@@ -58,10 +58,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ======================================================
 
 function getStoredUser() {
+
     try {
-        const storedUser = localStorage.getItem(
-            STORAGE_KEYS.user
-        );
+
+        const storedUser =
+            localStorage.getItem(
+                STORAGE_KEYS.user
+            );
 
         if (!storedUser) {
             return null;
@@ -70,6 +73,7 @@ function getStoredUser() {
         return JSON.parse(storedUser);
 
     } catch (error) {
+
         console.error(
             "Unable to read stored user:",
             error
@@ -80,12 +84,14 @@ function getStoredUser() {
 }
 
 function getUserToken() {
+
     return localStorage.getItem(
         STORAGE_KEYS.userToken
     );
 }
 
 function getVipToken() {
+
     return localStorage.getItem(
         STORAGE_KEYS.vipToken
     );
@@ -101,6 +107,7 @@ function saveUser(user, token = null) {
     );
 
     if (token) {
+
         localStorage.setItem(
             STORAGE_KEYS.userToken,
             token
@@ -139,22 +146,29 @@ async function apiRequest(endpoint, options = {}) {
     };
 
     if (token) {
-        headers.Authorization = `Bearer ${token}`;
+
+        headers.Authorization =
+            `Bearer ${token}`;
     }
 
-    const response = await fetch(
-        `${API_BASE_URL}${endpoint}`,
-        {
-            ...options,
-            headers
-        }
-    );
+    const response =
+        await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                ...options,
+                headers
+            }
+        );
 
     let data = {};
 
     try {
-        data = await response.json();
+
+        data =
+            await response.json();
+
     } catch (error) {
+
         data = {};
     }
 
@@ -178,10 +192,14 @@ async function apiRequest(endpoint, options = {}) {
 function setupAccountForms() {
 
     const loginForm =
-        document.querySelector("#loginForm");
+        document.querySelector(
+            "#loginForm"
+        );
 
     const registerForm =
-        document.querySelector("#registerForm");
+        document.querySelector(
+            "#registerForm"
+        );
 
     if (loginForm) {
 
@@ -209,51 +227,95 @@ function setupAccountForms() {
 function setupAccountPanelSwitching() {
 
     const loginPanel =
-        document.querySelector("#loginPanel");
+        document.querySelector(
+            "#loginPanel"
+        );
 
     const registerPanel =
-        document.querySelector("#registerPanel");
+        document.querySelector(
+            "#registerPanel"
+        );
 
+    // IMPORTANT:
+    // These IDs match the buttons in index.html.
     const showRegisterButtons =
         document.querySelectorAll(
-            "[data-show-register]"
+            "#showRegisterButton"
         );
 
     const showLoginButtons =
         document.querySelectorAll(
-            "[data-show-login]"
+            "#showLoginButton"
         );
+
+    // ----------------------------------------------
+    // SHOW REGISTER PANEL
+    // ----------------------------------------------
 
     showRegisterButtons.forEach(button => {
 
-        button.addEventListener("click", event => {
+        button.addEventListener(
+            "click",
+            event => {
 
-            event.preventDefault();
+                event.preventDefault();
 
-            if (loginPanel) {
-                loginPanel.style.display = "none";
+                // Hide login
+                if (loginPanel) {
+
+                    loginPanel.style.display =
+                        "none";
+
+                    loginPanel.hidden =
+                        true;
+                }
+
+                // Show register
+                if (registerPanel) {
+
+                    registerPanel.hidden =
+                        false;
+
+                    registerPanel.style.display =
+                        "";
+                }
             }
-
-            if (registerPanel) {
-                registerPanel.style.display = "";
-            }
-        });
+        );
     });
+
+    // ----------------------------------------------
+    // SHOW LOGIN PANEL
+    // ----------------------------------------------
 
     showLoginButtons.forEach(button => {
 
-        button.addEventListener("click", event => {
+        button.addEventListener(
+            "click",
+            event => {
 
-            event.preventDefault();
+                event.preventDefault();
 
-            if (registerPanel) {
-                registerPanel.style.display = "none";
+                // Hide register
+                if (registerPanel) {
+
+                    registerPanel.style.display =
+                        "none";
+
+                    registerPanel.hidden =
+                        true;
+                }
+
+                // Show login
+                if (loginPanel) {
+
+                    loginPanel.hidden =
+                        false;
+
+                    loginPanel.style.display =
+                        "";
+                }
             }
-
-            if (loginPanel) {
-                loginPanel.style.display = "";
-            }
-        });
+        );
     });
 }
 
@@ -265,7 +327,8 @@ async function handleLogin(event) {
 
     event.preventDefault();
 
-    const form = event.currentTarget;
+    const form =
+        event.currentTarget;
 
     const identifier =
         getFormValue(
@@ -310,6 +373,7 @@ async function handleLogin(event) {
                 "/login",
                 {
                     method: "POST",
+
                     body: JSON.stringify({
                         identifier,
                         password
@@ -368,12 +432,16 @@ async function handleRegister(event) {
 
     event.preventDefault();
 
-    const form = event.currentTarget;
+    const form =
+        event.currentTarget;
 
     const name =
         getFormValue(
             form,
-            ["name", "fullName"]
+            [
+                "name",
+                "fullName"
+            ]
         );
 
     const username =
@@ -450,6 +518,7 @@ async function handleRegister(event) {
                 "/register",
                 {
                     method: "POST",
+
                     body: JSON.stringify({
                         name,
                         username,
@@ -515,7 +584,8 @@ async function handleRegister(event) {
 
 async function checkUserSession() {
 
-    const token = getUserToken();
+    const token =
+        getUserToken();
 
     if (!token) {
 
@@ -580,11 +650,15 @@ function showAccountGate() {
         );
 
     if (gate) {
-        gate.style.display = "";
+
+        gate.style.display =
+            "";
     }
 
     if (website) {
-        website.style.display = "none";
+
+        website.style.display =
+            "none";
     }
 }
 
@@ -601,11 +675,15 @@ function openMainWebsite() {
         );
 
     if (gate) {
-        gate.style.display = "none";
+
+        gate.style.display =
+            "none";
     }
 
     if (website) {
-        website.style.display = "";
+
+        website.style.display =
+            "";
     }
 
     updateUserUI();
@@ -638,11 +716,21 @@ function switchToLoginPanel() {
         );
 
     if (registerPanel) {
-        registerPanel.style.display = "none";
+
+        registerPanel.style.display =
+            "none";
+
+        registerPanel.hidden =
+            true;
     }
 
     if (loginPanel) {
-        loginPanel.style.display = "";
+
+        loginPanel.hidden =
+            false;
+
+        loginPanel.style.display =
+            "";
     }
 }
 
@@ -657,7 +745,9 @@ function updateUserUI() {
     }
 
     document
-        .querySelectorAll("#userName")
+        .querySelectorAll(
+            "#userName"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -667,7 +757,9 @@ function updateUserUI() {
         });
 
     document
-        .querySelectorAll("[data-user-name]")
+        .querySelectorAll(
+            "[data-user-name]"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -677,7 +769,9 @@ function updateUserUI() {
         });
 
     document
-        .querySelectorAll("[data-user-username]")
+        .querySelectorAll(
+            "[data-user-username]"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -686,7 +780,9 @@ function updateUserUI() {
         });
 
     document
-        .querySelectorAll("[data-user-email]")
+        .querySelectorAll(
+            "[data-user-email]"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -713,17 +809,22 @@ function setupNavigation() {
             event => {
 
                 const href =
-                    link.getAttribute("href");
+                    link.getAttribute(
+                        "href"
+                    );
 
                 if (
                     !href ||
                     href === "#"
                 ) {
+
                     return;
                 }
 
                 const target =
-                    document.querySelector(href);
+                    document.querySelector(
+                        href
+                    );
 
                 if (!target) {
                     return;
@@ -743,7 +844,9 @@ function setupNavigation() {
 
     // League cards
     document
-        .querySelectorAll(".league-card")
+        .querySelectorAll(
+            ".league-card"
+        )
         .forEach(card => {
 
             card.addEventListener(
@@ -999,12 +1102,14 @@ function createPredictionCard(prediction) {
 
     const status =
         String(
-            prediction.status || "pending"
+            prediction.status ||
+            "pending"
         ).toLowerCase();
 
     const category =
         String(
-            prediction.category || "regular"
+            prediction.category ||
+            "regular"
         ).toLowerCase();
 
     const statusText =
@@ -1016,7 +1121,8 @@ function createPredictionCard(prediction) {
             : "Regular";
 
     return `
-        <article class="prediction-card"
+        <article
+            class="prediction-card"
             data-category="${escapeHtml(category)}"
             data-status="${escapeHtml(status)}">
 
@@ -1029,7 +1135,8 @@ function createPredictionCard(prediction) {
                     )}
                 </span>
 
-                <span class="prediction-category ${category}">
+                <span
+                    class="prediction-category ${category}">
                     ${categoryText}
                 </span>
 
@@ -1046,7 +1153,9 @@ function createPredictionCard(prediction) {
                     </strong>
                 </div>
 
-                <span class="vs">VS</span>
+                <span class="vs">
+                    VS
+                </span>
 
                 <div class="team away-team">
                     <strong>
@@ -1095,6 +1204,7 @@ function createPredictionCard(prediction) {
                 prediction.analysis
                     ? `
                         <div class="prediction-analysis">
+
                             <span class="label">
                                 Analysis
                             </span>
@@ -1104,13 +1214,17 @@ function createPredictionCard(prediction) {
                                     prediction.analysis
                                 )}
                             </p>
+
                         </div>
                     `
                     : ""
             }
 
-            <div class="prediction-status status-${escapeHtml(status)}">
+            <div
+                class="prediction-status status-${escapeHtml(status)}">
+
                 ${escapeHtml(statusText)}
+
             </div>
 
         </article>
@@ -1230,7 +1344,9 @@ function renderResults() {
     }
 
     const results =
-        Array.isArray(window.flexHubResults)
+        Array.isArray(
+            window.flexHubResults
+        )
             ? window.flexHubResults
             : [];
 
@@ -1263,7 +1379,10 @@ function renderResults() {
         grid.innerHTML =
             `<div class="empty-state">
                 <h3>No results available</h3>
-                <p>Completed prediction results will appear here.</p>
+                <p>
+                    Completed prediction results
+                    will appear here.
+                </p>
             </div>`;
 
         return;
@@ -1341,7 +1460,8 @@ async function updateVipPredictionCount() {
 
     if (!vipToken) {
 
-        element.textContent = "0";
+        element.textContent =
+            "0";
 
         return;
     }
@@ -1361,7 +1481,8 @@ async function updateVipPredictionCount() {
 
         if (!response.ok) {
 
-            element.textContent = "0";
+            element.textContent =
+                "0";
 
             return;
         }
@@ -1384,7 +1505,8 @@ async function updateVipPredictionCount() {
             error
         );
 
-        element.textContent = "0";
+        element.textContent =
+            "0";
     }
 }
 
@@ -1406,7 +1528,7 @@ async function setupVipPage() {
         return;
     }
 
-    // Verify the normal user session
+    // Verify normal user session
     const sessionValid =
         await verifyUserForVipPage();
 
@@ -1434,6 +1556,7 @@ async function verifyUserForVipPage() {
             );
 
         if (!data.user) {
+
             throw new Error(
                 "Invalid user session."
             );
@@ -1480,8 +1603,10 @@ function setupVipAccessForm() {
 
     // Prevent duplicate listeners
     if (
-        form.dataset.listenerAttached === "true"
+        form.dataset.listenerAttached ===
+        "true"
     ) {
+
         return;
     }
 
@@ -1548,12 +1673,6 @@ async function handleVipAccess(event) {
             "Activating..."
         );
 
-        /*
-         * IMPORTANT:
-         * The backend expects "accessCode",
-         * not "code".
-         */
-
         const response =
             await fetch(
                 `${API_BASE_URL}/vip/access`,
@@ -1577,9 +1696,12 @@ async function handleVipAccess(event) {
         let data = {};
 
         try {
+
             data =
                 await response.json();
+
         } catch (error) {
+
             data = {};
         }
 
@@ -1598,15 +1720,15 @@ async function handleVipAccess(event) {
             );
         }
 
-        // Save VIP token
         localStorage.setItem(
             STORAGE_KEYS.vipToken,
             data.token
         );
 
-        // Clear input
         if (codeInput) {
-            codeInput.value = "";
+
+            codeInput.value =
+                "";
         }
 
         showElementMessage(
@@ -1615,10 +1737,8 @@ async function handleVipAccess(event) {
             "success"
         );
 
-        // Refresh VIP status
         await checkVipStatus();
 
-        // Refresh VIP counter if available
         updateVipPredictionCount();
 
     } catch (error) {
@@ -1662,12 +1782,6 @@ async function checkVipStatus() {
 
     try {
 
-        /*
-         * IMPORTANT:
-         * /vip/status uses requireUser,
-         * so it must receive the NORMAL USER TOKEN.
-         */
-
         const response =
             await fetch(
                 `${API_BASE_URL}/vip/status`,
@@ -1687,9 +1801,12 @@ async function checkVipStatus() {
         let data = {};
 
         try {
+
             data =
                 await response.json();
+
         } catch (error) {
+
             data = {};
         }
 
@@ -1763,11 +1880,13 @@ function updateVipStatusUI(data) {
         }
 
         if (planElement) {
+
             planElement.textContent =
                 "No active VIP plan";
         }
 
         if (expiryElement) {
+
             expiryElement.textContent =
                 "—";
         }
@@ -1864,15 +1983,17 @@ async function loadVipPredictions() {
         let data = {};
 
         try {
+
             data =
                 await response.json();
+
         } catch (error) {
+
             data = {};
         }
 
         if (!response.ok) {
 
-            // VIP token may have expired
             if (
                 response.status === 401
             ) {
@@ -1949,6 +2070,7 @@ function setupVipLogout() {
             button.dataset.vipLogoutAttached ===
             "true"
         ) {
+
             return;
         }
 
@@ -1989,6 +2111,7 @@ function setupSignOut() {
             button.dataset.signOutAttached ===
             "true"
         ) {
+
             return;
         }
 
@@ -2063,6 +2186,7 @@ function setupMobileMenu() {
             link.addEventListener(
                 "click",
                 () => {
+
                     closeMobileMenu();
                 }
             );
@@ -2171,6 +2295,7 @@ function getFormValue(form, names) {
                 element.value?.trim();
 
             if (value) {
+
                 return value;
             }
         }
@@ -2230,7 +2355,9 @@ function showElementMessage(
     );
 
     element.style.display =
-        message ? "" : "none";
+        message
+            ? ""
+            : "none";
 }
 
 // ======================================================
@@ -2257,14 +2384,16 @@ function setButtonLoading(
                 button.textContent;
         }
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
         button.textContent =
             loadingText;
 
     } else {
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
         if (
             button.dataset.originalText
@@ -2330,8 +2459,12 @@ function formatPlan(plan) {
     return (
         plans[plan] ||
         capitalize(
-            String(plan || "VIP")
-                .replaceAll("_", " ")
+            String(
+                plan || "VIP"
+            ).replaceAll(
+                "_",
+                " "
+            )
         )
     );
 }
@@ -2358,6 +2491,7 @@ function formatMatchDate(date) {
                 parsed.getTime()
             )
         ) {
+
             return escapeHtml(date);
         }
 
@@ -2396,6 +2530,7 @@ function formatExpiry(date) {
                 parsed.getTime()
             )
         ) {
+
             return "—";
         }
 
@@ -2426,11 +2561,13 @@ function capitalize(value) {
         return "";
     }
 
-    return String(value)
-        .charAt(0)
-        .toUpperCase() +
+    return (
         String(value)
-            .slice(1);
+            .charAt(0)
+            .toUpperCase() +
+        String(value)
+            .slice(1)
+    );
 }
 
 // ======================================================
@@ -2439,18 +2576,35 @@ function capitalize(value) {
 
 function escapeHtml(value) {
 
-    if (value === null ||
-        value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
 
         return "";
     }
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 }
 
 // ======================================================
