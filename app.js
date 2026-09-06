@@ -2606,7 +2606,228 @@ function escapeHtml(value) {
             "&#039;"
         );
 }
+// FORGOT PASSWORD
+// =====================================================
+
+(function setupForgotPassword() {
+  function startForgotPassword() {
+    const existing = document.getElementById("forgotPasswordOverlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "forgotPasswordOverlay";
+
+    overlay.innerHTML = `
+      <div style="
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.75);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:99999;
+        padding:20px;
+      ">
+        <div style="
+          width:100%;
+          max-width:420px;
+          background:#fff;
+          border-radius:12px;
+          padding:25px;
+          box-shadow:0 20px 60px rgba(0,0,0,.35);
+        ">
+          <h2 style="margin:0 0 10px;color:#111;">
+            Forgot Password
+          </h2>
+
+          <p style="margin:0 0 20px;color:#555;">
+            Enter the email address you used to create your FLEX HUB PREDICTIONS account.
+          </p>
+
+          <input
+            id="forgotPasswordEmail"
+            type="email"
+            placeholder="Enter your email"
+            autocomplete="email"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:12px;
+              border:1px solid #ccc;
+              border-radius:7px;
+              margin-bottom:12px;
+              font-size:15px;
+            "
+          >
+
+          <div
+            id="forgotPasswordMessage"
+            style="
+              display:none;
+              margin-bottom:12px;
+              padding:10px;
+              border-radius:7px;
+              font-size:14px;
+            "
+          ></div>
+
+          <button
+            id="sendResetEmailButton"
+            type="button"
+            style="
+              width:100%;
+              padding:12px;
+              border:0;
+              border-radius:7px;
+              background:#111;
+              color:#fff;
+              font-size:15px;
+              cursor:pointer;
+              margin-bottom:10px;
+            "
+          >
+            Send Reset Link
+          </button>
+
+          <button
+            id="closeForgotPasswordButton"
+            type="button"
+            style="
+              width:100%;
+              padding:10px;
+              border:0;
+              background:transparent;
+              color:#555;
+              cursor:pointer;
+              font-size:14px;
+            "
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const emailInput =
+      document.getElementById("forgotPasswordEmail");
+
+    const sendButton =
+      document.getElementById("sendResetEmailButton");
+
+    const closeButton =
+      document.getElementById("closeForgotPasswordButton");
+
+    const messageBox =
+      document.getElementById("forgotPasswordMessage");
+
+    closeButton.addEventListener("click", () => {
+      overlay.remove();
+    });
+
+    emailInput.focus();
+
+    sendButton.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#fff3cd";
+        messageBox.style.color = "#664d03";
+        messageBox.textContent = "Please enter your email address.";
+        return;
+      }
+
+      sendButton.disabled = true;
+      sendButton.textContent = "Sending...";
+
+      messageBox.style.display = "none";
+
+      try {
+        const response = await fetch(
+          "https://flex-hub-prediction.onrender.com/api/forgot-password",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email })
+          }
+        );
+
+        const data = await response.json();
+
+        messageBox.style.display = "block";
+        messageBox.style.background = "#d1e7dd";
+        messageBox.style.color = "#0f5132";
+        messageBox.textContent =
+          data.message ||
+          "If an account with that email exists, a password reset link has been sent.";
+
+        sendButton.textContent = "Email Sent";
+      } catch (error) {
+        console.error("Forgot password request failed:", error);
+
+        messageBox.style.display = "block";
+        messageBox.style.background = "#f8d7da";
+        messageBox.style.color = "#842029";
+        messageBox.textContent =
+          "Unable to send the reset request right now. Please try again.";
+
+        sendButton.disabled = false;
+        sendButton.textContent = "Send Reset Link";
+      }
+    });
+  }
+
+  function connectForgotPasswordButton() {
+    const button =
+      document.getElementById("forgotPasswordButton");
+
+    if (!button) return false;
+
+    if (button.dataset.forgotPasswordReady === "true") {
+      return true;
+    }
+
+    button.dataset.forgotPasswordReady = "true";
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      startForgotPassword();
+    });
+
+    return true;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      connectForgotPasswordButton
+    );
+  } else {
+    connectForgotPasswordButton();
+  }
+
+  // The login gate can be rendered dynamically, so keep checking
+  // briefly until the button exists.
+  let attempts = 0;
+
+  const finder = setInterval(() => {
+    attempts++;
+
+    if (connectForgotPasswordButton() || attempts >= 30) {
+      clearInterval(finder);
+    }
+  }, 500);
+})();
+
+// =====================================================
+// END OF FORGOT PASSWORD
+// =====================================================
 
 // ======================================================
 // END OF FLEX HUB APP.JS
 // ======================================================
+// =====================================================
