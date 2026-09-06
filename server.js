@@ -47,6 +47,181 @@ app.get("/api/status", (req, res) => {
   res.json({ success: true, message: "FLEX HUB PREDICTIONS API is online.", serverTime: new Date().toISOString() });
 });
 
+// ==================== PASSWORD RESET ====================
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+app.post("/api/forgot-password", async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+
+    // Always return the same message so we do not reveal
+    // whether an email address has an account.
+    const genericMessage =
+      "If an account with that email exists, a password reset link has been sent.";
+
+    if (!email) {
+      return res.json({ success: true, message: genericMessage });
+    }
+
+    const { rows } = await db.query(
+      "SELECT id, name, email FROM users WHERE LOWER(email) = $1 LIMIT 1",
+      [email]
+    );
+
+    if (!rows.length) {
+      return res.json({ success: true, message: genericMessage });
+    }
+
+    const user = rows[0];
+
+    // Invalidate any previous unused reset tokens for this user.
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND used_at IS NULL",
+      [user.id]
+    );
+
+    // Create a secure random token.
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashResetToken(rawToken);
+
+    // Token is valid for 30 minutes.
+    await db.query(
+      `INSERT INTO password_reset_tokens
+        (user_id, token_hash, expires_at)
+       VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '30 minutes')`,
+      [user.id, tokenHash]
+    );
+
+    const resetBaseUrl =
+      process.env.PASSWORD_RESET_URL ||
+      "https://flexhubpredictions.com/reset-password.html";
+
+    const resetUrl =
+      `${resetBaseUrl}?token=${encodeURIComponent(rawToken)}`;
+
+    const emailFrom =
+      process.env.EMAIL_FROM ||
+      "FLEX HUB PREDICTIONS <noreply@flexhubpredictions.com>";
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not configured.");
+      return res.json({ success: true, message: genericMessage });
+    }
+
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: emailFrom,
+        to: [user.email],
+        subject: "Reset your FLEX HUB PREDICTIONS password",
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
+            <h2>FLEX HUB PREDICTIONS</h2>
+            <p>Hello ${String(user.name || "there").replace(/[<>&"]/g, "")},</p>
+            <p>We received a request to reset your password.</p>
+            <p>
+              <a href="${resetUrl}"
+                 style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">
+                Reset Password
+              </a>
+            </p>
+            <p>This link will expire in 30 minutes.</p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+          </div>
+        `
+      })
+    });
+
+    if (!resendResponse.ok) {
+      const resendError = await resendResponse.text();
+      console.error("Resend email error:", resendError);
+    }
+
+    return res.json({ success: true, message: genericMessage });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.json({
+      success: true,
+      message:
+        "If an account with that email exists, a password reset link has been sent."
+    });
+  }
+});
+
+app.post("/api/reset-password", async (req, res) => {
+  try {
+    const token = String(req.body?.token || "").trim();
+    const newPassword = String(req.body?.password || "");
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or missing reset token."
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters."
+      });
+    }
+
+    const tokenHash = hashResetToken(token);
+
+    const { rows } = await db.query(
+      `SELECT id, user_id
+       FROM password_reset_tokens
+       WHERE token_hash = $1
+         AND used_at IS NULL
+         AND expires_at > CURRENT_TIMESTAMP
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (!rows.length) {
+      return res.status(400).json({
+        success: false,
+        message: "This password reset link is invalid or has expired."
+      });
+    }
+
+    const resetToken = rows[0];
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await db.query(
+      "UPDATE users SET password = $1 WHERE id = $2",
+      [hashedPassword, resetToken.user_id]
+    );
+
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [resetToken.id]
+    );
+
+    return res.json({
+      success: true,
+      message: "Password reset successfully. You can now log in with your new password."
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to reset password right now."
+    });
+  }
+});
+
+// ==================== END PASSWORD RESET ====================
 function createToken(payload, expiresIn = "7d") {
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
