@@ -2,7 +2,7 @@
 // FLEX HUB PREDICTIONS - MAIN APP.JS
 // ======================================================
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "https://flex-hub-prediction.onrender.com/api";
 
 // ======================================================
 // STORAGE KEYS
