@@ -2158,7 +2158,7 @@ function setupMobileMenu() {
         () => {
 
             nav.classList.toggle(
-                "active"
+                "open"
             );
 
             menuButton.classList.toggle(
