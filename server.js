@@ -302,20 +302,96 @@ app.get("/api/admin/vip-subscriptions", requireAdmin, async (req, res) => {
 app.post("/api/vip/access", requireUser, async (req, res) => {
   try {
     const { accessCode } = req.body;
-    if (!accessCode) return res.status(400).json({ message: "Enter your VIP access code." });
+
+    if (!accessCode) {
+      return res.status(400).json({
+        message: "Enter your VIP access code."
+      });
+    }
 
     const result = await db.query(
       "SELECT * FROM vip_subscriptions WHERE code = $1",
       [accessCode.trim().toUpperCase()]
     );
+
     const subscription = result.rows[0];
 
-    if (!subscription) return res.status(404).json({ message: "Invalid VIP access code." });
+    if (!subscription) {
+      return res.status(404).json({
+        message: "Invalid VIP access code."
+      });
+    }
+
+    // If this VIP subscription is already active for this same account,
+    // restore VIP access by issuing a fresh VIP session token.
+    if (subscription.status === "active") {
+      if (subscription.user_id !== req.user.id) {
+        return res.status(400).json({
+          message: "This VIP code is already assigned to another account."
+        });
+      }
+
+      if (
+        subscription.expires_at &&
+        new Date(subscription.expires_at) <= new Date()
+      ) {
+        await db.query(
+          "UPDATE vip_subscriptions SET status = 'expired' WHERE id = $1",
+          [subscription.id]
+        );
+
+        return res.status(400).json({
+          message: "This VIP subscription has expired."
+        });
+      }
+
+      const remainingMilliseconds =
+        new Date(subscription.expires_at).getTime() - Date.now();
+
+      const remainingDays = Math.max(
+        1,
+        Math.ceil(remainingMilliseconds / (24 * 60 * 60 * 1000))
+      );
+
+      const vipToken = createToken(
+        {
+          id: req.user.id,
+          subscriptionId: subscription.id,
+          type: "vip"
+        },
+        `${remainingDays}d`
+      );
+
+      return res.json({
+        message: "VIP access restored.",
+        token: vipToken,
+        subscription: {
+          id: subscription.id,
+          plan: subscription.plan,
+          durationDays: subscription.duration_days,
+          activatedAt: subscription.activated_at,
+          expiresAt: subscription.expires_at,
+          status: "active"
+        }
+      });
+    }
+
+    // An expired subscription cannot be reused.
+    if (subscription.status === "expired") {
+      return res.status(400).json({
+        message: "This VIP subscription has expired."
+      });
+    }
+
+    // Only unused subscriptions can be activated for the first time.
     if (subscription.status !== "unused") {
-      return res.status(400).json({ message: "This VIP code has already been used." });
+      return res.status(400).json({
+        message: "This VIP code is not available."
+      });
     }
 
     const activatedAt = new Date();
+
     const expiresAt = new Date(
       activatedAt.getTime() +
       subscription.duration_days * 24 * 60 * 60 * 1000
@@ -323,17 +399,29 @@ app.post("/api/vip/access", requireUser, async (req, res) => {
 
     await db.query(
       `UPDATE vip_subscriptions
-       SET status = 'active', user_id = $1, activated_at = $2, expires_at = $3
+       SET status = 'active',
+           user_id = $1,
+           activated_at = $2,
+           expires_at = $3
        WHERE id = $4`,
-      [req.user.id, activatedAt.toISOString(), expiresAt.toISOString(), subscription.id]
+      [
+        req.user.id,
+        activatedAt.toISOString(),
+        expiresAt.toISOString(),
+        subscription.id
+      ]
     );
 
     const vipToken = createToken(
-      { id: req.user.id, subscriptionId: subscription.id, type: "vip" },
+      {
+        id: req.user.id,
+        subscriptionId: subscription.id,
+        type: "vip"
+      },
       `${subscription.duration_days}d`
     );
 
-    res.json({
+    return res.json({
       message: "VIP access activated.",
       token: vipToken,
       subscription: {
@@ -347,10 +435,12 @@ app.post("/api/vip/access", requireUser, async (req, res) => {
     });
   } catch (error) {
     console.error("VIP access error:", error);
-    res.status(500).json({ message: "Unable to activate VIP access." });
+
+    return res.status(500).json({
+      message: "Unable to activate VIP access."
+    });
   }
 });
-
 app.get("/api/vip/status", requireUser, async (req, res) => {
   try {
     const result = await db.query(
