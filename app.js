@@ -1145,28 +1145,81 @@ function createPredictionCard(prediction) {
 
             <div class="prediction-match">
 
-                <div class="team home-team">
-                    <strong>
-                        ${escapeHtml(
-                            prediction.home_team ||
-                            "Home Team"
-                        )}
-                    </strong>
-                </div>
+                <div class="team home-team" style="display:flex;align-items:center;gap:10px;">
+
+    <span style="
+        width:36px;
+        height:36px;
+        min-width:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:linear-gradient(135deg,#f5b942,#8a5a00);
+        color:#05070b;
+        font-size:12px;
+        font-weight:900;
+        border:2px solid #f5b942;
+        box-shadow:0 0 10px rgba(245,185,66,.35);
+    ">
+        ${escapeHtml(
+            (prediction.home_team || "Home Team")
+                .split(/\s+/)
+                .map(word => word[0])
+                .join("")
+                .slice(0,3)
+                .toUpperCase()
+        )}
+    </span>
+
+    <strong>
+        ${escapeHtml(
+            prediction.home_team ||
+            "Home Team"
+        )}
+    </strong>
+
+</div>
 
                 <span class="vs">
                     VS
                 </span>
 
-                <div class="team away-team">
-                    <strong>
-                        ${escapeHtml(
-                            prediction.away_team ||
-                            "Away Team"
-                        )}
-                    </strong>
-                </div>
+              <div class="team away-team" style="display:flex;align-items:center;gap:10px;">
 
+    <span style="
+        width:36px;
+        height:36px;
+        min-width:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:linear-gradient(135deg,#f5b942,#8a5a00);
+        color:#05070b;
+        font-size:12px;
+        font-weight:900;
+        border:2px solid #f5b942;
+        box-shadow:0 0 10px rgba(245,185,66,.35);
+    ">
+        ${escapeHtml(
+            (prediction.away_team || "Away Team")
+                .split(/\s+/)
+                .map(word => word[0])
+                .join("")
+                .slice(0,3)
+                .toUpperCase()
+        )}
+    </span>
+
+    <strong>
+        ${escapeHtml(
+            prediction.away_team ||
+            "Away Team"
+        )}
+    </strong>
+
+</div>
             </div>
 
             <div class="prediction-info">
