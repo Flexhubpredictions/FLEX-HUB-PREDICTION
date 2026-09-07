@@ -1162,10 +1162,10 @@ function updateMatchCountdowns() {
                 return;
             }
 
-            if (remaining <= 0) {
-                value.textContent = "KICKING OFF";
-                return;
-            }
+         if (remaining <= 0) {
+    value.textContent = "MATCH STARTED";
+    return;
+}
 
             value.textContent =
                 formatMatchCountdown(remaining);
