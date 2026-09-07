@@ -2571,6 +2571,276 @@ document
 ========================================= */
 
 checkSession();
+    // ==================== BETTING CODES JAVASCRIPT ====================
+
+async function loadBettingCodes() {
+
+    const tableBody = document.getElementById("bettingCodesTableBody");
+
+    if (!tableBody) return;
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/admin/betting-codes`,
+            {
+                headers: headers()
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to load betting codes.");
+        }
+
+        const bettingCodes = data.bettingCodes || [];
+
+        if (!bettingCodes.length) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="loading">
+                        No betting codes posted yet.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        tableBody.innerHTML = bettingCodes.map(code => {
+
+            const categoryClass =
+                code.category === "vip"
+                    ? "vip"
+                    : "regular";
+
+            return `
+                <tr>
+
+                    <td>
+                        ${escapeHTML(code.bookmaker)}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(code.code)}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(code.description || "—")}
+                    </td>
+
+                    <td>
+                        <span class="status-badge ${categoryClass}">
+                            ${code.category === "vip" ? "VIP" : "Regular"}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="status-badge">
+                            ${escapeHTML(code.status)}
+                        </span>
+                    </td>
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="danger-btn"
+                            onclick="deleteBettingCode(${code.id})"
+                        >
+                            DELETE
+                        </button>
+
+                    </td>
+
+                </tr>
+            `;
+
+        }).join("");
+
+    } catch (error) {
+
+        console.error("Load betting codes error:", error);
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="loading">
+                    Unable to load betting codes.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+async function deleteBettingCode(id) {
+
+    if (!confirm("Delete this betting code?")) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/admin/betting-codes/${id}`,
+            {
+                method: "DELETE",
+                headers: headers()
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to delete betting code."
+            );
+        }
+
+        await loadBettingCodes();
+
+    } catch (error) {
+
+        console.error("Delete betting code error:", error);
+
+        alert(
+            error.message || "Unable to delete betting code."
+        );
+    }
+}
+
+
+const bettingCodeForm =
+    document.getElementById("bettingCodeForm");
+
+
+if (bettingCodeForm) {
+
+    bettingCodeForm.addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const message =
+            document.getElementById("bettingCodeMessage");
+
+        const bookmaker =
+            document.getElementById("bettingBookmaker").value.trim();
+
+        const code =
+            document.getElementById("bettingCode").value.trim();
+
+        const category =
+            document.getElementById("bettingCategory").value;
+
+        const description =
+            document.getElementById("bettingDescription").value.trim();
+
+
+        if (!bookmaker || !code) {
+
+            message.textContent =
+                "Bookmaker and betting code are required.";
+
+            return;
+        }
+
+
+        message.textContent =
+            "Posting betting code...";
+
+
+        try {
+
+            const response = await fetch(
+                `${API_BASE_URL}/admin/betting-codes`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        ...headers(),
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        bookmaker,
+                        code,
+                        description,
+                        category
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Unable to add betting code."
+                );
+            }
+
+
+            message.textContent =
+                "Betting code posted successfully.";
+
+
+            bettingCodeForm.reset();
+
+
+            await loadBettingCodes();
+
+
+            setTimeout(() => {
+
+                message.textContent = "";
+
+            }, 3000);
+
+
+        } catch (error) {
+
+            console.error(
+                "Add betting code error:",
+                error
+            );
+
+            message.textContent =
+                error.message ||
+                "Unable to add betting code.";
+        }
+
+    });
+
+}
+
+
+// Make sure betting codes load whenever
+// the Admin Panel is opened.
+
+if (typeof openAdmin === "function") {
+
+    const originalOpenAdmin = openAdmin;
+
+    openAdmin = async function() {
+
+        const result = await originalOpenAdmin();
+
+        await loadBettingCodes();
+
+        return result;
+    };
+
+}
+
+
+// ==================== END BETTING CODES JAVASCRIPT ====================
 
 </script>
 
