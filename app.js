@@ -1889,6 +1889,7 @@ async function checkVipStatus() {
        if (data.active === true) {
 
     await loadVipPredictions();
+    await loadVipBettingCodes();       
 
 }
     } catch (error) {
