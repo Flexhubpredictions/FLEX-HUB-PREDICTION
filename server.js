@@ -862,6 +862,130 @@ app.patch("/api/predictions/:id/status", requireAdmin, async (req, res) => {
   }
 });
 
+// ==================== BETTING CODES ====================
+
+app.post("/api/admin/betting-codes", requireAdmin, async (req, res) => {
+  try {
+    const {
+      bookmaker,
+      code,
+      description,
+      category
+    } = req.body;
+
+    if (!bookmaker || !code) {
+      return res.status(400).json({
+        message: "Bookmaker and betting code are required."
+      });
+    }
+
+    const cleanBookmaker = String(bookmaker).trim();
+    const cleanCode = String(code).trim();
+    const cleanDescription = String(description || "").trim();
+    const cleanCategory =
+      category === "vip" ? "vip" : "regular";
+
+    const result = await db.query(
+      `INSERT INTO betting_codes
+       (bookmaker, code, description, category, status)
+       VALUES ($1, $2, $3, $4, 'active')
+       RETURNING *`,
+      [
+        cleanBookmaker,
+        cleanCode,
+        cleanDescription || null,
+        cleanCategory
+      ]
+    );
+
+    res.status(201).json({
+      message: "Betting code added successfully.",
+      bettingCode: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Add betting code error:", error);
+    res.status(500).json({
+      message: "Unable to add betting code."
+    });
+  }
+});
+
+
+app.get("/api/admin/betting-codes", requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM betting_codes
+       ORDER BY id DESC`
+    );
+
+    res.json({
+      bettingCodes: result.rows
+    });
+  } catch (error) {
+    console.error("Admin betting codes error:", error);
+    res.status(500).json({
+      message: "Unable to load betting codes."
+    });
+  }
+});
+
+
+app.delete("/api/admin/betting-codes/:id", requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `DELETE FROM betting_codes
+       WHERE id = $1
+       RETURNING id`,
+      [req.params.id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        message: "Betting code not found."
+      });
+    }
+
+    res.json({
+      message: "Betting code deleted successfully."
+    });
+  } catch (error) {
+    console.error("Delete betting code error:", error);
+    res.status(500).json({
+      message: "Unable to delete betting code."
+    });
+  }
+});
+
+
+app.get("/api/betting-codes", async (req, res) => {
+  try {
+    const category =
+      req.query.category === "vip"
+        ? "vip"
+        : "regular";
+
+    const result = await db.query(
+      `SELECT id, bookmaker, code, description, category, status, created_at
+       FROM betting_codes
+       WHERE category = $1
+         AND status = 'active'
+       ORDER BY id DESC`,
+      [category]
+    );
+
+    res.json({
+      bettingCodes: result.rows
+    });
+  } catch (error) {
+    console.error("Public betting codes error:", error);
+    res.status(500).json({
+      message: "Unable to load betting codes."
+    });
+  }
+});
+
+// ==================== END BETTING CODES ====================
 app.use((req, res) => {
   res.status(404).json({ message: "API route not found." });
 });
