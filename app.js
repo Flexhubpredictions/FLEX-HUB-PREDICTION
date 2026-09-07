@@ -3056,7 +3056,14 @@ async function loadTeamBadges() {
 
     for (const badge of badges) {
 
-        const teamName = badge.getAttribute("data-team-name");
+        // Do not request or replace a badge that is
+        // already loaded.
+        if (badge.querySelector("img")) {
+            continue;
+        }
+
+        const teamName =
+            badge.getAttribute("data-team-name");
 
         if (!teamName) {
             continue;
@@ -3071,9 +3078,14 @@ async function loadTeamBadges() {
 
             const data = await response.json();
 
-            const team = data.teams && data.teams[0];
+            const team =
+                data.teams &&
+                data.teams[0];
 
-            if (team && team.strBadge) {
+            if (
+                team &&
+                team.strBadge
+            ) {
 
                 badge.innerHTML = `
                     <img
@@ -3101,7 +3113,6 @@ async function loadTeamBadges() {
         }
     }
 }
-
 
 // Watch prediction cards for team badges
 const teamBadgeObserver = new MutationObserver(() => {
