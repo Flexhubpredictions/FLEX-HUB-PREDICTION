@@ -1147,7 +1147,12 @@ function createPredictionCard(prediction) {
 
                 <div class="team home-team" style="display:flex;align-items:center;gap:10px;">
 
-    <span style="
+   <span
+    class="team-badge"
+    data-team-name="${escapeHtml(
+        prediction.home_team || "Home Team"
+    )}"
+    style="
         width:36px;
         height:36px;
         min-width:36px;
@@ -1155,22 +1160,20 @@ function createPredictionCard(prediction) {
         display:flex;
         align-items:center;
         justify-content:center;
-        background:linear-gradient(135deg,#f5b942,#8a5a00);
-        color:#05070b;
-        font-size:12px;
-        font-weight:900;
+        background:#111722;
         border:2px solid #f5b942;
-        box-shadow:0 0 10px rgba(245,185,66,.35);
-    ">
-        ${escapeHtml(
-            (prediction.home_team || "Home Team")
-                .split(/\s+/)
-                .map(word => word[0])
-                .join("")
-                .slice(0,3)
-                .toUpperCase()
-        )}
-    </span>
+        overflow:hidden;
+    "
+>
+    ${escapeHtml(
+        (prediction.home_team || "Home Team")
+            .split(/\s+/)
+            .map(word => word[0])
+            .join("")
+            .slice(0,3)
+            .toUpperCase()
+    )}
+</span>
 
     <strong>
         ${escapeHtml(
@@ -1187,31 +1190,34 @@ function createPredictionCard(prediction) {
 
               <div class="team away-team" style="display:flex;align-items:center;gap:10px;">
 
-    <span style="
+   <span
+    class="team-badge"
+    data-team-name="${escapeHtml(
+        prediction.away_team || "Away Team"
+    )}"
+    style="
         width:36px;
         height:36px;
         min-width:36px;
+        min-height:36px;
         border-radius:50%;
         display:flex;
         align-items:center;
         justify-content:center;
-        background:linear-gradient(135deg,#f5b942,#8a5a00);
-        color:#05070b;
-        font-size:12px;
-        font-weight:900;
+        background:#111722;
         border:2px solid #f5b942;
-        box-shadow:0 0 10px rgba(245,185,66,.35);
-    ">
-        ${escapeHtml(
-            (prediction.away_team || "Away Team")
-                .split(/\s+/)
-                .map(word => word[0])
-                .join("")
-                .slice(0,3)
-                .toUpperCase()
-        )}
-    </span>
-
+        overflow:hidden;
+    "
+>
+    ${escapeHtml(
+        (prediction.away_team || "Away Team")
+            .split(/\s+/)
+            .map(word => word[0])
+            .join("")
+            .slice(0,3)
+            .toUpperCase()
+    )}
+</span>
     <strong>
         ${escapeHtml(
             prediction.away_team ||
@@ -3038,7 +3044,87 @@ async function copyBettingCode(button) {
 // ============================================================
 // END BETTING CODES
 // ============================================================
+// ============================================================
+// REAL TEAM BADGES
+// ============================================================
 
+async function loadTeamBadges() {
+
+    const badges = document.querySelectorAll(
+        ".team-badge[data-team-name]"
+    );
+
+    for (const badge of badges) {
+
+        const teamName = badge.getAttribute("data-team-name");
+
+        if (!teamName) {
+            continue;
+        }
+
+        try {
+
+            const response = await fetch(
+                "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
+                encodeURIComponent(teamName)
+            );
+
+            const data = await response.json();
+
+            const team = data.teams && data.teams[0];
+
+            if (team && team.strBadge) {
+
+                badge.innerHTML = `
+                    <img
+                        src="${team.strBadge}"
+                        alt="${escapeHtml(teamName)}"
+                        style="
+                            width:36px;
+                            height:36px;
+                            object-fit:contain;
+                            display:block;
+                        "
+                    >
+                `;
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Team badge error:",
+                teamName,
+                error
+            );
+
+        }
+    }
+}
+
+
+// Watch prediction cards for team badges
+const teamBadgeObserver = new MutationObserver(() => {
+
+    loadTeamBadges();
+
+});
+
+teamBadgeObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+
+// Load badges already on the page
+setTimeout(() => {
+    loadTeamBadges();
+}, 1000);
+
+
+// ============================================================
+// END REAL TEAM BADGES
+// ============================================================
 // END OF FLEX HUB APP.JS
 // ======================================================
 // =====================================================
