@@ -399,7 +399,7 @@ async function handleLogin(event) {
             "success"
         );
 
-        openMainWebsite();
+       showFlexHubAnimation(openMainWebsite);
 
     } catch (error) {
 
@@ -3125,6 +3125,141 @@ setTimeout(() => {
 // ============================================================
 // END REAL TEAM BADGES
 // ============================================================
+// ============================================================
+// FLEX HUB LOGIN / REGISTER ANIMATION
+// ============================================================
+
+function showFlexHubAnimation(callback) {
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "flexHubAnimation";
+
+    overlay.innerHTML = `
+        <div class="flex-hub-animation-content">
+
+            <div class="flex-hub-logo">
+                FLEX
+            </div>
+
+            <div class="flex-hub-title">
+                HUB
+            </div>
+
+            <div class="flex-hub-subtitle">
+                PREDICTIONS
+            </div>
+
+            <div class="flex-hub-loading">
+                LOADING...
+            </div>
+
+        </div>
+    `;
+
+    const style = document.createElement("style");
+
+    style.textContent = `
+        #flexHubAnimation {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            background: #05070b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: flexHubFadeIn .35s ease forwards;
+        }
+
+        .flex-hub-animation-content {
+            text-align: center;
+            transform: scale(.85);
+            animation: flexHubZoom 1.2s ease forwards;
+        }
+
+        .flex-hub-logo {
+            color: #f5b942;
+            font-size: 58px;
+            font-weight: 1000;
+            letter-spacing: 2px;
+            line-height: .9;
+            text-shadow: 0 0 25px rgba(245,185,66,.45);
+        }
+
+        .flex-hub-title {
+            color: white;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            margin-top: 4px;
+        }
+
+        .flex-hub-subtitle {
+            color: #f5b942;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            margin-top: 8px;
+        }
+
+        .flex-hub-loading {
+            margin-top: 28px;
+            color: #ffffff;
+            font-size: 13px;
+            letter-spacing: 4px;
+            opacity: .75;
+            animation: flexHubPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes flexHubZoom {
+            0% {
+                opacity: 0;
+                transform: scale(.65);
+            }
+
+            55% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes flexHubFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes flexHubPulse {
+            0%, 100% {
+                opacity: .35;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+
+    setTimeout(() => {
+
+        if (typeof callback === "function") {
+            callback();
+        }
+
+    }, 1800);
+}
 // END OF FLEX HUB APP.JS
 // ======================================================
 // =====================================================
