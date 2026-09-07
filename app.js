@@ -1886,11 +1886,13 @@ async function checkVipStatus() {
             data
         );
 
-        if (data.active === true) {
+       if (data.active === true) {
 
-            await loadVipPredictions();
-        }
+    await loadVipPredictions();
 
+    await loadVipBettingCodes();
+
+}
     } catch (error) {
 
         console.error(
@@ -3060,8 +3062,8 @@ async function loadVipBettingCodes() {
 
     try {
 
-        const token =
-            localStorage.getItem("vipToken");
+      const token =
+    getVipToken();
 
         if (!token) {
             return;
