@@ -3045,6 +3045,168 @@ async function copyBettingCode(button) {
 // END BETTING CODES
 // ============================================================
 // ============================================================
+// ============================================================
+// VIP BETTING CODES
+// ============================================================
+
+async function loadVipBettingCodes() {
+
+    const container =
+        document.getElementById("vipBettingCodesGrid");
+
+    if (!container) {
+        return;
+    }
+
+    try {
+
+        const token =
+            localStorage.getItem("vipToken");
+
+        if (!token) {
+            return;
+        }
+
+        const response = await fetch(
+            "https://flex-hub-prediction.onrender.com/api/vip/betting-codes",
+            {
+                headers: {
+                    Authorization:
+                        `Bearer ${token}`
+                }
+            }
+        );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to load VIP betting codes."
+            );
+        }
+
+        const bettingCodes =
+            data.bettingCodes || [];
+
+        if (!bettingCodes.length) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+
+                    <h3>
+                        No VIP betting codes yet
+                    </h3>
+
+                    <p>
+                        Check back later for new
+                        VIP betting codes.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML =
+            bettingCodes.map(code => `
+
+                <div class="prediction-card">
+
+                    <div class="prediction-card-header">
+
+                        <strong>
+                            ${escapeHtml(
+                                code.bookmaker
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="prediction-card-body">
+
+                        <div>
+                            <strong>
+                                VIP BETTING CODE
+                            </strong>
+                        </div>
+
+                        <div style="
+                            font-size:24px;
+                            font-weight:800;
+                            margin:10px 0;
+                        ">
+                            ${escapeHtml(
+                                code.code
+                            )}
+                        </div>
+
+                        ${
+                            code.description
+                                ? `
+                                    <div
+                                        style="
+                                            margin-bottom:15px;
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            code.description
+                                        )}
+                                    </div>
+                                  `
+                                : ""
+                        }
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="
+                                margin-top:5px;
+                                cursor:pointer;
+                            "
+                            data-betting-code="${escapeHtml(
+                                code.code
+                            )}"
+                            onclick="copyBettingCode(this)"
+                        >
+                            COPY CODE
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `).join("");
+
+    } catch (error) {
+
+        console.error(
+            "VIP betting codes error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="empty-state">
+
+                <h3>
+                    Unable to load VIP betting codes
+                </h3>
+
+                <p>
+                    Please try again later.
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+
+// ============================================================
+// END VIP BETTING CODES
+// ============================================================
 // REAL TEAM BADGES
 // ============================================================
 
@@ -3170,7 +3332,7 @@ function showFlexHubAnimation(callback) {
 
     const style = document.createElement("style");
 
-    style.textContent = `
+    style.textContent = 
         #flexHubAnimation {
             position: fixed;
             inset: 0;
