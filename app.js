@@ -3168,13 +3168,13 @@ function showFlexHubAnimation(callback) {
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: flexHubFadeIn .35s ease forwards;
+            animation: flexHubFadeIn .25s ease forwards;
         }
 
         .flex-hub-animation-content {
             text-align: center;
             transform: scale(.85);
-            animation: flexHubZoom 1.2s ease forwards;
+            animation: flexHubZoom 1.1s ease forwards;
         }
 
         .flex-hub-logo {
@@ -3212,6 +3212,7 @@ function showFlexHubAnimation(callback) {
         }
 
         @keyframes flexHubZoom {
+
             0% {
                 opacity: 0;
                 transform: scale(.65);
@@ -3226,9 +3227,11 @@ function showFlexHubAnimation(callback) {
                 opacity: 1;
                 transform: scale(1);
             }
+
         }
 
         @keyframes flexHubFadeIn {
+
             from {
                 opacity: 0;
             }
@@ -3236,9 +3239,11 @@ function showFlexHubAnimation(callback) {
             to {
                 opacity: 1;
             }
+
         }
 
         @keyframes flexHubPulse {
+
             0%, 100% {
                 opacity: .35;
             }
@@ -3246,6 +3251,7 @@ function showFlexHubAnimation(callback) {
             50% {
                 opacity: 1;
             }
+
         }
     `;
 
@@ -3254,11 +3260,16 @@ function showFlexHubAnimation(callback) {
 
     setTimeout(() => {
 
+        // Remove the animation completely
+        overlay.remove();
+        style.remove();
+
+        // Open the main website
         if (typeof callback === "function") {
             callback();
         }
 
-    }, 1800);
+    }, 1300);
 }
 // END OF FLEX HUB APP.JS
 // ======================================================
