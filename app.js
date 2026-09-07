@@ -2843,10 +2843,9 @@ async function loadRegularBettingCodes() {
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/betting-codes`
-        );
-
+      const response = await fetch(
+    "https://flex-hub-prediction.onrender.com/api/betting-codes"
+);
         const data = await response.json();
 
         if (!response.ok) {
