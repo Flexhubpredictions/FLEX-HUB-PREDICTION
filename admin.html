@@ -681,7 +681,159 @@ td {
 
 </section>
 
+<!-- BETTING CODES -->
 
+<section class="panel">
+
+    <div class="panel-heading">
+
+        <div>
+
+            <h3>Betting Codes</h3>
+
+            <p>
+                Post betting codes for users to see alongside predictions.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <form id="bettingCodeForm">
+
+        <div class="prediction-form">
+
+            <div class="form-group">
+
+                <label for="bettingBookmaker">
+                    Bookmaker
+                </label>
+
+                <input
+                    type="text"
+                    id="bettingBookmaker"
+                    placeholder="Example: Betway"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bettingCode">
+                    Betting Code
+                </label>
+
+                <input
+                    type="text"
+                    id="bettingCode"
+                    placeholder="Enter betting code"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bettingCategory">
+                    Category
+                </label>
+
+                <select id="bettingCategory">
+
+                    <option value="regular">
+                        Regular
+                    </option>
+
+                    <option value="vip">
+                        VIP
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bettingDescription">
+                    Description
+                </label>
+
+                <input
+                    type="text"
+                    id="bettingDescription"
+                    placeholder="Optional description"
+                >
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <button
+                    class="primary-btn"
+                    type="submit"
+                >
+                    POST BETTING CODE
+                </button>
+
+            </div>
+
+
+            <div
+                class="message full-width"
+                id="bettingCodeMessage"
+            ></div>
+
+        </div>
+
+    </form>
+
+
+    <div
+        class="table-wrapper"
+        style="margin-top:25px"
+    >
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Bookmaker</th>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+
+            </thead>
+
+            <tbody id="bettingCodesTableBody">
+
+                <tr>
+
+                    <td
+                        colspan="6"
+                        class="loading"
+                    >
+                        Loading betting codes...
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
 <!-- VIP SUBSCRIPTIONS -->
 
 <section class="panel">
