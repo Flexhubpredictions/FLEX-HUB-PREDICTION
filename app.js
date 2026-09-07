@@ -2832,6 +2832,9 @@ function escapeHtml(value) {
 // ============================================================
 // BETTING CODES
 // ============================================================
+// ============================================================
+// BETTING CODES
+// ============================================================
 
 async function loadRegularBettingCodes() {
 
@@ -2843,9 +2846,10 @@ async function loadRegularBettingCodes() {
 
     try {
 
-      const response = await fetch(
-    "https://flex-hub-prediction.onrender.com/api/betting-codes"
-);
+        const response = await fetch(
+            "https://flex-hub-prediction.onrender.com/api/betting-codes"
+        );
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -2896,12 +2900,25 @@ async function loadRegularBettingCodes() {
                     ${
                         code.description
                             ? `
-                                <div>
+                                <div style="margin-bottom:15px;">
                                     ${escapeHtml(code.description)}
                                 </div>
                               `
                             : ""
                     }
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        style="
+                            margin-top:5px;
+                            cursor:pointer;
+                        "
+                        data-betting-code="${escapeHtml(code.code)}"
+                        onclick="copyBettingCode(this)"
+                    >
+                        COPY CODE
+                    </button>
 
                 </div>
 
@@ -2926,8 +2943,49 @@ async function loadRegularBettingCodes() {
 
 
 // ============================================================
+// COPY BETTING CODE
+// ============================================================
+
+async function copyBettingCode(button) {
+
+    const code = button.getAttribute("data-betting-code");
+
+    if (!code) {
+        return;
+    }
+
+    const originalText = button.textContent;
+
+    try {
+
+        await navigator.clipboard.writeText(code);
+
+        button.textContent = "COPIED ✓";
+
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+
+    } catch (error) {
+
+        console.error(
+            "Copy betting code error:",
+            error
+        );
+
+        button.textContent = "COPY FAILED";
+
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }
+}
+
+
+// ============================================================
 // END BETTING CODES
 // ============================================================
+
 // END OF FLEX HUB APP.JS
 // ======================================================
 // =====================================================
