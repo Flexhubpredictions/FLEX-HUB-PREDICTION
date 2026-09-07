@@ -3172,7 +3172,7 @@ async function loadVipBettingCodes() {
                             )}"
                             onclick="copyBettingCode(this)"
                         >
-                            COPY CODE
+                            📋 COPY CODE
                         </button>
 
                     </div>
