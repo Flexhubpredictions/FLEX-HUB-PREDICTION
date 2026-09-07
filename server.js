@@ -960,31 +960,48 @@ app.delete("/api/admin/betting-codes/:id", requireAdmin, async (req, res) => {
 
 app.get("/api/betting-codes", async (req, res) => {
   try {
-    const category =
-      req.query.category === "vip"
-        ? "vip"
-        : "regular";
-
     const result = await db.query(
       `SELECT id, bookmaker, code, description, category, status, created_at
        FROM betting_codes
-       WHERE category = $1
+       WHERE category = 'regular'
          AND status = 'active'
-       ORDER BY id DESC`,
-      [category]
+       ORDER BY id DESC`
     );
 
     res.json({
       bettingCodes: result.rows
     });
   } catch (error) {
-    console.error("Public betting codes error:", error);
+    console.error("Public regular betting codes error:", error);
+
     res.status(500).json({
       message: "Unable to load betting codes."
     });
   }
 });
 
+
+app.get("/api/vip/betting-codes", requireVip, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, bookmaker, code, description, category, status, created_at
+       FROM betting_codes
+       WHERE category = 'vip'
+         AND status = 'active'
+       ORDER BY id DESC`
+    );
+
+    res.json({
+      bettingCodes: result.rows
+    });
+  } catch (error) {
+    console.error("VIP betting codes error:", error);
+
+    res.status(500).json({
+      message: "Unable to load VIP betting codes."
+    });
+  }
+});
 // ==================== END BETTING CODES ====================
 app.use((req, res) => {
   res.status(404).json({ message: "API route not found." });
