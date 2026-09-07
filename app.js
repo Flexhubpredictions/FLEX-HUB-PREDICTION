@@ -2977,7 +2977,7 @@ async function loadRegularBettingCodes() {
                         data-betting-code="${escapeHtml(code.code)}"
                         onclick="copyBettingCode(this)"
                     >
-                        COPY CODE
+                       📋 COPY CODE
                     </button>
 
                 </div>
