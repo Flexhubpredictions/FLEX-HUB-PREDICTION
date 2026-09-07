@@ -1890,8 +1890,6 @@ async function checkVipStatus() {
 
     await loadVipPredictions();
 
-    await loadVipBettingCodes();
-
 }
     } catch (error) {
 
