@@ -3332,7 +3332,7 @@ function showFlexHubAnimation(callback) {
 
     const style = document.createElement("style");
 
-    style.textContent = 
+    style.textContent = `
         #flexHubAnimation {
             position: fixed;
             inset: 0;
