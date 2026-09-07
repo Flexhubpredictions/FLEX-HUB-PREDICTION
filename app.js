@@ -2828,6 +2828,107 @@ function escapeHtml(value) {
 // =====================================================
 
 // ======================================================
+// ============================================================
+// BETTING CODES
+// ============================================================
+
+async function loadRegularBettingCodes() {
+
+    const container = document.getElementById("bettingCodesGrid");
+
+    if (!container) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/betting-codes`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to load betting codes."
+            );
+        }
+
+        const bettingCodes = data.bettingCodes || [];
+
+        if (!bettingCodes.length) {
+
+            container.innerHTML = `
+                <div class="loading-state">
+                    No betting codes available.
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML = bettingCodes.map(code => `
+
+            <div class="prediction-card">
+
+                <div class="prediction-card-header">
+
+                    <strong>
+                        ${escapeHtml(code.bookmaker)}
+                    </strong>
+
+                </div>
+
+                <div class="prediction-card-body">
+
+                    <div>
+                        <strong>BETTING CODE</strong>
+                    </div>
+
+                    <div style="
+                        font-size:24px;
+                        font-weight:800;
+                        margin:10px 0;
+                    ">
+                        ${escapeHtml(code.code)}
+                    </div>
+
+                    ${
+                        code.description
+                            ? `
+                                <div>
+                                    ${escapeHtml(code.description)}
+                                </div>
+                              `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+        `).join("");
+
+    } catch (error) {
+
+        console.error(
+            "Regular betting codes error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="loading-state">
+                Unable to load betting codes.
+            </div>
+        `;
+    }
+}
+
+
+// ============================================================
+// END BETTING CODES
+// ============================================================
 // END OF FLEX HUB APP.JS
 // ======================================================
 // =====================================================
+
