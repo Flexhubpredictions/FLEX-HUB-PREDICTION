@@ -1099,8 +1099,83 @@ function renderPredictions() {
 // CREATE PREDICTION CARD
 // ======================================================
 
-function createPredictionCard(prediction) {
+function getMatchKickoffDate(prediction) {
+    if (!prediction?.match_date || !prediction?.match_time) {
+        return null;
+    }
 
+    const kickoff = new Date(
+        `${prediction.match_date}T${prediction.match_time}`
+    );
+
+    if (Number.isNaN(kickoff.getTime())) {
+        return null;
+    }
+
+    return kickoff;
+}
+
+function formatMatchCountdown(milliseconds) {
+    const totalMinutes = Math.max(
+        0,
+        Math.floor(milliseconds / 60000)
+    );
+
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor(
+        (totalMinutes % 1440) / 60
+    );
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) {
+        return `${days}D ${String(hours).padStart(2, "0")}H ${String(minutes).padStart(2, "0")}M`;
+    }
+
+    if (hours > 0) {
+        return `${String(hours).padStart(2, "0")}H ${String(minutes).padStart(2, "0")}M`;
+    }
+
+return `${minutes}M`;
+}
+
+function updateMatchCountdowns() {
+    document
+        .querySelectorAll(".match-countdown")
+        .forEach((element) => {
+            const date = element.dataset.matchDate;
+            const time = element.dataset.matchTime;
+
+            if (!date || !time) {
+                return;
+            }
+
+            const kickoff = new Date(`${date}T${time}`);
+
+            if (Number.isNaN(kickoff.getTime())) {
+                return;
+            }
+
+            const remaining = kickoff.getTime() - Date.now();
+            const value = element.querySelector(".countdown-value");
+
+            if (!value) {
+                return;
+            }
+
+            if (remaining <= 0) {
+                value.textContent = "KICKING OFF";
+                return;
+            }
+
+            value.textContent =
+                formatMatchCountdown(remaining);
+        });
+}
+
+setInterval(updateMatchCountdowns, 1000);
+
+function createPredictionCard(prediction) {
+const kickoffTime = getMatchKickoffDate(prediction);
     const status =
         String(
             prediction.status ||
@@ -1242,14 +1317,20 @@ function createPredictionCard(prediction) {
                         ""
                     )}
                 </span>
-
-            </div>
-
-            <div class="prediction-selection">
-
-                <span class="label">
-                    Editorial Prediction
-                </span>
+<div
+    class="match-countdown"
+    data-match-date="${escapeHtml(prediction.match_date || "")}"
+    data-match-time="${escapeHtml(prediction.match_time || "")}"
+>
+   MATCH STARTS IN:
+<strong class="countdown-value">
+    ${kickoffTime
+        ? formatMatchCountdown(
+            kickoffTime.getTime() - Date.now()
+        )
+        : "—"
+    }
+</strong>
 
                 <strong>
                     ${escapeHtml(
