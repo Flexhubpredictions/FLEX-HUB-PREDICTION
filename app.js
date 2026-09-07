@@ -691,6 +691,7 @@ function openMainWebsite() {
     closeMobileMenu();
 
     loadPredictions();
+    loadRegularBettingCodes();
     loadResults();
 
     window.scrollTo({
