@@ -1317,25 +1317,32 @@ const kickoffTime = getMatchKickoffDate(prediction);
                         ""
                     )}
                 </span>
-<div
-    class="match-countdown"
-    data-match-date="${escapeHtml(prediction.match_date || "")}"
-    data-match-time="${escapeHtml(prediction.match_time || "")}"
->
-    MATCH STARTS IN:
-    <strong class="countdown-value">
-        ${kickoffTime
-            ? (
-                kickoffTime.getTime() - Date.now() <= 0
-                    ? "MATCH STARTED"
-                    : formatMatchCountdown(
-                        kickoffTime.getTime() - Date.now()
-                    )
-            )
-            : "—"
-        }
-    </strong>
-</div>
+${
+    kickoffTime
+        ? (
+            kickoffTime.getTime() - Date.now() <= 0
+                ? `
+                    <div class="match-countdown match-started">
+                        🟢 MATCH STARTED
+                    </div>
+                  `
+                : `
+                    <div
+                        class="match-countdown"
+                        data-match-date="${escapeHtml(prediction.match_date || "")}"
+                        data-match-time="${escapeHtml(prediction.match_time || "")}"
+                    >
+                        🕐 MATCH STARTS IN:
+                        <strong class="countdown-value">
+                            ${formatMatchCountdown(
+                                kickoffTime.getTime() - Date.now()
+                            )}
+                        </strong>
+                    </div>
+                  `
+        )
+        : ""
+}
 
 <strong>
     ${escapeHtml(
