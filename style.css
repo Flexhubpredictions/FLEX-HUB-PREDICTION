@@ -2313,3 +2313,54 @@ input:focus-visible {
             none !important;
     }
 }
+
+/* =================================================
+   SMALL BETTING CODE CARDS
+================================================= */
+
+.betting-code-card {
+    position: relative;
+    overflow: hidden;
+
+    background: linear-gradient(
+        145deg,
+        #111822,
+        #080c12
+    );
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    padding: 14px;
+
+    min-height: auto;
+
+    box-shadow: none;
+}
+
+
+.betting-code-card .prediction-card-header {
+    padding: 8px 10px;
+}
+
+
+.betting-code-card .prediction-card-body {
+    padding: 10px;
+}
+
+
+.betting-code-card strong {
+    font-size: 18px;
+}
+
+
+.betting-code-card p {
+    margin: 6px 0;
+    font-size: 13px;
+}
+
+
+.betting-code-card .primary-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+}
