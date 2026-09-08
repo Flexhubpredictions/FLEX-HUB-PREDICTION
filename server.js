@@ -759,6 +759,36 @@ app.get("/api/predictions/:id", async (req, res) => {
     res.status(500).json({ message: "Unable to load prediction." });
   }
 });
+app.delete("/api/results/:id", requireAdmin, async (req, res) => {
+  try {
+
+    const result = await db.query(
+      `DELETE FROM prediction_results
+       WHERE id = $1
+       RETURNING id`,
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Result not found."
+      });
+    }
+
+    res.json({
+      message: "Result deleted successfully."
+    });
+
+  } catch (error) {
+
+    console.error("Delete result error:", error);
+
+    res.status(500).json({
+      message: "Unable to delete result."
+    });
+
+  }
+});
 
 app.get("/api/vip/predictions", requireVip, async (req, res) => {
   try {
