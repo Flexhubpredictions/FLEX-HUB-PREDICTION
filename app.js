@@ -1161,20 +1161,48 @@ function updateMatchCountdowns() {
                 return;
             }
 
+            const elapsed = Date.now() - kickoff.getTime();
             const remaining = kickoff.getTime() - Date.now();
-            const value = element.querySelector(".countdown-value");
+
+            const value =
+                element.querySelector(".countdown-value");
 
             if (!value) {
                 return;
             }
 
-         if (remaining <= 0) {
-    value.textContent = "MATCH STARTED";
-    return;
-}
+            if (remaining > 0) {
+                value.textContent =
+                    formatMatchCountdown(remaining);
+                return;
+            }
+
+            const twoHours =
+                2 * 60 * 60 * 1000;
+
+            const twoAndHalfHours =
+                2.5 * 60 * 60 * 1000;
+
+            if (
+                elapsed >= 0 &&
+                elapsed < twoHours
+            ) {
+                value.textContent =
+                    "MATCH ONGOING";
+                return;
+            }
+
+            if (
+                elapsed >= twoHours &&
+                elapsed <= twoAndHalfHours
+            ) {
+                value.textContent =
+                    "MATCH ENDED";
+                return;
+            }
 
             value.textContent =
-                formatMatchCountdown(remaining);
+                "MATCH ENDED";
         });
 }
 
