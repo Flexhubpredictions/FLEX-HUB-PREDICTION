@@ -787,7 +787,7 @@ app.put("/api/predictions/:id", requireAdmin, async (req, res) => {
   try {
     const {
       league, home_team, away_team, match_date, match_time,
-      prediction, analysis, category, status
+      prediction, analysis, category, status, featured
     } = req.body;
 
     if (!league || !home_team || !away_team || !match_date || !match_time || !prediction) {
