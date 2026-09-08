@@ -1224,7 +1224,7 @@ function updateMatchCountdowns() {
 
 setInterval(updateMatchCountdowns, 1000);
 
-function createPredictionCard(prediction) {
+function createPredictionCard(prediction, isResult = false) {
 const kickoffTime = getMatchKickoffDate(prediction);
     const status =
         String(
@@ -1424,11 +1424,53 @@ ${
                 ${escapeHtml(statusText)}
 
             </div>
+            ${
+    isResult
+        ? `
+            <button
+                class="delete-result-btn"
+                onclick="deleteResult(${prediction.id}, '${prediction.result_source}')"
+            >
+                Delete Result
+            </button>
+          `
+        : ""
+}
 
         </article>
     `;
 }
 
+async function deleteResult(id, source) {
+
+    if (!confirm("Are you sure you want to delete this result?")) {
+        return;
+    }
+
+    try {
+
+        const response = await apiRequest(
+            `/results/${id}?source=${encodeURIComponent(source)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(
+                data.message || "Unable to delete result."
+            );
+        }
+
+        await loadResults();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+}
 // ======================================================
 // RESULTS
 // ======================================================
@@ -1588,7 +1630,7 @@ function renderResults() {
 
     grid.innerHTML =
         filtered
-            .map(createPredictionCard)
+           .map(prediction => createPredictionCard(prediction, true))
             .join("");
 }
 
