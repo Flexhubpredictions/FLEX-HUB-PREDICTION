@@ -801,13 +801,13 @@ app.put("/api/predictions/:id", requireAdmin, async (req, res) => {
       `UPDATE predictions SET
          league = $1, home_team = $2, away_team = $3, match_date = $4,
          match_time = $5, prediction = $6, analysis = $7,
-         category = $8, status = $9
-       WHERE id = $10
+         category = $8, status = $9, featured = $10
+       WHERE id = $11
        RETURNING *`,
       [
         league.trim(), home_team.trim(), away_team.trim(),
         match_date, match_time, prediction.trim(),
-        analysis ? analysis.trim() : "", finalCategory, finalStatus, req.params.id
+        analysis ? analysis.trim() : "", finalCategory, finalStatus, featured === true, req.params.id
       ]
     );
 
