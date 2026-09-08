@@ -1,0 +1,21 @@
+{
+  "name": "FLEX HUB PREDICTIONS",
+  "short_name": "FLEX HUB",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "description": "FLEX HUB football predictions",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
