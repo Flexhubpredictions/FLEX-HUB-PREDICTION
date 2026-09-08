@@ -1552,26 +1552,38 @@ function renderResults() {
 
 function updatePredictionStats() {
 
-    const total =
-        allPredictions.length;
+    const total = allPredictions.length;
 
-    const regular =
-        allPredictions.filter(
-            prediction =>
-                prediction.category !== "vip"
-        ).length;
+    const regular = allPredictions.filter(
+        prediction => prediction.category !== "vip"
+    ).length;
 
-    const pending =
-        allPredictions.filter(
-            prediction =>
-                prediction.status === "pending"
-        ).length;
+    const pending = allPredictions.filter(
+        prediction => prediction.status === "pending"
+    ).length;
 
-    const completed =
-        allPredictions.filter(
-            prediction =>
-                prediction.status !== "pending"
-        ).length;
+    const completed = allPredictions.filter(
+        prediction => prediction.status !== "pending"
+    ).length;
+
+    const won = allPredictions.filter(
+        prediction => prediction.status === "won"
+    ).length;
+
+    const lost = allPredictions.filter(
+        prediction => prediction.status === "lost"
+    ).length;
+
+    const voidPredictions = allPredictions.filter(
+        prediction => prediction.status === "void"
+    ).length;
+
+    const decided = won + lost;
+
+    const winRate = decided > 0
+        ? Math.round((won / decided) * 100)
+        : 0;
+
 
     setText(
         "#totalPredictions",
@@ -1592,6 +1604,27 @@ function updatePredictionStats() {
         "#completedPredictions",
         completed
     );
+
+    setText(
+        "#wonPredictions",
+        won
+    );
+
+    setText(
+        "#lostPredictions",
+        lost
+    );
+
+    setText(
+        "#voidPredictions",
+        voidPredictions
+    );
+
+    setText(
+        "#winRate",
+        `${winRate}%`
+    );
+
 
     updateVipPredictionCount();
 }
