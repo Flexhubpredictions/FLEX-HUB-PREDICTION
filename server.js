@@ -827,17 +827,78 @@ app.put("/api/predictions/:id", requireAdmin, async (req, res) => {
 
 app.delete("/api/predictions/:id", requireAdmin, async (req, res) => {
   try {
-    const result = await db.query(
-      "DELETE FROM predictions WHERE id = $1 RETURNING id",
+
+    const predictionResult = await db.query(
+      `SELECT * FROM predictions
+       WHERE id = $1`,
       [req.params.id]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Prediction not found." });
+
+    if (predictionResult.rows.length === 0) {
+      return res.status(404).json({
+        message: "Prediction not found."
+      });
     }
-    res.json({ message: "Prediction deleted successfully." });
+
+    const prediction = predictionResult.rows[0];
+
+    // Keep completed regular predictions in Results history
+    if (
+      prediction.category === "regular" &&
+      prediction.status !== "pending"
+    ) {
+
+      await db.query(
+        `INSERT INTO prediction_results
+         (
+           prediction_id,
+           league,
+           home_team,
+           away_team,
+           match_date,
+           match_time,
+           prediction,
+           analysis,
+           category,
+           status,
+           featured
+         )
+         VALUES
+         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [
+          prediction.id,
+          prediction.league,
+          prediction.home_team,
+          prediction.away_team,
+          prediction.match_date,
+          prediction.match_time,
+          prediction.prediction,
+          prediction.analysis,
+          prediction.category,
+          prediction.status,
+          prediction.featured
+        ]
+      );
+    }
+
+    // Remove the prediction from the active predictions list
+    await db.query(
+      "DELETE FROM predictions WHERE id = $1",
+      [req.params.id]
+    );
+
+    res.json({
+      message: "Prediction deleted successfully and result preserved."
+    });
+
   } catch (error) {
+
     console.error("Delete prediction error:", error);
-    res.status(500).json({ message: "Unable to delete prediction." });
+
+    res.status(500).json({
+      message: "Unable to delete prediction."
+    });
+
   }
 });
 
