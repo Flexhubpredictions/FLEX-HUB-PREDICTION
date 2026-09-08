@@ -1224,7 +1224,7 @@ function updateMatchCountdowns() {
 
 setInterval(updateMatchCountdowns, 1000);
 
-function createPredictionCard(prediction, isResult = false) {
+function createPredictionCard(prediction) {
 const kickoffTime = getMatchKickoffDate(prediction);
     const status =
         String(
@@ -1424,18 +1424,7 @@ ${
                 ${escapeHtml(statusText)}
 
             </div>
-            ${
-    isResult
-        ? `
-            <button
-                class="delete-result-btn"
-                onclick="deleteResult(${prediction.id}, '${prediction.result_source}')"
-            >
-                Delete Result
-            </button>
-          `
-        : ""
-}
+          
 
         </article>
     `;
@@ -1630,7 +1619,7 @@ function renderResults() {
 
     grid.innerHTML =
         filtered
-           .map(prediction => createPredictionCard(prediction, true))
+        .map(createPredictionCard)
             .join("");
 }
 
