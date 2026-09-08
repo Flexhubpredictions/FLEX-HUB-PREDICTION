@@ -1314,6 +1314,32 @@ td {
 
 </section>
 
+<section class="admin-section">
+    <h2>Results History</h2>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>League</th>
+                    <th>Match</th>
+                    <th>Date</th>
+                    <th>Prediction</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="resultsTableBody">
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        Loading results...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 </main>
 
 </div>
@@ -1484,7 +1510,7 @@ async function openAdmin() {
 
 
     await loadPredictions();
-
+await loadResults();
     await loadSubscriptions();
 
 }
@@ -2597,6 +2623,153 @@ async function(id) {
     }
 
 };
+    window.deleteResult =
+async function(id, source) {
+
+    if (
+        !confirm(
+            "Are you sure you want to permanently delete this result?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                API_BASE_URL +
+                "/results/" +
+                id +
+                "?source=" +
+                encodeURIComponent(source),
+                {
+                    method: "DELETE",
+                    headers: headers()
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to delete result."
+            );
+        }
+
+        await loadResults();
+
+    } catch(error) {
+
+        alert(error.message);
+
+    }
+
+};
+    async function loadResults() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_BASE_URL +
+                "/predictions?results=true",
+                {
+                    headers: headers()
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to load results."
+            );
+        }
+
+        const results =
+            data.predictions || [];
+
+        const tableBody =
+            document.getElementById(
+                "resultsTableBody"
+            );
+
+        if (!tableBody) {
+            return;
+        }
+
+        if (results.length === 0) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        No results found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        tableBody.innerHTML =
+            results.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.league || "")}</td>
+
+                    <td>
+                        ${escapeHtml(item.home_team || "")}
+                        vs
+                        ${escapeHtml(item.away_team || "")}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(item.match_date || "")}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(item.prediction || "")}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(item.status || "")}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            onclick="deleteResult(${item.id}, '${item.result_source}')"
+                        >
+                            Delete Result
+                        </button>
+                    </td>
+                </tr>
+            `).join("");
+
+    } catch(error) {
+
+        const tableBody =
+            document.getElementById(
+                "resultsTableBody"
+            );
+
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        ${escapeHtml(error.message)}
+                    </td>
+                </tr>
+            `;
+        }
+
+    }
+
+}
 
 
 /* =========================================
