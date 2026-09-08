@@ -8,6 +8,24 @@ const crypto = require("crypto");
 dotenv.config();
 
 const db = require("./database");
+async function logActivity(user, action, details = "") {
+    try {
+        await db.query(
+            `INSERT INTO activity_logs
+             (user_id, name, username, action, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+                user?.id || null,
+                user?.name || null,
+                user?.username || null,
+                action,
+                details
+            ]
+        );
+    } catch (error) {
+        console.error("Activity log error:", error);
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -331,6 +349,7 @@ app.post("/api/register", async (req, res) => {
     );
 
     const user = insertResult.rows[0];
+    await logActivity(user, "ACCOUNT_CREATED", "New account created");
     const token = createToken({ id: user.id, username: user.username, type: "user" });
 
     res.status(201).json({ message: "Account created successfully.", user, token });
@@ -359,6 +378,7 @@ app.post("/api/login", async (req, res) => {
 
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) return res.status(401).json({ message: "Invalid login details." });
+    await logActivity(user, "LOGIN", "User logged in");
 
     const token = createToken({ id: user.id, username: user.username, type: "user" });
 
