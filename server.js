@@ -751,9 +751,9 @@ app.get("/api/admin/vip-predictions", requireAdmin, async (req, res) => {
 app.post("/api/predictions", requireAdmin, async (req, res) => {
   try {
     const {
-      league, home_team, away_team, match_date, match_time,
-      prediction, analysis, category, status
-    } = req.body;
+  league, home_team, away_team, match_date, match_time,
+  prediction, analysis, category, status, featured
+} = req.body;
 
     if (!league || !home_team || !away_team || !match_date || !match_time || !prediction) {
       return res.status(400).json({ message: "Please complete all required prediction fields." });
@@ -764,13 +764,13 @@ app.post("/api/predictions", requireAdmin, async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO predictions
-       (league, home_team, away_team, match_date, match_time, prediction, analysis, category, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (league, home_team, away_team, match_date, match_time, prediction, analysis, category, status, featured)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         league.trim(), home_team.trim(), away_team.trim(),
         match_date, match_time, prediction.trim(),
-        analysis ? analysis.trim() : "", finalCategory, finalStatus
+        analysis ? analysis.trim() : "", finalCategory, finalStatus, featured === true
       ]
     );
 
