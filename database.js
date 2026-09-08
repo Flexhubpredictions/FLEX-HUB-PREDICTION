@@ -41,7 +41,8 @@ async function init() {
       prediction TEXT NOT NULL,
       analysis TEXT,
       category TEXT NOT NULL DEFAULT 'regular',
-      status TEXT NOT NULL DEFAULT 'pending',
+     status TEXT NOT NULL DEFAULT 'pending',
+      featured BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
