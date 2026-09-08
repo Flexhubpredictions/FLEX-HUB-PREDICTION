@@ -1942,40 +1942,79 @@ async function loadPredictions() {
 
 function updateStats() {
 
-    document.getElementById(
-        "totalCount"
-    ).textContent =
+    const total =
         allPredictions.length;
 
+    const regular =
+        allPredictions.filter(
+            item => item.category === "regular"
+        ).length;
+
+    const vip =
+        allPredictions.filter(
+            item => item.category === "vip"
+        ).length;
+
+    const pending =
+        allPredictions.filter(
+            item => item.status === "pending"
+        ).length;
+
+    const won =
+        allPredictions.filter(
+            item => item.status === "won"
+        ).length;
+
+    const lost =
+        allPredictions.filter(
+            item => item.status === "lost"
+        ).length;
+
+    const voidCount =
+        allPredictions.filter(
+            item => item.status === "void"
+        ).length;
+
+    const decided =
+        won + lost;
+
+    const winRate =
+        decided > 0
+            ? Math.round((won / decided) * 100)
+            : 0;
+
+    document.getElementById(
+        "totalCount"
+    ).textContent = total;
 
     document.getElementById(
         "regularCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.category === "regular"
-        ).length;
-
+    ).textContent = regular;
 
     document.getElementById(
         "vipCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.category === "vip"
-        ).length;
-
+    ).textContent = vip;
 
     document.getElementById(
         "pendingCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.status === "pending"
-        ).length;
+    ).textContent = pending;
 
+    document.getElementById(
+        "wonCount"
+    ).textContent = won;
+
+    document.getElementById(
+        "lostCount"
+    ).textContent = lost;
+
+    document.getElementById(
+        "voidCount"
+    ).textContent = voidCount;
+
+    document.getElementById(
+        "adminWinRate"
+    ).textContent = winRate + "%";
 }
-
 
 function renderPredictions() {
 
