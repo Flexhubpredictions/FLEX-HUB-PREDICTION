@@ -1151,6 +1151,24 @@ img {
         border-color 0.25s ease,
         box-shadow 0.25s ease;
 }
+.featured-prediction {
+    border: 2px solid var(--gold);
+    box-shadow:
+        0 0 25px rgba(244, 197, 66, 0.25);
+}
+
+.featured-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    margin-right: 8px;
+    border-radius: 7px;
+    background: var(--gold);
+    color: #050608;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+}
 
 .prediction-card::before {
     content: "";
@@ -2010,7 +2028,7 @@ img {
    MOBILE NAVIGATION
    ========================================================= */
 
-@media (max-width: 850px) {
+@media (max-width: 768px) {
 
     .menu-toggle {
         display: grid;
