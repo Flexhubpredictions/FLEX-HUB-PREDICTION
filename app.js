@@ -3580,3 +3580,45 @@ function showFlexHubAnimation(callback) {
 // END OF FLEX HUB APP.JS
 // ======================================================
 // =====================================================
+
+// ============================================================
+// FLEX HUB PWA INSTALL BUTTON
+// ============================================================
+
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+
+    deferredInstallPrompt = event;
+
+    const installButton =
+        document.getElementById("installAppBtn");
+
+    if (installButton) {
+        installButton.style.display = "inline-block";
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const installButton =
+        document.getElementById("installAppBtn");
+
+    if (!installButton) {
+        return;
+    }
+
+    installButton.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) {
+            return;
+        }
+
+        deferredInstallPrompt.prompt();
+
+        await deferredInstallPrompt.userChoice;
+
+        deferredInstallPrompt = null;
+
+        installButton.style.display = "none";
+    });
+});
