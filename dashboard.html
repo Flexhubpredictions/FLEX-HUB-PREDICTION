@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#0b0f14"
+    >
+
+    <title>Dashboard | FLEX HUB PREDICTIONS</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <link
+        rel="manifest"
+        href="manifest.json"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         ACCOUNT GATE
+    ========================== -->
+
+    <section
+        id="accountGate"
+        class="account-gate"
+    >
+
+        <div class="account-container">
+
+
+            <!-- LOGIN -->
+
+            <div
+                id="loginPanel"
+                class="account-panel"
+            >
+
+                <div class="account-logo">
+                    FLEX HUB
+                </div>
+
+                <h2>Welcome Back</h2>
+
+                <p>
+                    Login to continue to FLEX HUB
+                </p>
+
+
+                <form id="loginForm">
+
+                    <div class="form-group">
+
+                        <label for="loginIdentifier">
+                            Username or Email
+                        </label>
+
+                        <input
+                            type="text"
+                            id="loginIdentifier"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="loginPassword">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="loginPassword"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="remember-row">
+
+                        <label>
+
+                            <input
+                                type="checkbox"
+                                id="rememberMe"
+                            >
+
+                            Remember me
+
+                        </label>
+
+
+                        <button
+                            type="button"
+                            id="forgotPasswordButton"
+                            class="text-button"
+                        >
+                            Forgot password?
+                        </button>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="primary-btn"
+                    >
+                        Login
+                    </button>
+
+
+                    <p
+                        id="loginMessage"
+                        class="form-message"
+                    ></p>
+
+
+                </form>
+
+
+                <div class="account-switch">
+
+                    Don't have an account?
+
+                    <button
+                        type="button"
+                        id="showRegisterButton"
+                        class="text-button"
+                    >
+                        Create account
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- REGISTER -->
+
+            <div
+                id="registerPanel"
+                class="account-panel"
+                style="display:none;"
+            >
+
+                <div class="account-logo">
+                    FLEX HUB
+                </div>
+
+                <h2>Create Account</h2>
+
+                <p>
+                    Create your FLEX HUB account
+                </p>
+
+
+                <form id="registerForm">
+
+
+                    <div class="form-group">
+
+                        <label for="registerName">
+                            Full Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="registerName"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerUsername">
+                            Username
+                        </label>
+
+                        <input
+                            type="text"
+                            id="registerUsername"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerEmail">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="registerEmail"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerPassword">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="registerPassword"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerConfirmPassword">
+                            Confirm Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="registerConfirmPassword"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="terms-row">
+
+                        <label>
+
+                            <input
+                                type="checkbox"
+                                id="registerTerms"
+                                required
+                            >
+
+                            I agree to the terms and conditions.
+
+                        </label>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="primary-btn"
+                    >
+                        Create Account
+                    </button>
+
+
+                    <p
+                        id="registerMessage"
+                        class="form-message"
+                    ></p>
+
+
+                </form>
+
+
+                <div class="account-switch">
+
+                    Already have an account?
+
+                    <button
+                        type="button"
+                        id="showLoginButton"
+                        class="text-button"
+                    >
+                        Login
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <footer class="account-footer">
+
+            ©
+            <span id="accountYear"></span>
+            FLEX HUB PREDICTIONS
+
+        </footer>
+
+    </section>
+
+
+
+    <!-- =========================
+         MAIN WEBSITE
+    ========================== -->
+
+    <div
+        id="mainWebsite"
+        style="display:none;"
+    >
+
+
+        <!-- HEADER -->
+
+        <header class="site-header">
+
+            <div class="container">
+
+                <div class="header-content">
+
+
+                    <a
+                        href="index.html"
+                        class="site-logo"
+                    >
+                        FLEX HUB
+                    </a>
+
+
+                    <button
+                        id="menuButton"
+                        class="menu-button"
+                        aria-label="Open menu"
+                    >
+                        ☰
+                    </button>
+
+
+                    <nav
+                        id="mainNav"
+                        class="main-nav"
+                    >
+
+                        <a href="index.html">
+                            Home
+                        </a>
+
+                        <a href="predictions.html">
+                            Predictions
+                        </a>
+
+                        <a href="leagues.html">
+                            Leagues
+                        </a>
+
+                        <a href="vip.html">
+                            VIP
+                        </a>
+
+                        <a href="results.html">
+                            Results
+                        </a>
+
+                        <a href="dashboard.html">
+                            Dashboard
+                        </a>
+
+                    </nav>
+
+
+                    <div class="header-user">
+
+                        <span id="userName"></span>
+
+
+                        <button
+                            id="signOutButton"
+                            class="text-button"
+                        >
+                            Sign Out
+                        </button>
+
+
+                        <button
+                            id="installAppBtn"
+                            style="display:none;"
+                        >
+                            📲 Install FLEX HUB
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =========================
+             DASHBOARD
+        ========================== -->
+
+        <main>
+
+            <section
+                id="dashboard"
+                class="section"
+            >
+
+                <div class="container">
+
+
+                    <div class="section-heading">
+
+                        <div>
+
+                            <span class="section-label">
+                                MY ACCOUNT
+                            </span>
+
+                            <h1>
+                                Dashboard
+                            </h1>
+
+                            <p>
+                                Your FLEX HUB prediction overview.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- ACCOUNT CARD -->
+
+                    <div class="dashboard-card">
+
+                        <h2>
+                            Welcome,
+                            <span id="dashboardUserName">
+                                User
+                            </span>
+                        </h2>
+
+                        <p>
+                            Keep track of your predictions
+                            and overall performance here.
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- PERFORMANCE STATS -->
+
+                    <div class="stats-grid">
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Total Predictions
+                            </span>
+
+                            <strong id="totalPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Regular
+                            </span>
+
+                            <strong id="regularPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                VIP
+                            </span>
+
+                            <strong id="vipPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Pending
+                            </span>
+
+                            <strong id="pendingPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Completed
+                            </span>
+
+                            <strong id="completedPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Won
+                            </span>
+
+                            <strong id="wonPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Lost
+                            </span>
+
+                            <strong id="lostPredictions">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <span class="stat-label">
+                                Win Rate
+                            </span>
+
+                            <strong id="winRate">
+                                0%
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- DASHBOARD ACTIONS -->
+
+                    <div class="dashboard-actions">
+
+                        <a
+                            href="predictions.html"
+                            class="primary-btn"
+                        >
+                            View Predictions
+                        </a>
+
+
+                        <a
+                            href="results.html"
+                            class="secondary-btn"
+                        >
+                            View Results
+                        </a>
+
+
+                        <a
+                            href="vip.html"
+                            class="secondary-btn"
+                        >
+                            View VIP
+                        </a>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+        </main>
+        <!-- =========================
+             FOOTER
+        ========================== -->
+
+        <footer class="site-footer">
+
+            <div class="container">
+
+                <div class="footer-content">
+
+                    <div class="footer-brand">
+
+                        <h3>FLEX HUB</h3>
+
+                        <p>
+                            Football predictions,
+                            betting codes and match analysis.
+                        </p>
+
+                    </div>
+
+
+                    <div class="footer-links">
+
+                        <a href="index.html">
+                            Home
+                        </a>
+
+                        <a href="predictions.html">
+                            Predictions
+                        </a>
+
+                        <a href="leagues.html">
+                            Leagues
+                        </a>
+
+                        <a href="vip.html">
+                            VIP
+                        </a>
+
+                        <a href="results.html">
+                            Results
+                        </a>
+
+                        <a href="dashboard.html">
+                            Dashboard
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <div class="footer-bottom">
+
+                    <p>
+                        ©
+                        <span id="currentYear"></span>
+                        FLEX HUB PREDICTIONS
+                    </p>
+
+                </div>
+
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <!-- =========================
+         SCRIPTS
+    ========================== -->
+
+    <script src="app.js"></script>
+
+
+    <script>
+
+        if ("serviceWorker" in navigator) {
+
+            window.addEventListener(
+                "load",
+                () => {
+
+                    navigator.serviceWorker.register(
+                        "sw.js"
+                    );
+
+                }
+            );
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
