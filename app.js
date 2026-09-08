@@ -594,6 +594,7 @@ async function checkUserSession() {
         return false;
     }
 
+    openMainWebsite();
     try {
 
         const data =
