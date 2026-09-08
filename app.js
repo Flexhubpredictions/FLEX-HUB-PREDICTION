@@ -2586,8 +2586,8 @@ function formatStatus(status) {
 
     const statuses = {
         pending: "Pending",
-        won: "Completed",
-        lost: "Completed",
+        won: "match won",
+        lost: "match lost",
         void: "Void"
     };
 
