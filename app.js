@@ -1034,6 +1034,11 @@ function renderPredictions() {
 
     let predictions =
         [...allPredictions];
+    predictions.sort(
+    (a, b) =>
+        Number(b.featured === true) -
+        Number(a.featured === true)
+);
 
     // Search
     if (currentSearchQuery) {
@@ -1198,11 +1203,12 @@ const kickoffTime = getMatchKickoffDate(prediction);
 
     return `
         <article
-        class="prediction-card"
+        class="prediction-card ${prediction.featured ? "featured-prediction" : ""}"
             data-category="${escapeHtml(category)}"
             data-status="${escapeHtml(status)}">
 
             <div class="prediction-card-top">
+            ${prediction.featured ? '<span class="featured-badge">★ FEATURED</span>' : ''}
 
                 <span class="prediction-league">
                     ${escapeHtml(
