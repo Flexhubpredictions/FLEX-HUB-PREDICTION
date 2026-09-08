@@ -970,14 +970,15 @@ function updateLeagueFilterUI() {
 
 async function loadPredictions() {
 
-    const grid =
-        document.querySelector(
-            "#predictionsGrid"
-        );
+const grid =
+    document.querySelector("#predictionsGrid");
 
-    if (!grid) {
-        return;
-    }
+const hasDashboardStats =
+    document.querySelector("#totalPredictions");
+
+if (!grid && !hasDashboardStats) {
+    return;
+}
 
     try {
 
