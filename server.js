@@ -670,27 +670,80 @@ app.get("/api/vip/status", requireUser, async (req, res) => {
 
 app.get("/api/predictions", async (req, res) => {
   try {
+
     let result;
+
     if (req.query.results === "true") {
+
       result = await db.query(
-        `SELECT * FROM predictions
-         WHERE category = 'regular' AND status != 'pending'
-         ORDER BY match_date DESC, match_time DESC`
+        `
+        SELECT
+          id,
+          id AS result_id,
+          'active' AS result_source,
+          league,
+          home_team,
+          away_team,
+          match_date,
+          match_time,
+          prediction,
+          analysis,
+          category,
+          status,
+          featured,
+          created_at
+        FROM predictions
+        WHERE category = 'regular'
+          AND status != 'pending'
+
+        UNION ALL
+
+        SELECT
+          id,
+          prediction_id AS result_id,
+          'archived' AS result_source,
+          league,
+          home_team,
+          away_team,
+          match_date,
+          match_time,
+          prediction,
+          analysis,
+          category,
+          status,
+          featured,
+          created_at
+        FROM prediction_results
+        WHERE category = 'regular'
+
+        ORDER BY match_date DESC, match_time DESC
+        `
       );
+
     } else {
+
       result = await db.query(
         `SELECT * FROM predictions
          WHERE category = 'regular'
          ORDER BY match_date ASC, match_time ASC`
       );
+
     }
-    res.json({ predictions: result.rows });
+
+    res.json({
+      predictions: result.rows
+    });
+
   } catch (error) {
+
     console.error("Regular predictions error:", error);
-    res.status(500).json({ message: "Unable to load predictions." });
+
+    res.status(500).json({
+      message: "Unable to load predictions."
+    });
+
   }
 });
-
 app.get("/api/predictions/:id", async (req, res) => {
   try {
     const result = await db.query(
