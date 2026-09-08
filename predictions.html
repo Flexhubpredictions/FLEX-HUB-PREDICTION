@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111827">
+    <link rel="manifest" href="manifest.json">
+    <title>Predictions - FLEX HUB</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ACCOUNT GATE -->
+    <div id="accountGate">
+        <div class="auth-container">
+
+            <div class="auth-card">
+                <h1>FLEX HUB</h1>
+                <p>Login to continue</p>
+
+                <div id="loginForm">
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="Email"
+                    >
+
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Password"
+                    >
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        onclick="loginUser()"
+                    >
+                        LOGIN
+                    </button>
+
+                    <p>
+                        Don't have an account?
+                        <button
+                            type="button"
+                            onclick="showRegisterForm()"
+                            class="link-btn"
+                        >
+                            Create Account
+                        </button>
+                    </p>
+
+                </div>
+
+                <div
+                    id="registerForm"
+                    style="display:none;"
+                >
+
+                    <input
+                        type="text"
+                        id="registerUsername"
+                        placeholder="Username"
+                    >
+
+                    <input
+                        type="email"
+                        id="registerEmail"
+                        placeholder="Email"
+                    >
+
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        placeholder="Password"
+                    >
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        onclick="registerUser()"
+                    >
+                        CREATE ACCOUNT
+                    </button>
+
+                    <p>
+                        Already have an account?
+                        <button
+                            type="button"
+                            onclick="showLoginForm()"
+                            class="link-btn"
+                        >
+                            Login
+                        </button>
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- MAIN WEBSITE -->
+    <div
+        id="mainWebsite"
+        style="display:none;"
+    >
+
+        <!-- HEADER -->
+        <header class="main-header">
+
+            <div class="logo">
+                FLEX HUB
+            </div>
+
+            <nav>
+
+                <a href="index.html">
+                    Home
+                </a>
+
+                <a href="predictions.html">
+                    Predictions
+                </a>
+
+                <a href="leagues.html">
+                    Leagues
+                </a>
+
+                <a href="vip.html">
+                    VIP
+                </a>
+
+                <a href="results.html">
+                    Results
+                </a>
+
+                <a href="dashboard.html">
+                    Dashboard
+                </a>
+
+            </nav>
+
+        </header>
+
+
+        <!-- PREDICTIONS PAGE -->
+        <main>
+
+            <section
+                id="predictions"
+                class="section"
+            >
+
+                <div class="section-header">
+
+                    <h2>
+                        ⚽ ALL PREDICTIONS
+                    </h2>
+
+                    <p>
+                        Today's football predictions
+                    </p>
+
+                </div>
+
+
+                <!-- SEARCH -->
+                <div class="prediction-controls">
+
+                    <input
+                        type="text"
+                        id="predictionSearch"
+                        placeholder="🔍 Search team or match..."
+                    >
+
+                </div>
+
+
+                <!-- LEAGUE FILTERS -->
+                <div class="league-filters">
+
+                    <button
+                        type="button"
+                        data-league-filter="all"
+                    >
+                        ALL
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="Premier League"
+                    >
+                        PREMIER LEAGUE
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="La Liga"
+                    >
+                        LA LIGA
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="Serie A"
+                    >
+                        SERIE A
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="Bundesliga"
+                    >
+                        BUNDESLIGA
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="Ligue 1"
+                    >
+                        LIGUE 1
+                    </button>
+
+                    <button
+                        type="button"
+                        data-league-filter="Champions League"
+                    >
+                        CHAMPIONS LEAGUE
+                    </button>
+
+                </div>
+
+
+                <!-- PREDICTIONS -->
+                <div
+                    id="predictionsGrid"
+                    class="predictions-grid"
+                >
+                    <p>
+                        Loading predictions...
+                    </p>
+                </div>
+
+            </section>
+
+        </main>
+
+
+        <!-- FOOTER -->
+        <footer>
+
+            <p>
+                © 2026 FLEX HUB PREDICTIONS
+            </p>
+
+        </footer>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
