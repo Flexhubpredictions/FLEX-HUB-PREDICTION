@@ -980,27 +980,30 @@ if (!grid && !hasDashboardStats) {
     return;
 }
 
-    try {
+   try {
 
+    if (grid) {
         grid.innerHTML =
             `<div class="loading-state">
                 <p>Loading predictions...</p>
             </div>`;
+    }
 
-        const data =
-            await apiRequest(
-                "/predictions"
-            );
+    const data =
+        await apiRequest(
+            "/predictions"
+        );
 
         allPredictions =
             Array.isArray(data)
                 ? data
                 : data.predictions || [];
 
-        renderPredictions();
+     if (grid) {
+    renderPredictions();
+}
 
-        updatePredictionStats();
-
+updatePredictionStats();
     } catch (error) {
 
         console.error(
@@ -1008,14 +1011,16 @@ if (!grid && !hasDashboardStats) {
             error
         );
 
-        grid.innerHTML =
-            `<div class="empty-state">
-                <h3>Predictions unavailable</h3>
-                <p>${escapeHtml(
-                    error.message ||
-                    "Unable to load predictions."
-                )}</p>
-            </div>`;
+       if (grid) {
+    grid.innerHTML =
+        `<div class="empty-state">
+            <h3>Predictions unavailable</h3>
+            <p>${escapeHtml(
+                error.message ||
+                "Unable to load predictions."
+            )}</p>
+        </div>`;
+}
     }
 }
 
