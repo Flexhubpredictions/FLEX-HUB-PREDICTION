@@ -1035,6 +1035,16 @@ function renderPredictions() {
 
     let predictions =
         [...allPredictions];
+    // Home page: show featured predictions only
+    if (
+        grid.dataset.homeFeaturedOnly === "true"
+    ) {
+        predictions =
+            predictions.filter(
+                prediction =>
+                    prediction.featured === true
+            );
+    }
     predictions.sort(
     (a, b) =>
         Number(b.featured === true) -
@@ -3088,7 +3098,7 @@ async function loadRegularBettingCodes() {
 
         container.innerHTML = bettingCodes.map(code => `
 
-            <div class="prediction-card">
+            <div class="betting-code-card">
 
                 <div class="prediction-card-header">
 
