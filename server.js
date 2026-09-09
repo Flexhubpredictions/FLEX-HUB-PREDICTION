@@ -543,6 +543,95 @@ app.delete("/api/admin/notifications/:id", requireAdmin, async (req, res) => {
         });
     }
 });
+// ==================== USER NOTIFICATIONS ====================
+
+app.get("/api/notifications", requireUser, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const vipResult = await db.query(`
+            SELECT id
+            FROM vip_subscriptions
+            WHERE user_id = $1
+              AND status = 'active'
+              AND expires_at > CURRENT_TIMESTAMP
+            LIMIT 1
+        `, [userId]);
+
+        const isVip = vipResult.rows.length > 0;
+
+        const result = await db.query(`
+            SELECT
+                n.id,
+                n.title,
+                n.message,
+                n.target,
+                n.created_at,
+                CASE
+                    WHEN nr.id IS NULL THEN FALSE
+                    ELSE TRUE
+                END AS is_read
+            FROM notifications n
+            LEFT JOIN notification_reads nr
+                ON nr.notification_id = n.id
+                AND nr.user_id = $1
+            WHERE n.target = 'all'
+               OR (n.target = 'vip' AND $2 = TRUE)
+            ORDER BY n.created_at DESC
+            LIMIT 100
+        `, [userId, isVip]);
+
+        const unreadCount = result.rows.filter(
+            item => !item.is_read
+        ).length;
+
+        res.json({
+            notifications: result.rows,
+            unreadCount
+        });
+
+    } catch (error) {
+        console.error("User notifications error:", error);
+
+        res.status(500).json({
+            message: "Unable to load notifications."
+        });
+    }
+});
+
+
+app.post("/api/notifications/:id/read", requireUser, async (req, res) => {
+    try {
+        const notificationId = Number(req.params.id);
+        const userId = req.user.id;
+
+        if (!Number.isInteger(notificationId)) {
+            return res.status(400).json({
+                message: "Invalid notification ID."
+            });
+        }
+
+        await db.query(`
+            INSERT INTO notification_reads
+                (notification_id, user_id)
+            VALUES
+                ($1, $2)
+            ON CONFLICT (notification_id, user_id)
+            DO NOTHING
+        `, [notificationId, userId]);
+
+        res.json({
+            message: "Notification marked as read."
+        });
+
+    } catch (error) {
+        console.error("Mark notification read error:", error);
+
+        res.status(500).json({
+            message: "Unable to mark notification as read."
+        });
+    }
+});
 
 async function requireVip(req, res, next) {
   try {
