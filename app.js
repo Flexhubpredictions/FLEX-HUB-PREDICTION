@@ -2383,10 +2383,12 @@ function setupSignOut() {
 
         button.addEventListener(
             "click",
-            event => {
+           async event => {
 
                 event.preventDefault();
-                
+                await apiRequest("/logout", {
+    method: "POST"
+});
                clearUserSession();
 
                 window.location.href =
