@@ -122,8 +122,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user
       ON password_reset_tokens(user_id);
-  `);
-  ALTER TABLE users
+       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
     CREATE TABLE IF NOT EXISTS notifications (
@@ -154,6 +153,7 @@ await pool.query(`
     `);
 }
 
+ 
 async function close() {
   await pool.end();
 }
