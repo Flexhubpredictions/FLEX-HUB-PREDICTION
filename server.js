@@ -313,6 +313,33 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ message: "Admin session expired. Please login again." });
   }
 }
+app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT
+                id,
+                name,
+                username,
+                action,
+                details,
+                created_at
+            FROM activity_logs
+            ORDER BY created_at DESC
+            LIMIT 100
+        `);
+
+        res.json({
+            activityLogs: result.rows
+        });
+
+    } catch (error) {
+        console.error("Activity logs error:", error);
+
+        res.status(500).json({
+            message: "Unable to load activity logs."
+        });
+    }
+});
 
 async function requireVip(req, res, next) {
   try {
