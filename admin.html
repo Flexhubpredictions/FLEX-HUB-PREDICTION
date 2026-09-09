@@ -1629,6 +1629,7 @@ async function openAdmin() {
     await loadResults();
     await loadSubscriptions();
     await loadActivityLogs();
+    await loadUsers();
 
 }
     async function loadActivityLogs() {
@@ -1712,7 +1713,309 @@ async function openAdmin() {
 
     }
 }
+// ==================== USER MANAGEMENT ====================
 
+let adminUsers = [];
+
+async function loadUsers() {
+    const tableBody = document.getElementById("usersTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="8" class="loading">
+                Loading users...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch(
+            API_BASE_URL + "/admin/users",
+            {
+                headers: headers()
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to load users.");
+        }
+
+        adminUsers = data.users || [];
+
+        renderUsers(adminUsers);
+
+    } catch (error) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">
+                    ${escapeHTML(error.message)}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+function renderUsers(users) {
+
+    const tableBody = document.getElementById("usersTableBody");
+
+    if (!tableBody) return;
+
+    if (!users.length) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">
+                    No users found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    tableBody.innerHTML = users.map(user => {
+
+        const status = user.is_active
+            ? "Active"
+            : "Disabled";
+
+        return `
+            <tr>
+
+                <td>${user.id}</td>
+
+                <td>${escapeHTML(user.name || "—")}</td>
+
+                <td>${escapeHTML(user.username || "—")}</td>
+
+                <td>${escapeHTML(user.email || "—")}</td>
+
+                <td>
+                    <span>
+                        ${status}
+                    </span>
+                </td>
+
+                <td>
+                    <span id="vipStatus-${user.id}">
+                        Checking...
+                    </span>
+                </td>
+
+                <td>
+                    ${user.created_at
+                        ? new Date(user.created_at).toLocaleString()
+                        : "—"}
+                </td>
+
+                <td>
+
+                    <button
+                        type="button"
+                        onclick="toggleUserStatus(${user.id}, ${user.is_active})"
+                    >
+                        ${user.is_active ? "Disable" : "Enable"}
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="deleteUser(${user.id}, '${escapeHTML(user.username || "")}')"
+                    >
+                        Delete
+                    </button>
+
+                </td>
+
+            </tr>
+        `;
+
+    }).join("");
+
+    loadUserVipStatuses(users);
+}
+
+
+async function loadUserVipStatuses(users) {
+
+    for (const user of users) {
+
+        const element = document.getElementById(
+            `vipStatus-${user.id}`
+        );
+
+        if (!element) continue;
+
+        try {
+
+            const response = await fetch(
+                API_BASE_URL + "/admin/subscriptions",
+                {
+                    headers: headers()
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            const subscriptions = data.subscriptions || [];
+
+            const activeVip = subscriptions.find(
+                subscription =>
+                    Number(subscription.user_id) === Number(user.id) &&
+                    subscription.status === "active"
+            );
+
+            element.textContent = activeVip
+                ? "VIP"
+                : "Regular";
+
+        } catch (error) {
+
+            element.textContent = "—";
+
+        }
+
+    }
+
+}
+
+
+async function toggleUserStatus(userId, currentStatus) {
+
+    const action = currentStatus
+        ? "disable"
+        : "enable";
+
+    const confirmed = confirm(
+        `Are you sure you want to ${action} this account?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        const response = await fetch(
+            API_BASE_URL + `/admin/users/${userId}/status`,
+            {
+                method: "PATCH",
+                headers: headers(),
+                body: JSON.stringify({
+                    is_active: !currentStatus
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to update account."
+            );
+        }
+
+        alert(data.message);
+
+        await loadUsers();
+        await loadActivityLogs();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+async function deleteUser(userId, username) {
+
+    const confirmed = confirm(
+        `Delete the account "${username}"?\n\nThis cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        const response = await fetch(
+            API_BASE_URL + `/admin/users/${userId}`,
+            {
+                method: "DELETE",
+                headers: headers()
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to delete user."
+            );
+        }
+
+        alert(data.message);
+
+        await loadUsers();
+        await loadActivityLogs();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+// User search
+
+const userSearchInput = document.getElementById(
+    "userSearchInput"
+);
+
+if (userSearchInput) {
+
+    userSearchInput.addEventListener(
+        "input",
+        function () {
+
+            const query = this.value
+                .trim()
+                .toLowerCase();
+
+            const filteredUsers = adminUsers.filter(user => {
+
+                return (
+                    String(user.name || "")
+                        .toLowerCase()
+                        .includes(query) ||
+
+                    String(user.username || "")
+                        .toLowerCase()
+                        .includes(query) ||
+
+                    String(user.email || "")
+                        .toLowerCase()
+                        .includes(query)
+                );
+
+            });
+
+            renderUsers(filteredUsers);
+
+        }
+    );
+
+}
 
 /* =========================================
    SESSION
