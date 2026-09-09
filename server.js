@@ -262,7 +262,25 @@ function requireUser(req, res, next) {
     return res.status(401).json({ message: "Your session has expired. Please login again." });
   }
 }
+app.post("/api/logout", requireUser, async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id, name, username FROM users WHERE id = $1",
+      [req.user.id]
+    );
 
+    const user = result.rows[0];
+
+    if (user) {
+      await logActivity(user, "SIGN_OUT", "User signed out");
+    }
+
+    res.json({ message: "Logout recorded." });
+  } catch (error) {
+    console.error("Logout activity error:", error);
+    res.status(500).json({ message: "Logout failed." });
+  }
+});
 function requireAdmin(req, res, next) {
   try {
     const token = getTokenFromRequest(req);
