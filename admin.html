@@ -1558,9 +1558,91 @@ async function openAdmin() {
 
 
     await loadPredictions();
-await loadResults();
+    await loadResults();
     await loadSubscriptions();
+    await loadActivityLogs();
 
+}
+    async function loadActivityLogs() {
+
+    const tableBody =
+        document.getElementById(
+            "activityLogTableBody"
+        );
+
+    if (!tableBody) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                API_BASE_URL +
+                "/admin/activity-logs",
+                {
+                    headers: headers()
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to load activity logs."
+            );
+        }
+
+        const logs =
+            data.activityLogs || [];
+
+        if (!logs.length) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        No activity recorded yet.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML =
+            logs.map(item => `
+                <tr>
+                    <td>
+                        ${item.created_at
+                            ? new Date(item.created_at).toLocaleString()
+                            : "—"}
+                    </td>
+                    <td>
+                        ${escapeHTML(item.name || "—")}
+                    </td>
+                    <td>
+                        ${escapeHTML(item.username || "—")}
+                    </td>
+                    <td>
+                        ${escapeHTML(item.action || "—")}
+                    </td>
+                    <td>
+                        ${escapeHTML(item.details || "—")}
+                    </td>
+                </tr>
+            `).join("");
+
+    } catch (error) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-state">
+                    ${escapeHTML(error.message)}
+                </td>
+            </tr>
+        `;
+
+    }
 }
 
 
