@@ -281,6 +281,26 @@ app.post("/api/logout", requireUser, async (req, res) => {
     res.status(500).json({ message: "Logout failed." });
   }
 });
+app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, name, username, action, details, created_at
+       FROM activity_logs
+       WHERE action IN ('ACCOUNT_CREATED', 'LOGIN', 'SIGN_OUT')
+       ORDER BY created_at DESC
+       LIMIT 200`
+    );
+
+    res.json({
+      activities: result.rows
+    });
+  } catch (error) {
+    console.error("Admin activity logs error:", error);
+    res.status(500).json({
+      message: "Unable to load activity logs."
+    });
+  }
+});
 function requireAdmin(req, res, next) {
   try {
     const token = getTokenFromRequest(req);
