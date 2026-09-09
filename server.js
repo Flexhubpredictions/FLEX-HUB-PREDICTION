@@ -282,38 +282,6 @@ app.post("/api/logout", requireUser, async (req, res) => {
   }
 });
 app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT id, name, username, action, details, created_at
-       FROM activity_logs
-       WHERE action IN ('ACCOUNT_CREATED', 'LOGIN', 'SIGN_OUT')
-       ORDER BY created_at DESC
-       LIMIT 200`
-    );
-
-    res.json({
-      activities: result.rows
-    });
-  } catch (error) {
-    console.error("Admin activity logs error:", error);
-    res.status(500).json({
-      message: "Unable to load activity logs."
-    });
-  }
-});
-function requireAdmin(req, res, next) {
-  try {
-    const token = getTokenFromRequest(req);
-    if (!token) return res.status(401).json({ message: "Admin login required." });
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== "admin") return res.status(401).json({ message: "Invalid admin token." });
-    req.admin = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ message: "Admin session expired. Please login again." });
-  }
-}
-app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
     try {
         const result = await db.query(`
             SELECT
@@ -325,7 +293,7 @@ app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
                 created_at
             FROM activity_logs
             ORDER BY created_at DESC
-            LIMIT 100
+            LIMIT 200
         `);
 
         res.json({
@@ -340,6 +308,18 @@ app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
         });
     }
 });
+function requireAdmin(req, res, next) {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) return res.status(401).json({ message: "Admin login required." });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.type !== "admin") return res.status(401).json({ message: "Invalid admin token." });
+    req.admin = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Admin session expired. Please login again." });
+  }
+}
 
 async function requireVip(req, res, next) {
   try {
