@@ -3690,3 +3690,435 @@ document.addEventListener("DOMContentLoaded", () => {
         installButton.style.display = "none";
     });
 });
+
+// ==================== USER NOTIFICATION CENTER ====================
+
+(function setupNotificationCenter() {
+
+    function notificationEscapeHTML(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function addNotificationStyles() {
+
+        if (document.getElementById("flexNotificationStyles")) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = "flexNotificationStyles";
+
+        style.textContent = `
+            #flexNotificationBell {
+                position: fixed;
+                right: 20px;
+                bottom: 85px;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                z-index: 9998;
+                font-size: 23px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 18px rgba(0,0,0,.25);
+            }
+
+            #flexNotificationBadge {
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                min-width: 20px;
+                height: 20px;
+                padding: 0 5px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: bold;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #flexNotificationPanel {
+                position: fixed;
+                right: 20px;
+                bottom: 148px;
+                width: 350px;
+                max-width: calc(100vw - 30px);
+                max-height: 70vh;
+                overflow-y: auto;
+                z-index: 9999;
+                display: none;
+                border-radius: 14px;
+                padding: 18px;
+                box-shadow: 0 8px 30px rgba(0,0,0,.3);
+            }
+
+            #flexNotificationPanel.flex-notification-open {
+                display: block;
+            }
+
+            .flex-notification-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 14px;
+            }
+
+            .flex-notification-header h3 {
+                margin: 0;
+            }
+
+            #flexNotificationClose {
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                font-size: 22px;
+            }
+
+            .flex-notification-item {
+                padding: 13px;
+                margin-bottom: 10px;
+                border-radius: 10px;
+                border: 1px solid rgba(128,128,128,.25);
+                cursor: pointer;
+            }
+
+            .flex-notification-item.unread {
+                font-weight: 600;
+            }
+
+            .flex-notification-title {
+                font-size: 15px;
+                margin-bottom: 5px;
+            }
+
+            .flex-notification-message {
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .flex-notification-time {
+                margin-top: 7px;
+                font-size: 11px;
+                opacity: .65;
+            }
+
+            .flex-notification-empty {
+                text-align: center;
+                padding: 25px 10px;
+                opacity: .7;
+            }
+
+            @media (max-width: 600px) {
+
+                #flexNotificationBell {
+                    right: 15px;
+                    bottom: 75px;
+                }
+
+                #flexNotificationPanel {
+                    right: 15px;
+                    bottom: 138px;
+                    width: calc(100vw - 30px);
+                }
+
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+
+    function createNotificationUI() {
+
+        if (document.getElementById("flexNotificationBell")) {
+            return;
+        }
+
+        addNotificationStyles();
+
+        const bell = document.createElement("button");
+
+        bell.id = "flexNotificationBell";
+        bell.type = "button";
+        bell.setAttribute("aria-label", "Notifications");
+        bell.innerHTML = `
+            🔔
+            <span id="flexNotificationBadge"></span>
+        `;
+
+        const panel = document.createElement("div");
+
+        panel.id = "flexNotificationPanel";
+
+        panel.innerHTML = `
+            <div class="flex-notification-header">
+
+                <h3>Notifications</h3>
+
+                <button
+                    type="button"
+                    id="flexNotificationClose"
+                    aria-label="Close notifications"
+                >
+                    ×
+                </button>
+
+            </div>
+
+            <div id="flexNotificationList">
+                <div class="flex-notification-empty">
+                    Loading notifications...
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(bell);
+        document.body.appendChild(panel);
+
+        bell.addEventListener("click", async () => {
+
+            panel.classList.toggle(
+                "flex-notification-open"
+            );
+
+            if (panel.classList.contains("flex-notification-open")) {
+                await loadUserNotifications();
+            }
+
+        });
+
+        document
+            .getElementById("flexNotificationClose")
+            .addEventListener("click", () => {
+
+                panel.classList.remove(
+                    "flex-notification-open"
+                );
+
+            });
+    }
+
+
+    async function loadUserNotifications() {
+
+        const list = document.getElementById(
+            "flexNotificationList"
+        );
+
+        const badge = document.getElementById(
+            "flexNotificationBadge"
+        );
+
+        if (!list) return;
+
+        try {
+
+            const token = localStorage.getItem(
+                STORAGE_KEYS.userToken
+            );
+
+            if (!token) {
+                return;
+            }
+
+            const response = await fetch(
+                API_BASE_URL + "/notifications",
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to load notifications."
+                );
+            }
+
+            const notifications =
+                data.notifications || [];
+
+            const unreadCount =
+                Number(data.unreadCount || 0);
+
+            if (badge) {
+
+                if (unreadCount > 0) {
+
+                    badge.textContent =
+                        unreadCount > 99
+                            ? "99+"
+                            : unreadCount;
+
+                    badge.style.display = "flex";
+
+                } else {
+
+                    badge.style.display = "none";
+
+                }
+
+            }
+
+            if (!notifications.length) {
+
+                list.innerHTML = `
+                    <div class="flex-notification-empty">
+                        No notifications yet.
+                    </div>
+                `;
+
+                return;
+            }
+
+            list.innerHTML = notifications.map(item => `
+
+                <div
+                    class="flex-notification-item ${
+                        item.is_read ? "" : "unread"
+                    }"
+                    data-notification-id="${item.id}"
+                >
+
+                    <div class="flex-notification-title">
+                        ${notificationEscapeHTML(item.title)}
+                    </div>
+
+                    <div class="flex-notification-message">
+                        ${notificationEscapeHTML(item.message)}
+                    </div>
+
+                    <div class="flex-notification-time">
+                        ${
+                            item.created_at
+                                ? new Date(
+                                    item.created_at
+                                  ).toLocaleString()
+                                : ""
+                        }
+                    </div>
+
+                </div>
+
+            `).join("");
+
+            list
+                .querySelectorAll(
+                    ".flex-notification-item"
+                )
+                .forEach(item => {
+
+                    item.addEventListener(
+                        "click",
+                        async () => {
+
+                            const id =
+                                item.dataset.notificationId;
+
+                            await markNotificationRead(id);
+
+                            item.classList.remove(
+                                "unread"
+                            );
+
+                            await loadUserNotifications();
+
+                        }
+                    );
+
+                });
+
+        } catch (error) {
+
+            list.innerHTML = `
+                <div class="flex-notification-empty">
+                    ${notificationEscapeHTML(error.message)}
+                </div>
+            `;
+        }
+    }
+
+
+    async function markNotificationRead(id) {
+
+        try {
+
+            const token = localStorage.getItem(
+                STORAGE_KEYS.userToken
+            );
+
+            if (!token) return;
+
+            await fetch(
+                API_BASE_URL +
+                `/notifications/${id}/read`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    }
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Notification read error:",
+                error
+            );
+
+        }
+    }
+
+
+    function startNotificationCenter() {
+
+        const token = localStorage.getItem(
+            STORAGE_KEYS.userToken
+        );
+
+        if (!token) {
+            return;
+        }
+
+        createNotificationUI();
+
+        loadUserNotifications();
+
+        setInterval(
+            loadUserNotifications,
+            60000
+        );
+    }
+
+
+    if (document.readyState === "loading") {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            startNotificationCenter
+        );
+
+    } else {
+
+        startNotificationCenter();
+
+    }
+
+})();
