@@ -513,20 +513,19 @@ async function handleRegister(event) {
             "Creating account..."
         );
 
-        const data =
-            (
-                "/register",
-                {
-                    method: "POST",
+        const data = await apiRequest(
+    "/register",
+    {
+        method: "POST",
 
-                    body: JSON.stringify({
-                        name,
-                        username,
-                        email,
-                        password
-                    })
-                }
-            );
+        body: JSON.stringify({
+            name,
+            username,
+            email,
+            password
+        })
+    }
+);
 
         if (!data.user) {
 
