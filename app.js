@@ -2386,13 +2386,10 @@ function setupSignOut() {
            async event => {
 
                 event.preventDefault();
-                await apiRequest("/logout", {
-    method: "POST"
-});
-               clearUserSession();
 
-                window.location.href =
-                    "index.html";
+clearUserSession();
+
+window.location.href = "index.html";
             }
         );
     });
