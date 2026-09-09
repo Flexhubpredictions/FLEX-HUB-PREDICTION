@@ -2386,8 +2386,8 @@ function setupSignOut() {
             event => {
 
                 event.preventDefault();
-
-                clearUserSession();
+                
+               clearUserSession();
 
                 window.location.href =
                     "index.html";
