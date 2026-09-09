@@ -2017,52 +2017,7 @@ if (userSearchInput) {
     );
 
 }
-    // ==================== USER MANAGEMENT ====================
-
-let adminUsers = [];
-
-async function loadUsers() {
-    const tableBody = document.getElementById("usersTableBody");
-    if (!tableBody) return;
-
-    tableBody.innerHTML = `
-        <tr>
-            <td colspan="8" class="loading">
-                Loading users...
-            </td>
-        </tr>
-    `;
-
-    try {
-        const response = await fetch(
-            API_BASE_URL + "/admin/users",
-            {
-                headers: headers()
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || "Unable to load users.");
-        }
-
-        adminUsers = data.users || [];
-
-        renderUsers(adminUsers);
-
-    } catch (error) {
-
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">
-                    ${escapeHTML(error.message)}
-                </td>
-            </tr>
-        `;
-    }
-}
-
+   
 
 function renderUsers(users) {
 
