@@ -514,7 +514,7 @@ async function handleRegister(event) {
         );
 
         const data =
-            await apiRequest(
+            (
                 "/register",
                 {
                     method: "POST",
