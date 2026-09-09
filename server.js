@@ -320,6 +320,229 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ message: "Admin session expired. Please login again." });
   }
 }
+// ==================== ADMIN USER MANAGEMENT ====================
+
+app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT
+                id,
+                name,
+                username,
+                email,
+                is_active,
+                created_at
+            FROM users
+            ORDER BY created_at DESC
+        `);
+
+        res.json({
+            users: result.rows
+        });
+    } catch (error) {
+        console.error("Admin users error:", error);
+
+        res.status(500).json({
+            message: "Unable to load users."
+        });
+    }
+});
+
+
+app.patch("/api/admin/users/:id/status", requireAdmin, async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({
+                message: "Invalid user ID."
+            });
+        }
+
+        const { is_active } = req.body;
+
+        if (typeof is_active !== "boolean") {
+            return res.status(400).json({
+                message: "is_active must be true or false."
+            });
+        }
+
+        const result = await db.query(`
+            UPDATE users
+            SET is_active = $1
+            WHERE id = $2
+            RETURNING id, name, username, email, is_active
+        `, [is_active, userId]);
+
+        if (!result.rows.length) {
+            return res.status(404).json({
+                message: "User not found."
+            });
+        }
+
+        await logActivity(
+            result.rows[0],
+            is_active ? "ACCOUNT_ENABLED" : "ACCOUNT_DISABLED",
+            is_active ? "Account enabled by admin" : "Account disabled by admin"
+        );
+
+        res.json({
+            message: is_active
+                ? "Account enabled successfully."
+                : "Account disabled successfully.",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Update user status error:", error);
+
+        res.status(500).json({
+            message: "Unable to update user status."
+        });
+    }
+});
+
+
+app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({
+                message: "Invalid user ID."
+            });
+        }
+
+        const result = await db.query(`
+            DELETE FROM users
+            WHERE id = $1
+            RETURNING id, name, username, email
+        `, [userId]);
+
+        if (!result.rows.length) {
+            return res.status(404).json({
+                message: "User not found."
+            });
+        }
+
+        res.json({
+            message: "User deleted successfully.",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Delete user error:", error);
+
+        res.status(500).json({
+            message: "Unable to delete user."
+        });
+    }
+});
+
+
+// ==================== ADMIN NOTIFICATIONS ====================
+
+app.get("/api/admin/notifications", requireAdmin, async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT
+                id,
+                title,
+                message,
+                target,
+                created_at
+            FROM notifications
+            ORDER BY created_at DESC
+        `);
+
+        res.json({
+            notifications: result.rows
+        });
+    } catch (error) {
+        console.error("Admin notifications error:", error);
+
+        res.status(500).json({
+            message: "Unable to load notifications."
+        });
+    }
+});
+
+
+app.post("/api/admin/notifications", requireAdmin, async (req, res) => {
+    try {
+        const title = String(req.body.title || "").trim();
+        const message = String(req.body.message || "").trim();
+        const target = String(req.body.target || "all").trim();
+
+        if (!title || !message) {
+            return res.status(400).json({
+                message: "Title and message are required."
+            });
+        }
+
+        if (!["all", "vip"].includes(target)) {
+            return res.status(400).json({
+                message: "Invalid notification target."
+            });
+        }
+
+        const result = await db.query(`
+            INSERT INTO notifications
+                (title, message, target)
+            VALUES
+                ($1, $2, $3)
+            RETURNING id, title, message, target, created_at
+        `, [title, message, target]);
+
+        res.status(201).json({
+            message: "Notification created successfully.",
+            notification: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Create notification error:", error);
+
+        res.status(500).json({
+            message: "Unable to create notification."
+        });
+    }
+});
+
+
+app.delete("/api/admin/notifications/:id", requireAdmin, async (req, res) => {
+    try {
+        const notificationId = Number(req.params.id);
+
+        if (!Number.isInteger(notificationId)) {
+            return res.status(400).json({
+                message: "Invalid notification ID."
+            });
+        }
+
+        const result = await db.query(`
+            DELETE FROM notifications
+            WHERE id = $1
+            RETURNING id
+        `, [notificationId]);
+
+        if (!result.rows.length) {
+            return res.status(404).json({
+                message: "Notification not found."
+            });
+        }
+
+        res.json({
+            message: "Notification deleted successfully."
+        });
+
+    } catch (error) {
+        console.error("Delete notification error:", error);
+
+        res.status(500).json({
+            message: "Unable to delete notification."
+        });
+    }
+});
 
 async function requireVip(req, res, next) {
   try {
