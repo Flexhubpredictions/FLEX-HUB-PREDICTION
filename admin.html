@@ -1002,6 +1002,74 @@ td {
 
 </section>
 
+<!-- ADMIN USER MANAGEMENT -->
+
+<section class="panel">
+
+    <div class="panel-heading">
+
+        <div>
+            <h3>User Management</h3>
+
+            <p>
+                Manage FLEX HUB user accounts and VIP access.
+            </p>
+        </div>
+
+    </div>
+
+    <div style="margin: 20px 0;">
+
+        <input
+            type="text"
+            id="userSearchInput"
+            placeholder="Search by name, username, or email..."
+            style="
+                width:100%;
+                padding:12px;
+                border-radius:8px;
+                border:1px solid #ccc;
+                font-size:15px;
+            "
+        >
+
+    </div>
+
+    <div style="overflow-x:auto;">
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>VIP</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+
+            </thead>
+
+            <tbody id="usersTableBody">
+
+                <tr>
+                    <td colspan="8" class="loading">
+                        Loading users...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+    
 <!-- ADMIN ACTIVITY LOG -->
 
 <section class="panel">
