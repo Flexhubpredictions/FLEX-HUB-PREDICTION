@@ -4738,7 +4738,7 @@ async function loadSubscriptions() {
     try {
 
         const data =
-            await apiRequest("/admin/subscriptions");
+            await apiRequest("/admin/vip-subscriptions");
 
         adminSubscriptions =
             Array.isArray(data)
