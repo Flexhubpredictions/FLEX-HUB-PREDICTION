@@ -3193,6 +3193,7 @@ let allPredictions = [];
 let adminUsers = [];
 let adminSubscriptions = [];
 let adminNotifications = [];
+let adminActivityLogs = [];
 
 
 /* =========================================================
@@ -3556,36 +3557,27 @@ async function openAdmin() {
 
 async function checkSession() {
 
-    const token =
-        getToken();
+    const token = getToken();
 
     if (!token) {
-
         showLoginPage();
-
         return;
-
     }
-
 
     try {
 
-        await apiRequest(
-            "/admin/me"
-        );
+        await apiRequest("/admin/me");
 
-        await openAdmin();
+        openAdmin();
 
-    } catch(error) {
+    } catch (error) {
 
-        localStorage.removeItem(
-            ADMIN_TOKEN_KEY
-        );
+        console.error("Admin session check failed:", error);
+
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
 
         showLoginPage();
-
     }
-
 }
 
 
@@ -5949,16 +5941,13 @@ function resetNotificationForm() {
 
 async function loadActivityLog() {
 
-    const tableBody =
-        document.getElementById(
-            "activityLogTableBody"
-        );
+    const tbody = document.getElementById("activityLogTableBody");
 
-    if (!tableBody) return;
+    if (!tbody) return;
 
-    tableBody.innerHTML = `
+    tbody.innerHTML = `
         <tr>
-            <td colspan="5" class="loading-cell">
+            <td colspan="5" class="empty-state">
                 Loading activity...
             </td>
         </tr>
@@ -5966,41 +5955,33 @@ async function loadActivityLog() {
 
     try {
 
-        const data =
-            await apiRequest(
-                "/admin/activity"
-            );
+        const data = await apiRequest("/admin/activity-logs");
 
-        const activities =
+        adminActivityLogs =
             Array.isArray(data)
                 ? data
                 : (
-                    data.activities ||
-                    data.activity ||
                     data.logs ||
-                    data.data ||
+                    data.activityLogs ||
+                    data.activities ||
                     []
                 );
 
-        renderActivityLog(activities);
+        renderActivityLog();
 
     } catch (error) {
 
-        console.error(
-            "Activity log error:",
-            error
-        );
+        console.error("Activity log error:", error);
 
-        tableBody.innerHTML = `
+        tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="empty-cell">
-                    No activity records available.
+                <td colspan="5" class="empty-state">
+                    Unable to load activity logs.
                 </td>
             </tr>
         `;
     }
 }
-
 
 function renderActivityLog(activities) {
 
