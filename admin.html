@@ -4694,20 +4694,33 @@ function renderResults(results) {
                         ${statusBadge(status)}
                     </td>
 
-                    <td>
-                        ${
-                            result.id
-                                ? `
-                                <button
-                                    class="table-btn edit-btn"
-                                    onclick="editPrediction('${result.id}')"
-                                >
-                                    Edit
-                                </button>
-                                `
-                                : "-"
-                        }
-                    </td>
+                  <td>
+    ${
+        result.id
+            ? `
+            <div class="action-buttons">
+
+                <button
+                    type="button"
+                    class="table-btn edit-btn"
+                    onclick="editPrediction('${result.id}')"
+                >
+                    Edit
+                </button>
+
+                <button
+                    type="button"
+                    class="table-btn danger-btn"
+                    onclick="deletePrediction('${result.id}')"
+                >
+                    Delete
+                </button>
+
+            </div>
+            `
+            : "-"
+    }
+</td>
 
                 </tr>
             `;
