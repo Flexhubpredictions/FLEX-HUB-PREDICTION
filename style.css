@@ -4276,4 +4276,302 @@ button:disabled,
     }
 }
 
+/* =========================================================
+   PART 9 — FINAL POLISH & COMPATIBILITY
+   ========================================================= */
 
+/* =========================
+   LINKS & BUTTONS
+   ========================= */
+
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button,
+.btn,
+a.btn {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        background .2s ease,
+        border-color .2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: var(--gold);
+    color: #050505;
+    border: 1px solid var(--gold);
+    box-shadow: 0 8px 25px rgba(244,197,66,.16);
+}
+
+.btn-primary:hover {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+    box-shadow: 0 12px 30px rgba(244,197,66,.22);
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,.04);
+    color: var(--white);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: rgba(244,197,66,.08);
+    border-color: var(--gold-border);
+    color: var(--gold);
+}
+
+
+/* =========================
+   COMMON CARD POLISH
+   ========================= */
+
+.prediction-card,
+.betting-code-card,
+.result-card,
+.league-card,
+.dashboard-card,
+.dashboard-panel,
+.vip-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.prediction-card::before,
+.betting-code-card::before,
+.result-card::before,
+.league-card::before,
+.dashboard-card::before,
+.vip-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(244,197,66,.35),
+        transparent
+    );
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+
+.prediction-card:hover::before,
+.betting-code-card:hover::before,
+.result-card:hover::before,
+.league-card:hover::before,
+.dashboard-card:hover::before,
+.vip-card:hover::before {
+    opacity: 1;
+}
+
+
+/* =========================
+   VIP HIGHLIGHT
+   ========================= */
+
+.prediction-category.vip,
+.vip-prediction,
+.vip-badge {
+    color: var(--gold);
+}
+
+.prediction-card.vip,
+.prediction-card[data-category="vip"] {
+    border-color: rgba(244,197,66,.25);
+    box-shadow:
+        0 12px 35px rgba(0,0,0,.25),
+        0 0 0 1px rgba(244,197,66,.03);
+}
+
+
+/* =========================
+   EMPTY / LOADING STATES
+   ========================= */
+
+.loading-state,
+.empty-state,
+.error-state {
+    width: 100%;
+    min-height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 25px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: rgba(255,255,255,.015);
+    color: var(--muted);
+}
+
+.error-state {
+    color: #ff8790;
+    border-color: rgba(255,82,96,.2);
+}
+
+.empty-state strong {
+    color: var(--white);
+}
+
+
+/* =========================
+   FORM INPUT POLISH
+   ========================= */
+
+input,
+textarea,
+select {
+    color-scheme: dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #626977;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: rgba(244,197,66,.55);
+    box-shadow: 0 0 0 3px rgba(244,197,66,.07);
+}
+
+
+/* =========================
+   SCROLLBAR
+   ========================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #070809;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #252932;
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3a3f49;
+}
+
+
+/* =========================
+   TEXT SELECTION
+   ========================= */
+
+::selection {
+    background: rgba(244,197,66,.25);
+    color: var(--white);
+}
+
+
+/* =========================
+   PAGE TRANSITION
+   ========================= */
+
+#mainWebsite {
+    min-height: 100vh;
+}
+
+main {
+    min-height: 60vh;
+}
+
+
+/* =========================
+   MOBILE TOUCH IMPROVEMENTS
+   ========================= */
+
+@media (max-width: 700px) {
+
+    .btn {
+        min-height: 46px;
+    }
+
+    .prediction-card:hover,
+    .betting-code-card:hover,
+    .result-card:hover,
+    .league-card:hover,
+    .dashboard-card:hover,
+    .vip-card:hover {
+        transform: none;
+    }
+
+    .footer-bottom {
+        padding: 18px 12px;
+    }
+}
+
+
+/* =========================
+   VERY SMALL SCREENS
+   ========================= */
+
+@media (max-width: 360px) {
+
+    .hero-text h1 {
+        font-size: 28px;
+    }
+
+    .hero-card {
+        min-height: 190px;
+    }
+
+    .hero-actions .btn {
+        font-size: 13px;
+    }
+
+    .stat-card strong {
+        font-size: 23px;
+    }
+
+    .prediction-selection {
+        font-size: 15px;
+    }
+
+    .betting-code-value {
+        font-size: 21px;
+    }
+}
+
+
+/* =========================================================
+   FLEX HUB REDESIGN COMPLETE
+   ========================================================= */
