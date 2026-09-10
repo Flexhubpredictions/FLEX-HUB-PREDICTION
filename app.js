@@ -1,20 +1,12 @@
-// ============================================================
-// FLEX HUB PREDICTIONS
-// MAIN APP.JS — PART 1
-// ============================================================
+// ======================================================
+// FLEX HUB PREDICTIONS - MAIN APP.JS
+// ======================================================
 
-"use strict";
+const API_BASE_URL = "https://flex-hub-prediction.onrender.com/api";
 
-// ============================================================
-// API CONFIGURATION
-// ============================================================
-
-const API_BASE_URL =
-    "https://flex-hub-prediction.onrender.com/api";
-
-// ============================================================
+// ======================================================
 // STORAGE KEYS
-// ============================================================
+// ======================================================
 
 const STORAGE_KEYS = {
     user: "flexHubUser",
@@ -22,52 +14,24 @@ const STORAGE_KEYS = {
     vipToken: "flexHubVipToken"
 };
 
-// ============================================================
-// GLOBAL STATE
-// ============================================================
+// ======================================================
+// GLOBAL VARIABLES
+// ======================================================
 
 let currentUser = null;
-
 let allPredictions = [];
-let allResults = [];
 
 let currentLeagueFilter = "all";
 let currentResultFilter = "all";
 let currentSearchQuery = "";
 
-let applicationStarted = false;
-let mainWebsiteOpened = false;
-
-let countdownTimer = null;
-let notificationTimer = null;
-
-// ============================================================
+// ======================================================
 // PAGE INITIALIZATION
-// ============================================================
+// ======================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeFlexHub
-);
-
-async function initializeFlexHub() {
-
-    // Prevent accidental double initialization
-    if (applicationStarted) {
-        return;
-    }
-
-    applicationStarted = true;
-
-    // ------------------------------------------
-    // Restore saved account
-    // ------------------------------------------
+document.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = getStoredUser();
-
-    // ------------------------------------------
-    // Setup website functionality
-    // ------------------------------------------
 
     setupAccountForms();
     setupNavigation();
@@ -78,38 +42,20 @@ async function initializeFlexHub() {
     setupSignOut();
     setupFooterYear();
     setupWhatsAppLinks();
-    setupInstallButton();
 
-    // ------------------------------------------
-    // VIP PAGE
-    // ------------------------------------------
-
-    if (
-        document.body &&
-        document.body.classList.contains("vip-page")
-    ) {
-
+    // VIP page
+    if (document.body.classList.contains("vip-page")) {
         await setupVipPage();
-
         return;
     }
 
-    // ------------------------------------------
-    // NORMAL WEBSITE
-    // ------------------------------------------
+    // Main website
+    await checkUserSession();
+});
 
-    const sessionValid =
-        await checkUserSession();
-
-    if (sessionValid) {
-
-        startNotificationCenter();
-    }
-}
-
-// ============================================================
+// ======================================================
 // STORAGE
-// ============================================================
+// ======================================================
 
 function getStoredUser() {
 
@@ -124,74 +70,34 @@ function getStoredUser() {
             return null;
         }
 
-        const user =
-            JSON.parse(storedUser);
-
-        if (
-            !user ||
-            typeof user !== "object"
-        ) {
-            return null;
-        }
-
-        return user;
+        return JSON.parse(storedUser);
 
     } catch (error) {
 
         console.error(
-            "Unable to restore saved user:",
+            "Unable to read stored user:",
             error
-        );
-
-        localStorage.removeItem(
-            STORAGE_KEYS.user
         );
 
         return null;
     }
 }
 
-// ============================================================
-// GET USER TOKEN
-// ============================================================
-
 function getUserToken() {
 
-    return (
-        localStorage.getItem(
-            STORAGE_KEYS.userToken
-        ) || ""
+    return localStorage.getItem(
+        STORAGE_KEYS.userToken
     );
 }
-
-// ============================================================
-// GET VIP TOKEN
-// ============================================================
 
 function getVipToken() {
 
-    return (
-        localStorage.getItem(
-            STORAGE_KEYS.vipToken
-        ) || ""
+    return localStorage.getItem(
+        STORAGE_KEYS.vipToken
     );
 }
 
-// ============================================================
-// SAVE USER
-// ============================================================
-
-function saveUser(
-    user,
-    token = null
-) {
-
-    if (
-        !user ||
-        typeof user !== "object"
-    ) {
-        return;
-    }
+function saveUser(user, token = null) {
 
     currentUser = user;
 
@@ -200,8 +106,6 @@ function saveUser(
         JSON.stringify(user)
     );
 
-    // Only replace the existing token
-    // when the server actually gives us one.
     if (token) {
 
         localStorage.setItem(
@@ -210,10 +114,6 @@ function saveUser(
         );
     }
 }
-
-// ============================================================
-// CLEAR USER SESSION
-// ============================================================
 
 function clearUserSession() {
 
@@ -230,146 +130,64 @@ function clearUserSession() {
     localStorage.removeItem(
         STORAGE_KEYS.vipToken
     );
-
-    allPredictions = [];
-    allResults = [];
-
-    mainWebsiteOpened = false;
 }
 
-// ============================================================
+// ======================================================
 // API REQUEST HELPER
-// ============================================================
+// ======================================================
 
-async function apiRequest(
-    endpoint,
-    options = {}
-) {
+async function apiRequest(endpoint, options = {}) {
 
-    if (!endpoint) {
-
-        throw new Error(
-            "Invalid API endpoint."
-        );
-    }
-
-    const token =
-        getUserToken();
+    const token = getUserToken();
 
     const headers = {
-        "Content-Type":
-            "application/json",
-
+        "Content-Type": "application/json",
         ...(options.headers || {})
     };
 
-    // Add normal user authentication
-    // automatically when available.
     if (token) {
 
         headers.Authorization =
             `Bearer ${token}`;
     }
 
-    let response;
-
-    try {
-
-        response =
-            await fetch(
-                `${API_BASE_URL}${endpoint}`,
-                {
-                    ...options,
-                    headers
-                }
-            );
-
-    } catch (error) {
-
-        console.error(
-            "API connection error:",
-            error
+    const response =
+        await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                ...options,
+                headers
+            }
         );
-
-        throw new Error(
-            "Unable to connect to FLEX HUB server. Please check your internet connection and try again."
-        );
-    }
-
-    // ------------------------------------------
-    // Read response safely
-    // ------------------------------------------
 
     let data = {};
 
-    const contentType =
-        response.headers.get(
-            "content-type"
-        ) || "";
+    try {
 
-    if (
-        contentType.includes(
-            "application/json"
-        )
-    ) {
+        data =
+            await response.json();
 
-        try {
+    } catch (error) {
 
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = {};
-        }
-
-    } else {
-
-        try {
-
-            const text =
-                await response.text();
-
-            data =
-                text
-                    ? { message: text }
-                    : {};
-
-        } catch (error) {
-
-            data = {};
-        }
+        data = {};
     }
-
-    // ------------------------------------------
-    // Handle API errors
-    // ------------------------------------------
 
     if (!response.ok) {
 
         const message =
             data.message ||
             data.error ||
-            `Request failed (${response.status}).`;
+            "Something went wrong.";
 
-        const error =
-            new Error(message);
-
-        error.status =
-            response.status;
-
-        error.data =
-            data;
-
-        throw error;
+        throw new Error(message);
     }
 
     return data;
 }
 
-// ============================================================
+// ======================================================
 // ACCOUNT FORMS
-// ============================================================
+// ======================================================
 
 function setupAccountForms() {
 
@@ -383,55 +201,28 @@ function setupAccountForms() {
             "#registerForm"
         );
 
-    // ------------------------------------------
-    // LOGIN
-    // ------------------------------------------
-
     if (loginForm) {
 
-        // Prevent duplicate listeners
-        if (
-            loginForm.dataset.flexHubReady !==
-            "true"
-        ) {
-
-            loginForm.dataset.flexHubReady =
-                "true";
-
-            loginForm.addEventListener(
-                "submit",
-                handleLogin
-            );
-        }
+        loginForm.addEventListener(
+            "submit",
+            handleLogin
+        );
     }
-
-    // ------------------------------------------
-    // REGISTER
-    // ------------------------------------------
 
     if (registerForm) {
 
-        if (
-            registerForm.dataset.flexHubReady !==
-            "true"
-        ) {
-
-            registerForm.dataset.flexHubReady =
-                "true";
-
-            registerForm.addEventListener(
-                "submit",
-                handleRegister
-            );
-        }
+        registerForm.addEventListener(
+            "submit",
+            handleRegister
+        );
     }
 
     setupAccountPanelSwitching();
 }
 
-// ============================================================
-// ACCOUNT PANEL SWITCHING
-// ============================================================
+// ======================================================
+// LOGIN / REGISTER PANEL SWITCHING
+// ======================================================
 
 function setupAccountPanelSwitching() {
 
@@ -445,130 +236,92 @@ function setupAccountPanelSwitching() {
             "#registerPanel"
         );
 
-    // Support both the new buttons
-    // and the previous data attributes.
+    // IMPORTANT:
+    // These IDs match the buttons in index.html.
     const showRegisterButtons =
         document.querySelectorAll(
-            "#showRegisterButton, [data-show-register]"
+            "#showRegisterButton"
         );
 
     const showLoginButtons =
         document.querySelectorAll(
-            "#showLoginButton, [data-show-login]"
+            "#showLoginButton"
         );
 
-    // ------------------------------------------
-    // SHOW REGISTER
-    // ------------------------------------------
+    // ----------------------------------------------
+    // SHOW REGISTER PANEL
+    // ----------------------------------------------
 
-    showRegisterButtons.forEach(
-        button => {
+    showRegisterButtons.forEach(button => {
 
-            if (
-                button.dataset.flexHubSwitchReady ===
-                "true"
-            ) {
-                return;
-            }
+        button.addEventListener(
+            "click",
+            event => {
 
-            button.dataset.flexHubSwitchReady =
-                "true";
+                event.preventDefault();
 
-            button.addEventListener(
-                "click",
-                event => {
+                // Hide login
+                if (loginPanel) {
 
-                    event.preventDefault();
+                    loginPanel.style.display =
+                        "none";
 
-                    showRegisterPanel(
-                        loginPanel,
-                        registerPanel
-                    );
+                    loginPanel.hidden =
+                        true;
                 }
-            );
-        }
-    );
 
-    // ------------------------------------------
-    // SHOW LOGIN
-    // ------------------------------------------
+                // Show register
+                if (registerPanel) {
 
-    showLoginButtons.forEach(
-        button => {
+                    registerPanel.hidden =
+                        false;
 
-            if (
-                button.dataset.flexHubSwitchReady ===
-                "true"
-            ) {
-                return;
-            }
-
-            button.dataset.flexHubSwitchReady =
-                "true";
-
-            button.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-                    showLoginPanel(
-                        loginPanel,
-                        registerPanel
-                    );
+                    registerPanel.style.display =
+                        "";
                 }
-            );
-        }
-    );
+            }
+        );
+    });
+
+    // ----------------------------------------------
+    // SHOW LOGIN PANEL
+    // ----------------------------------------------
+
+    showLoginButtons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                // Hide register
+                if (registerPanel) {
+
+                    registerPanel.style.display =
+                        "none";
+
+                    registerPanel.hidden =
+                        true;
+                }
+
+                // Show login
+                if (loginPanel) {
+
+                    loginPanel.hidden =
+                        false;
+
+                    loginPanel.style.display =
+                        "";
+                }
+            }
+        );
+    });
 }
 
-// ============================================================
-// SHOW REGISTER PANEL
-// ============================================================
-
-function showRegisterPanel(
-    loginPanel = document.querySelector("#loginPanel"),
-    registerPanel = document.querySelector("#registerPanel")
-) {
-
-    if (loginPanel) {
-
-        loginPanel.hidden = true;
-        loginPanel.style.display = "none";
-    }
-
-    if (registerPanel) {
-
-        registerPanel.hidden = false;
-        registerPanel.style.display = "";
-    }
-}
-
-// ============================================================
-// SHOW LOGIN PANEL
-// ============================================================
-
-function showLoginPanel(
-    loginPanel = document.querySelector("#loginPanel"),
-    registerPanel = document.querySelector("#registerPanel")
-) {
-
-    if (registerPanel) {
-
-        registerPanel.hidden = true;
-        registerPanel.style.display = "none";
-    }
-
-    if (loginPanel) {
-
-        loginPanel.hidden = false;
-        loginPanel.style.display = "";
-    }
-}
-
-// ============================================================
+// ======================================================
 // LOGIN
-// ============================================================
+// ======================================================
 
 async function handleLogin(event) {
 
@@ -596,42 +349,21 @@ async function handleLogin(event) {
     const message =
         findFormMessage(form);
 
-    // ------------------------------------------
-    // Validation
-    // ------------------------------------------
-
-    if (!identifier) {
+    if (!identifier || !password) {
 
         showElementMessage(
             message,
-            "Please enter your username or email.",
+            "Please enter your username/email and password.",
             "error"
         );
 
         return;
     }
-
-    if (!password) {
-
-        showElementMessage(
-            message,
-            "Please enter your password.",
-            "error"
-        );
-
-        return;
-    }
-
-    const submitButton =
-        event.submitter ||
-        form.querySelector(
-            'button[type="submit"]'
-        );
 
     try {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             true,
             "Signing in..."
         );
@@ -649,27 +381,12 @@ async function handleLogin(event) {
                 }
             );
 
-        // --------------------------------------
-        // Validate server response
-        // --------------------------------------
-
-        if (!data.user) {
+        if (!data.user || !data.token) {
 
             throw new Error(
-                "The server did not return your account."
+                "The server returned an invalid login response."
             );
         }
-
-        if (!data.token) {
-
-            throw new Error(
-                "The server did not return a login session."
-            );
-        }
-
-        // --------------------------------------
-        // Save session permanently
-        // --------------------------------------
 
         saveUser(
             data.user,
@@ -682,19 +399,7 @@ async function handleLogin(event) {
             "success"
         );
 
-        // --------------------------------------
-        // Show branded transition
-        // --------------------------------------
-
-        showFlexHubAnimation(
-            () => {
-
-                openMainWebsite({
-                    reloadData: true
-                });
-
-            }
-        );
+       showFlexHubAnimation(openMainWebsite);
 
     } catch (error) {
 
@@ -706,22 +411,22 @@ async function handleLogin(event) {
         showElementMessage(
             message,
             error.message ||
-            "Unable to login. Please try again.",
+            "Unable to login.",
             "error"
         );
 
     } finally {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             false
         );
     }
 }
 
-// ============================================================
+// ======================================================
 // REGISTER
-// ============================================================
+// ======================================================
 
 async function handleRegister(event) {
 
@@ -770,48 +475,16 @@ async function handleRegister(event) {
     const message =
         findFormMessage(form);
 
-    // ------------------------------------------
-    // Validation
-    // ------------------------------------------
-
-    if (!name) {
-
-        showElementMessage(
-            message,
-            "Please enter your name.",
-            "error"
-        );
-
-        return;
-    }
-
-    if (!username) {
+    if (
+        !name ||
+        !username ||
+        !email ||
+        !password
+    ) {
 
         showElementMessage(
             message,
-            "Please choose a username.",
-            "error"
-        );
-
-        return;
-    }
-
-    if (!email) {
-
-        showElementMessage(
-            message,
-            "Please enter your email address.",
-            "error"
-        );
-
-        return;
-    }
-
-    if (!password) {
-
-        showElementMessage(
-            message,
-            "Please create a password.",
+            "Please complete all registration fields.",
             "error"
         );
 
@@ -832,34 +505,27 @@ async function handleRegister(event) {
         return;
     }
 
-    const submitButton =
-        event.submitter ||
-        form.querySelector(
-            'button[type="submit"]'
-        );
-
     try {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             true,
             "Creating account..."
         );
 
-        const data =
-            await apiRequest(
-                "/register",
-                {
-                    method: "POST",
+        const data = await apiRequest(
+    "/register",
+    {
+        method: "POST",
 
-                    body: JSON.stringify({
-                        name,
-                        username,
-                        email,
-                        password
-                    })
-                }
-            );
+        body: JSON.stringify({
+            name,
+            username,
+            email,
+            password
+        })
+    }
+);
 
         if (!data.user) {
 
@@ -867,10 +533,6 @@ async function handleRegister(event) {
                 "The server did not return the new account."
             );
         }
-
-        // --------------------------------------
-        // Save account
-        // --------------------------------------
 
         saveUser(
             data.user,
@@ -883,31 +545,14 @@ async function handleRegister(event) {
             "success"
         );
 
-        // --------------------------------------
-        // If server automatically logs the user in
-        // --------------------------------------
-
         if (data.token) {
 
-            openMainWebsite({
-                reloadData: true
-            });
+            openMainWebsite();
 
-            return;
+        } else {
+
+            switchToLoginPanel();
         }
-
-        // --------------------------------------
-        // Otherwise return to login
-        // --------------------------------------
-
-        setTimeout(
-            () => {
-
-                switchToLoginPanel();
-
-            },
-            900
-        );
 
     } catch (error) {
 
@@ -919,29 +564,28 @@ async function handleRegister(event) {
         showElementMessage(
             message,
             error.message ||
-            "Unable to create your account.",
+            "Unable to create account.",
             "error"
         );
 
     } finally {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             false
         );
     }
 }
 
-// ============================================================
+// ======================================================
 // CHECK USER SESSION
-// ============================================================
+// ======================================================
 
 async function checkUserSession() {
 
     const token =
         getUserToken();
 
-    // No saved login = show login gate.
     if (!token) {
 
         showAccountGate();
@@ -949,10 +593,9 @@ async function checkUserSession() {
         return false;
     }
 
+    openMainWebsite();
     try {
 
-        // Verify the token BEFORE opening
-        // the main website.
         const data =
             await apiRequest(
                 "/user/me"
@@ -965,17 +608,13 @@ async function checkUserSession() {
             );
         }
 
-        // Refresh saved user information.
         saveUser(
             data.user
         );
 
         updateUserUI();
 
-        openMainWebsite({
-            reloadData: true,
-            scrollTop: false
-        });
+        openMainWebsite();
 
         return true;
 
@@ -986,7 +625,6 @@ async function checkUserSession() {
             error
         );
 
-        // Invalid/expired account token.
         clearUserSession();
 
         showAccountGate();
@@ -995,9 +633,9 @@ async function checkUserSession() {
     }
 }
 
-// ============================================================
+// ======================================================
 // ACCOUNT GATE
-// ============================================================
+// ======================================================
 
 function showAccountGate() {
 
@@ -1013,31 +651,18 @@ function showAccountGate() {
 
     if (gate) {
 
-        gate.hidden = false;
-        gate.style.display = "";
+        gate.style.display =
+            "";
     }
 
     if (website) {
 
-        website.hidden = true;
-        website.style.display = "none";
+        website.style.display =
+            "none";
     }
-
-    mainWebsiteOpened = false;
 }
 
-// ============================================================
-// OPEN MAIN WEBSITE
-// ============================================================
-
-async function openMainWebsite(
-    options = {}
-) {
-
-    const {
-        reloadData = true,
-        scrollTop = true
-    } = options;
+function openMainWebsite() {
 
     const gate =
         document.querySelector(
@@ -1049,92 +674,70 @@ async function openMainWebsite(
             "#mainWebsite"
         );
 
-    // ------------------------------------------
-    // Hide account gate
-    // ------------------------------------------
-
     if (gate) {
 
-        gate.hidden = true;
-        gate.style.display = "none";
+        gate.style.display =
+            "none";
     }
-
-    // ------------------------------------------
-    // Show main website
-    // ------------------------------------------
 
     if (website) {
 
-        website.hidden = false;
-        website.style.display = "";
+        website.style.display =
+            "";
     }
-
-    mainWebsiteOpened = true;
 
     updateUserUI();
+
     closeMobileMenu();
 
-    // ------------------------------------------
-    // Load content
-    // ------------------------------------------
+    loadPredictions();
+    loadRegularBettingCodes();
+    loadResults();
 
-    if (reloadData) {
-
-        await Promise.allSettled([
-            loadPredictions(),
-            loadRegularBettingCodes(),
-            loadResults()
-        ]);
-
-        startNotificationCenter();
-    }
-
-    // ------------------------------------------
-    // Scroll only when requested
-    // ------------------------------------------
-
-    if (scrollTop) {
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 }
 
-// ============================================================
+// ======================================================
 // SWITCH TO LOGIN
-// ============================================================
+// ======================================================
 
 function switchToLoginPanel() {
 
-    showLoginPanel();
-
-    const loginForm =
+    const loginPanel =
         document.querySelector(
-            "#loginForm"
+            "#loginPanel"
         );
 
-    if (loginForm) {
+    const registerPanel =
+        document.querySelector(
+            "#registerPanel"
+        );
 
-        const firstInput =
-            loginForm.querySelector(
-                "input"
-            );
+    if (registerPanel) {
 
-        if (firstInput) {
+        registerPanel.style.display =
+            "none";
 
-            setTimeout(
-                () => firstInput.focus(),
-                100
-            );
-        }
+        registerPanel.hidden =
+            true;
+    }
+
+    if (loginPanel) {
+
+        loginPanel.hidden =
+            false;
+
+        loginPanel.style.display =
+            "";
     }
 }
 
-// ============================================================
+// ======================================================
 // USER INTERFACE
-// ============================================================
+// ======================================================
 
 function updateUserUI() {
 
@@ -1142,28 +745,29 @@ function updateUserUI() {
         return;
     }
 
-    const displayName =
-        currentUser.name ||
-        currentUser.username ||
-        "User";
-
-    // ------------------------------------------
-    // Name
-    // ------------------------------------------
-
     document
         .querySelectorAll(
-            "#userName, [data-user-name]"
+            "#userName"
         )
         .forEach(element => {
 
             element.textContent =
-                displayName;
+                currentUser.name ||
+                currentUser.username ||
+                "User";
         });
 
-    // ------------------------------------------
-    // Username
-    // ------------------------------------------
+    document
+        .querySelectorAll(
+            "[data-user-name]"
+        )
+        .forEach(element => {
+
+            element.textContent =
+                currentUser.name ||
+                currentUser.username ||
+                "User";
+        });
 
     document
         .querySelectorAll(
@@ -1176,10 +780,6 @@ function updateUserUI() {
                 "—";
         });
 
-    // ------------------------------------------
-    // Email
-    // ------------------------------------------
-
     document
         .querySelectorAll(
             "[data-user-email]"
@@ -1190,103 +790,42 @@ function updateUserUI() {
                 currentUser.email ||
                 "—";
         });
-
-    // ------------------------------------------
-    // Optional VIP indicator
-    // ------------------------------------------
-
-    updateStoredVipIndicator();
 }
 
-// ============================================================
-// STORED VIP INDICATOR
-// ============================================================
-
-function updateStoredVipIndicator() {
-
-    const vipToken =
-        getVipToken();
-
-    document
-        .querySelectorAll(
-            "[data-vip-user]"
-        )
-        .forEach(element => {
-
-            element.classList.toggle(
-                "active",
-                Boolean(vipToken)
-            );
-        });
-}
-// ============================================================
+// ======================================================
 // NAVIGATION
-// ============================================================
+// ======================================================
 
 function setupNavigation() {
 
     const links =
         document.querySelectorAll(
-            "nav a[href^='#'], " +
-            "#mainNav a[href^='#'], " +
-            "[data-scroll-target]"
+            "nav a[href^='#'], #mainNav a[href^='#']"
         );
 
     links.forEach(link => {
 
-        if (
-            link.dataset.flexHubNavigationReady ===
-            "true"
-        ) {
-            return;
-        }
-
-        link.dataset.flexHubNavigationReady =
-            "true";
-
         link.addEventListener(
             "click",
             event => {
-
-                const dataTarget =
-                    link.getAttribute(
-                        "data-scroll-target"
-                    );
 
                 const href =
                     link.getAttribute(
                         "href"
                     );
 
-                const targetSelector =
-                    dataTarget ||
-                    href;
-
                 if (
-                    !targetSelector ||
-                    targetSelector === "#"
+                    !href ||
+                    href === "#"
                 ) {
+
                     return;
                 }
 
-                let target = null;
-
-                try {
-
-                    target =
-                        document.querySelector(
-                            targetSelector
-                        );
-
-                } catch (error) {
-
-                    console.warn(
-                        "Invalid navigation target:",
-                        targetSelector
+                const target =
+                    document.querySelector(
+                        href
                     );
-
-                    return;
-                }
 
                 if (!target) {
                     return;
@@ -1300,49 +839,16 @@ function setupNavigation() {
                     behavior: "smooth",
                     block: "start"
                 });
-
-                // Keep the URL clean without
-                // forcing a page reload.
-                if (
-                    href &&
-                    href.startsWith("#") &&
-                    history.replaceState
-                ) {
-
-                    history.replaceState(
-                        null,
-                        "",
-                        href
-                    );
-                }
             }
         );
     });
 
-    setupLeagueCards();
-}
-
-// ============================================================
-// LEAGUE CARDS
-// ============================================================
-
-function setupLeagueCards() {
-
+    // League cards
     document
         .querySelectorAll(
-            ".league-card, [data-league]"
+            ".league-card"
         )
         .forEach(card => {
-
-            if (
-                card.dataset.flexHubLeagueReady ===
-                "true"
-            ) {
-                return;
-            }
-
-            card.dataset.flexHubLeagueReady =
-                "true";
 
             card.addEventListener(
                 "click",
@@ -1351,30 +857,26 @@ function setupLeagueCards() {
                     const league =
                         card.dataset.league;
 
-                    if (!league) {
-                        return;
+                    if (league) {
+
+                        currentLeagueFilter =
+                            league;
+
+                        updateLeagueFilterUI();
+
+                        renderPredictions();
                     }
 
-                    currentLeagueFilter =
-                        league;
-
-                    updateLeagueFilterUI();
-
-                    renderPredictions();
-
-                    const predictionsSection =
+                    const predictions =
                         document.querySelector(
                             "#predictions"
-                        ) ||
-                        document.querySelector(
-                            "#predictionsSection"
                         );
 
-                    if (predictionsSection) {
+                    if (predictions) {
 
                         event.preventDefault();
 
-                        predictionsSection.scrollIntoView({
+                        predictions.scrollIntoView({
                             behavior: "smooth",
                             block: "start"
                         });
@@ -1384,42 +886,27 @@ function setupLeagueCards() {
         });
 }
 
-// ============================================================
+// ======================================================
 // SEARCH
-// ============================================================
+// ======================================================
 
 function setupSearch() {
 
     const search =
         document.querySelector(
             "#predictionSearch"
-        ) ||
-        document.querySelector(
-            "[data-prediction-search]"
         );
 
     if (!search) {
         return;
     }
 
-    if (
-        search.dataset.flexHubSearchReady ===
-        "true"
-    ) {
-        return;
-    }
-
-    search.dataset.flexHubSearchReady =
-        "true";
-
     search.addEventListener(
         "input",
         event => {
 
             currentSearchQuery =
-                String(
-                    event.target.value || ""
-                )
+                event.target.value
                     .trim()
                     .toLowerCase();
 
@@ -1428,9 +915,9 @@ function setupSearch() {
     );
 }
 
-// ============================================================
+// ======================================================
 // LEAGUE FILTERS
-// ============================================================
+// ======================================================
 
 function setupLeagueFilters() {
 
@@ -1440,21 +927,9 @@ function setupLeagueFilters() {
         )
         .forEach(button => {
 
-            if (
-                button.dataset.flexHubLeagueFilterReady ===
-                "true"
-            ) {
-                return;
-            }
-
-            button.dataset.flexHubLeagueFilterReady =
-                "true";
-
             button.addEventListener(
                 "click",
-                event => {
-
-                    event.preventDefault();
+                () => {
 
                     currentLeagueFilter =
                         button.dataset.leagueFilter ||
@@ -1466,13 +941,7 @@ function setupLeagueFilters() {
                 }
             );
         });
-
-    updateLeagueFilterUI();
 }
-
-// ============================================================
-// UPDATE LEAGUE FILTER UI
-// ============================================================
 
 function updateLeagueFilterUI() {
 
@@ -1483,114 +952,57 @@ function updateLeagueFilterUI() {
         .forEach(button => {
 
             const value =
-                String(
-                    button.dataset.leagueFilter ||
-                    "all"
-                )
-                    .trim()
-                    .toLowerCase();
-
-            const activeValue =
-                String(
-                    currentLeagueFilter ||
-                    "all"
-                )
-                    .trim()
-                    .toLowerCase();
-
-            const isActive =
-                value === activeValue;
+                button.dataset.leagueFilter ||
+                "all";
 
             button.classList.toggle(
                 "active",
-                isActive
-            );
-
-            button.setAttribute(
-                "aria-pressed",
-                isActive
-                    ? "true"
-                    : "false"
+                value.toLowerCase() ===
+                currentLeagueFilter.toLowerCase()
             );
         });
 }
 
-// ============================================================
-// LOAD PREDICTIONS
-// ============================================================
+// ======================================================
+// LOAD REGULAR PREDICTIONS
+// ======================================================
 
 async function loadPredictions() {
 
-    const grid =
-        document.querySelector(
-            "#predictionsGrid"
-        );
+const grid =
+    document.querySelector("#predictionsGrid");
 
-    const hasStats =
-        Boolean(
-            document.querySelector(
-                "#totalPredictions"
-            )
-        );
+const hasDashboardStats =
+    document.querySelector("#totalPredictions");
 
-    // Nothing on this page requires
-    // regular predictions.
-    if (!grid && !hasStats) {
-        return;
+if (!grid && !hasDashboardStats) {
+    return;
+}
+
+   try {
+
+    if (grid) {
+        grid.innerHTML =
+            `<div class="loading-state">
+                <p>Loading predictions...</p>
+            </div>`;
     }
 
-    try {
-
-        if (grid) {
-
-            grid.innerHTML = `
-                <div class="loading-state">
-                    <p>Loading predictions...</p>
-                </div>
-            `;
-        }
-
-        const data =
-            await apiRequest(
-                "/predictions"
-            );
-
-        const predictions =
-            Array.isArray(data)
-                ? data
-                : Array.isArray(
-                    data.predictions
-                )
-                    ? data.predictions
-                    : [];
-
-        // --------------------------------------
-        // Only keep valid objects
-        // --------------------------------------
+    const data =
+        await apiRequest(
+            "/predictions"
+        );
 
         allPredictions =
-            predictions.filter(
-                prediction =>
-                    prediction &&
-                    typeof prediction === "object"
-            );
+            Array.isArray(data)
+                ? data
+                : data.predictions || [];
 
-        // --------------------------------------
-        // Render
-        // --------------------------------------
+     if (grid) {
+    renderPredictions();
+}
 
-        if (grid) {
-            renderPredictions();
-        }
-
-        updatePredictionStats();
-
-        // --------------------------------------
-        // Team badges
-        // --------------------------------------
-
-        scheduleTeamBadgeLoad();
-
+updatePredictionStats();
     } catch (error) {
 
         console.error(
@@ -1598,50 +1010,22 @@ async function loadPredictions() {
             error
         );
 
-        allPredictions = [];
-
-        if (grid) {
-
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <h3>Predictions unavailable</h3>
-
-                    <p>
-                        ${escapeHtml(
-                            error.message ||
-                            "Unable to load predictions."
-                        )}
-                    </p>
-
-                    <button
-                        type="button"
-                        class="primary-btn"
-                        data-retry-predictions
-                    >
-                        Try Again
-                    </button>
-                </div>
-            `;
-
-            const retryButton =
-                grid.querySelector(
-                    "[data-retry-predictions]"
-                );
-
-            if (retryButton) {
-
-                retryButton.addEventListener(
-                    "click",
-                    () => loadPredictions()
-                );
-            }
-        }
+       if (grid) {
+    grid.innerHTML =
+        `<div class="empty-state">
+            <h3>Predictions unavailable</h3>
+            <p>${escapeHtml(
+                error.message ||
+                "Unable to load predictions."
+            )}</p>
+        </div>`;
+}
     }
 }
 
-// ============================================================
-// RENDER PREDICTIONS
-// ============================================================
+// ======================================================
+// RENDER REGULAR PREDICTIONS
+// ======================================================
 
 function renderPredictions() {
 
@@ -1656,56 +1040,23 @@ function renderPredictions() {
 
     let predictions =
         [...allPredictions];
-
-    // ------------------------------------------
-    // Home featured mode
-    // ------------------------------------------
-
+    // Home page: show featured predictions only
     if (
-        grid.dataset.homeFeaturedOnly ===
-        "true"
+        grid.dataset.homeFeaturedOnly === "true"
     ) {
-
         predictions =
             predictions.filter(
                 prediction =>
-                    prediction.featured === true ||
-                    String(
-                        prediction.featured
-                    ).toLowerCase() === "true"
+                    prediction.featured === true
             );
     }
-
-    // ------------------------------------------
-    // Featured first
-    // ------------------------------------------
-
     predictions.sort(
-        (a, b) => {
+    (a, b) =>
+        Number(b.featured === true) -
+        Number(a.featured === true)
+);
 
-            const featuredA =
-                a.featured === true ||
-                String(
-                    a.featured
-                ).toLowerCase() === "true";
-
-            const featuredB =
-                b.featured === true ||
-                String(
-                    b.featured
-                ).toLowerCase() === "true";
-
-            return (
-                Number(featuredB) -
-                Number(featuredA)
-            );
-        }
-    );
-
-    // ------------------------------------------
     // Search
-    // ------------------------------------------
-
     if (currentSearchQuery) {
 
         predictions =
@@ -1717,15 +1068,9 @@ function renderPredictions() {
                         prediction.home_team,
                         prediction.away_team,
                         prediction.prediction,
-                        prediction.analysis,
-                        prediction.category,
-                        prediction.status
+                        prediction.analysis
                     ]
-                        .filter(
-                            value =>
-                                value !== null &&
-                                value !== undefined
-                        )
+                        .filter(Boolean)
                         .join(" ")
                         .toLowerCase();
 
@@ -1736,421 +1081,178 @@ function renderPredictions() {
             );
     }
 
-    // ------------------------------------------
-    // League filter
-    // ------------------------------------------
-
+    // League
     if (
         currentLeagueFilter &&
         currentLeagueFilter !== "all"
     ) {
-
-        const selectedLeague =
-            String(
-                currentLeagueFilter
-            )
-                .trim()
-                .toLowerCase();
 
         predictions =
             predictions.filter(
                 prediction =>
                     String(
                         prediction.league || ""
-                    )
-                        .trim()
-                        .toLowerCase() ===
-                    selectedLeague
+                    ).toLowerCase() ===
+                    String(
+                        currentLeagueFilter
+                    ).toLowerCase()
             );
     }
 
-    // ------------------------------------------
-    // Empty state
-    // ------------------------------------------
-
     if (!predictions.length) {
 
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    No predictions found
-                </h3>
-
-                <p>
-                    Try another search or league.
-                </p>
-
-            </div>
-        `;
+        grid.innerHTML =
+            `<div class="empty-state">
+                <h3>No predictions found</h3>
+                <p>Try another search or league.</p>
+            </div>`;
 
         return;
     }
 
-    // ------------------------------------------
-    // Render cards
-    // ------------------------------------------
-
     grid.innerHTML =
         predictions
-            .map(
-                prediction =>
-                    createPredictionCard(
-                        prediction
-                    )
-            )
+            .map(createPredictionCard)
             .join("");
-
-    // ------------------------------------------
-    // Load team badges after cards exist
-    // ------------------------------------------
-
-    scheduleTeamBadgeLoad();
-
-    // ------------------------------------------
-    // Update countdowns immediately
-    // ------------------------------------------
-
-    updateMatchCountdowns();
 }
 
-// ============================================================
-// PREDICTION CARD DATA HELPERS
-// ============================================================
+// ======================================================
+// CREATE PREDICTION CARD
+// ======================================================
 
-function normalizePredictionStatus(
-    prediction
-) {
-
-    return String(
-        prediction?.status ||
-        "pending"
-    )
-        .trim()
-        .toLowerCase();
-}
-
-function normalizePredictionCategory(
-    prediction
-) {
-
-    return String(
-        prediction?.category ||
-        "regular"
-    )
-        .trim()
-        .toLowerCase();
-}
-
-function isFeaturedPrediction(
-    prediction
-) {
-
-    return (
-        prediction?.featured === true ||
-        String(
-            prediction?.featured
-        ).toLowerCase() === "true"
-    );
-}
-
-// ============================================================
-// MATCH KICKOFF DATE
-// ============================================================
-
-function getMatchKickoffDate(
-    prediction
-) {
-
-    if (
-        !prediction ||
-        !prediction.match_date ||
-        !prediction.match_time
-    ) {
+function getMatchKickoffDate(prediction) {
+    if (!prediction?.match_date || !prediction?.match_time) {
         return null;
     }
 
-    const date =
-        String(
-            prediction.match_date
-        ).trim();
+    const kickoff = new Date(
+        `${prediction.match_date}T${prediction.match_time}`
+    );
 
-    const time =
-        String(
-            prediction.match_time
-        ).trim();
-
-    const kickoff =
-        new Date(
-            `${date}T${time}`
-        );
-
-    if (
-        Number.isNaN(
-            kickoff.getTime()
-        )
-    ) {
+    if (Number.isNaN(kickoff.getTime())) {
         return null;
     }
 
     return kickoff;
 }
 
-// ============================================================
-// FORMAT COUNTDOWN
-// ============================================================
+function formatMatchCountdown(milliseconds) {
+    const totalMinutes = Math.max(
+        0,
+        Math.floor(milliseconds / 60000)
+    );
 
-function formatMatchCountdown(
-    milliseconds
-) {
-
-    const totalMinutes =
-        Math.max(
-            0,
-            Math.floor(
-                milliseconds / 60000
-            )
-        );
-
-    const days =
-        Math.floor(
-            totalMinutes / 1440
-        );
-
-    const hours =
-        Math.floor(
-            (totalMinutes % 1440) / 60
-        );
-
-    const minutes =
-        totalMinutes % 60;
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor(
+        (totalMinutes % 1440) / 60
+    );
+    const minutes = totalMinutes % 60;
 
     if (days > 0) {
-
-        return (
-            `${days}D ` +
-            `${String(hours).padStart(2, "0")}H ` +
-            `${String(minutes).padStart(2, "0")}M`
-        );
+        return `${days}D ${String(hours).padStart(2, "0")}H ${String(minutes).padStart(2, "0")}M`;
     }
 
     if (hours > 0) {
-
-        return (
-            `${String(hours).padStart(2, "0")}H ` +
-            `${String(minutes).padStart(2, "0")}M`
-        );
+        return `${String(hours).padStart(2, "0")}H ${String(minutes).padStart(2, "0")}M`;
     }
 
-    return `${minutes}M`;
+return `${minutes}M`;
 }
 
-// ============================================================
-// UPDATE MATCH COUNTDOWNS
-// ============================================================
-
 function updateMatchCountdowns() {
-
     document
-        .querySelectorAll(
-            ".match-countdown"
-        )
-        .forEach(element => {
-
-            const date =
-                element.dataset.matchDate;
-
-            const time =
-                element.dataset.matchTime;
+        .querySelectorAll(".match-countdown")
+        .forEach((element) => {
+            const date = element.dataset.matchDate;
+            const time = element.dataset.matchTime;
 
             if (!date || !time) {
                 return;
             }
 
-            const kickoff =
-                new Date(
-                    `${date}T${time}`
-                );
+            const kickoff = new Date(`${date}T${time}`);
 
-            if (
-                Number.isNaN(
-                    kickoff.getTime()
-                )
-            ) {
+            if (Number.isNaN(kickoff.getTime())) {
                 return;
             }
 
-            const now =
-                Date.now();
-
-            const kickoffTimestamp =
-                kickoff.getTime();
-
-            const remaining =
-                kickoffTimestamp - now;
-
-            const elapsed =
-                now - kickoffTimestamp;
+            const elapsed = Date.now() - kickoff.getTime();
+            const remaining = kickoff.getTime() - Date.now();
 
             const value =
-                element.querySelector(
-                    ".countdown-value"
-                );
+                element.querySelector(".countdown-value");
 
             if (!value) {
                 return;
             }
 
-            // ----------------------------------
-            // Match has not started
-            // ----------------------------------
-
             if (remaining > 0) {
-
                 value.textContent =
-                    formatMatchCountdown(
-                        remaining
-                    );
-
-                element.dataset.state =
-                    "upcoming";
-
+                    formatMatchCountdown(remaining);
                 return;
             }
 
-            // ----------------------------------
-            // Match ongoing
-            // ----------------------------------
-
             const twoHours =
                 2 * 60 * 60 * 1000;
+
+            const twoAndHalfHours =
+                2.5 * 60 * 60 * 1000;
 
             if (
                 elapsed >= 0 &&
                 elapsed < twoHours
             ) {
-
                 value.textContent =
                     "MATCH ONGOING";
-
-                element.dataset.state =
-                    "ongoing";
-
                 return;
             }
 
-            // ----------------------------------
-            // Match ended
-            // ----------------------------------
+            if (
+                elapsed >= twoHours &&
+                elapsed <= twoAndHalfHours
+            ) {
+                value.textContent =
+                    "MATCH ENDED";
+                return;
+            }
 
             value.textContent =
                 "MATCH ENDED";
-
-            element.dataset.state =
-                "ended";
         });
 }
 
-// ============================================================
-// START COUNTDOWN TIMER
-// ============================================================
-
-function startCountdownTimer() {
-
-    if (countdownTimer) {
-        return;
-    }
-
-    updateMatchCountdowns();
-
-    countdownTimer =
-        setInterval(
-            updateMatchCountdowns,
-            1000
-        );
-}
-
-// Start once the document is ready.
-startCountdownTimer();
-// ============================================================
-// CREATE PREDICTION CARD
-// ============================================================
+setInterval(updateMatchCountdowns, 1000);
 
 function createPredictionCard(prediction) {
-
+const kickoffTime = getMatchKickoffDate(prediction);
     const status =
-        normalizePredictionStatus(
-            prediction
-        );
+        String(
+            prediction.status ||
+            "pending"
+        ).toLowerCase();
 
     const category =
-        normalizePredictionCategory(
-            prediction
-        );
-
-    const featured =
-        isFeaturedPrediction(
-            prediction
-        );
-
-    const kickoffTime =
-        getMatchKickoffDate(
-            prediction
-        );
+        String(
+            prediction.category ||
+            "regular"
+        ).toLowerCase();
 
     const statusText =
-        formatStatus(
-            status
-        );
+        formatStatus(status);
 
     const categoryText =
         category === "vip"
             ? "VIP"
             : "Regular";
 
-    const homeTeam =
-        prediction.home_team ||
-        "Home Team";
-
-    const awayTeam =
-        prediction.away_team ||
-        "Away Team";
-
-    const homeInitials =
-        getTeamInitials(
-            homeTeam
-        );
-
-    const awayInitials =
-        getTeamInitials(
-            awayTeam
-        );
-
     return `
         <article
-            class="
-                prediction-card
-                ${featured ? "featured-prediction" : ""}
-            "
+        class="prediction-card ${prediction.featured ? "featured-prediction" : ""}"
             data-category="${escapeHtml(category)}"
-            data-status="${escapeHtml(status)}"
-        >
-
-            <!-- ==========================================
-                 CARD TOP
-            =========================================== -->
+            data-status="${escapeHtml(status)}">
 
             <div class="prediction-card-top">
-
-                ${
-                    featured
-                        ? `
-                            <span class="featured-badge">
-                                ★ FEATURED
-                            </span>
-                          `
-                        : ""
-                }
+            ${prediction.featured ? '<span class="featured-badge">★ FEATURED</span>' : ''}
 
                 <span class="prediction-league">
                     ${escapeHtml(
@@ -2160,163 +1262,141 @@ function createPredictionCard(prediction) {
                 </span>
 
                 <span
-                    class="
-                        prediction-category
-                        ${escapeHtml(category)}
-                    "
-                >
-                    ${escapeHtml(categoryText)}
+                    class="prediction-category ${category}">
+                    ${categoryText}
                 </span>
 
             </div>
 
-
-            <!-- ==========================================
-                 MATCH
-            =========================================== -->
-
             <div class="prediction-match">
 
-                <!-- HOME TEAM -->
+                <div class="team home-team" style="display:flex;align-items:center;gap:10px;">
 
-                <div class="team home-team">
+   <span
+    class="team-badge"
+    data-team-name="${escapeHtml(
+        prediction.home_team || "Home Team"
+    )}"
+    style="
+        width:36px;
+        height:36px;
+        min-width:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#111722;
+        border:2px solid #f5b942;
+        overflow:hidden;
+    "
+>
+    ${escapeHtml(
+        (prediction.home_team || "Home Team")
+            .split(/\s+/)
+            .map(word => word[0])
+            .join("")
+            .slice(0,3)
+            .toUpperCase()
+    )}
+</span>
 
-                    <span
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            homeTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            homeInitials
-                        )}
-                    </span>
+    <strong>
+        ${escapeHtml(
+            prediction.home_team ||
+            "Home Team"
+        )}
+    </strong>
 
-                    <strong>
-                        ${escapeHtml(
-                            homeTeam
-                        )}
-                    </strong>
-
-                </div>
-
-
-                <!-- VS -->
+</div>
 
                 <span class="vs">
                     VS
                 </span>
 
+              <div class="team away-team" style="display:flex;align-items:center;gap:10px;">
 
-                <!-- AWAY TEAM -->
+   <span
+    class="team-badge"
+    data-team-name="${escapeHtml(
+        prediction.away_team || "Away Team"
+    )}"
+    style="
+        width:36px;
+        height:36px;
+        min-width:36px;
+        min-height:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#111722;
+        border:2px solid #f5b942;
+        overflow:hidden;
+    "
+>
+    ${escapeHtml(
+        (prediction.away_team || "Away Team")
+            .split(/\s+/)
+            .map(word => word[0])
+            .join("")
+            .slice(0,3)
+            .toUpperCase()
+    )}
+</span>
+    <strong>
+        ${escapeHtml(
+            prediction.away_team ||
+            "Away Team"
+        )}
+    </strong>
 
-                <div class="team away-team">
-
-                    <span
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            awayTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            awayInitials
-                        )}
-                    </span>
-
-                    <strong>
-                        ${escapeHtml(
-                            awayTeam
-                        )}
-                    </strong>
-
-                </div>
-
+</div>
             </div>
-
-
-            <!-- ==========================================
-                 MATCH INFORMATION
-            =========================================== -->
 
             <div class="prediction-info">
 
-                ${
-                    prediction.match_date
-                        ? `
-                            <span>
-                                ${formatMatchDate(
-                                    prediction.match_date
-                                )}
-                            </span>
-                          `
-                        : ""
-                }
-
-                ${
-                    prediction.match_time
-                        ? `
-                            <span>
-                                ${escapeHtml(
-                                    prediction.match_time
-                                )}
-                            </span>
-                          `
-                        : ""
-                }
-
-                ${
-                    kickoffTime
-                        ? `
-                            <div
-                                class="match-countdown"
-                                data-match-date="${escapeHtml(
-                                    prediction.match_date || ""
-                                )}"
-                                data-match-time="${escapeHtml(
-                                    prediction.match_time || ""
-                                )}"
-                            >
-                                <strong class="countdown-value">
-                                    ${formatMatchCountdown(
-                                        Math.max(
-                                            0,
-                                            kickoffTime.getTime() -
-                                            Date.now()
-                                        )
-                                    )}
-                                </strong>
-                            </div>
-                          `
-                        : ""
-                }
-
-            </div>
-
-
-            <!-- ==========================================
-                 PREDICTION
-            =========================================== -->
-
-            <div class="prediction-selection">
-
-                <span class="label">
-                    Prediction
+                <span>
+                    ${formatMatchDate(
+                        prediction.match_date
+                    )}
                 </span>
 
-                <strong>
+                <span>
                     ${escapeHtml(
-                        prediction.prediction ||
-                        "Preview"
+                        prediction.match_time ||
+                        ""
+                    )}
+                </span>
+${
+    kickoffTime
+        ? `
+            <div
+                class="match-countdown"
+                data-match-date="${escapeHtml(prediction.match_date || "")}"
+                data-match-time="${escapeHtml(prediction.match_time || "")}"
+            >
+                <strong class="countdown-value">
+                    ${formatMatchCountdown(
+                        Math.max(
+                            0,
+                            kickoffTime.getTime() - Date.now()
+                        )
                     )}
                 </strong>
+            </div>
+          `
+        : ""
+}
+}
+
+<strong>
+    ${escapeHtml(
+        prediction.prediction ||
+        "Preview"
+    )}
+</strong>
 
             </div>
-
-
-            <!-- ==========================================
-                 ANALYSIS
-            =========================================== -->
-
             ${
                 prediction.analysis
                     ? `
@@ -2333,75 +1413,55 @@ function createPredictionCard(prediction) {
                             </p>
 
                         </div>
-                      `
+                    `
                     : ""
             }
 
-
-            <!-- ==========================================
-                 STATUS
-            =========================================== -->
-
             <div
-                class="
-                    prediction-status
-                    status-${escapeHtml(status)}
-                "
-            >
+                class="prediction-status status-${escapeHtml(status)}">
+
                 ${escapeHtml(statusText)}
+
             </div>
+          
 
         </article>
     `;
 }
 
-// ============================================================
-// GET TEAM INITIALS
-// ============================================================
+async function deleteResult(id, source) {
 
-function getTeamInitials(
-    teamName
-) {
-
-    const name =
-        String(
-            teamName ||
-            ""
-        ).trim();
-
-    if (!name) {
-        return "FC";
+    if (!confirm("Are you sure you want to delete this result?")) {
+        return;
     }
 
-    const words =
-        name
-            .split(/\s+/)
-            .filter(Boolean);
+    try {
 
-    // Two or more words:
-    // use the first letter of each word.
-    if (words.length > 1) {
+        const response = await apiRequest(
+            `/results/${id}?source=${encodeURIComponent(source)}`,
+            {
+                method: "DELETE"
+            }
+        );
 
-        return words
-            .slice(0, 3)
-            .map(
-                word =>
-                    word.charAt(0)
-            )
-            .join("")
-            .toUpperCase();
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(
+                data.message || "Unable to delete result."
+            );
+        }
+
+        await loadResults();
+
+    } catch (error) {
+
+        alert(error.message);
+
     }
-
-    // One word:
-    // use up to three letters.
-    return name
-        .slice(0, 3)
-        .toUpperCase();
 }
-
-// ============================================================
+// ======================================================
 // RESULTS
-// ============================================================
+// ======================================================
 
 function setupResultFilters() {
 
@@ -2411,21 +1471,9 @@ function setupResultFilters() {
         )
         .forEach(button => {
 
-            if (
-                button.dataset.flexHubResultFilterReady ===
-                "true"
-            ) {
-                return;
-            }
-
-            button.dataset.flexHubResultFilterReady =
-                "true";
-
             button.addEventListener(
                 "click",
-                event => {
-
-                    event.preventDefault();
+                () => {
 
                     currentResultFilter =
                         button.dataset.resultFilter ||
@@ -2437,13 +1485,7 @@ function setupResultFilters() {
                 }
             );
         });
-
-    updateResultFilterUI();
 }
-
-// ============================================================
-// UPDATE RESULT FILTER UI
-// ============================================================
 
 function updateResultFilterUI() {
 
@@ -2454,41 +1496,16 @@ function updateResultFilterUI() {
         .forEach(button => {
 
             const value =
-                String(
-                    button.dataset.resultFilter ||
-                    "all"
-                )
-                    .trim()
-                    .toLowerCase();
-
-            const activeValue =
-                String(
-                    currentResultFilter ||
-                    "all"
-                )
-                    .trim()
-                    .toLowerCase();
-
-            const isActive =
-                value === activeValue;
+                button.dataset.resultFilter ||
+                "all";
 
             button.classList.toggle(
                 "active",
-                isActive
-            );
-
-            button.setAttribute(
-                "aria-pressed",
-                isActive
-                    ? "true"
-                    : "false"
+                value.toLowerCase() ===
+                currentResultFilter.toLowerCase()
             );
         });
 }
-
-// ============================================================
-// LOAD RESULTS
-// ============================================================
 
 async function loadResults() {
 
@@ -2503,11 +1520,10 @@ async function loadResults() {
 
     try {
 
-        grid.innerHTML = `
-            <div class="loading-state">
+        grid.innerHTML =
+            `<div class="loading-state">
                 <p>Loading results...</p>
-            </div>
-        `;
+            </div>`;
 
         const data =
             await apiRequest(
@@ -2517,29 +1533,14 @@ async function loadResults() {
         const results =
             Array.isArray(data)
                 ? data
-                : Array.isArray(
-                    data.predictions
-                )
-                    ? data.predictions
-                    : [];
+                : data.predictions || [];
 
-        allResults =
-            results.filter(
-                result =>
-                    result &&
-                    typeof result === "object"
-            );
-
-        // Keep backward compatibility
-        // with the previous global variable.
         window.flexHubResults =
-            allResults;
+            results;
 
         renderResults();
 
         updatePredictionStats();
-
-        scheduleTeamBadgeLoad();
 
     } catch (error) {
 
@@ -2548,53 +1549,16 @@ async function loadResults() {
             error
         );
 
-        allResults = [];
-
-        window.flexHubResults = [];
-
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    Results unavailable
-                </h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Unable to load results."
-                    )}
-                </p>
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    data-retry-results
-                >
-                    Try Again
-                </button>
-
-            </div>
-        `;
-
-        const retryButton =
-            grid.querySelector(
-                "[data-retry-results]"
-            );
-
-        if (retryButton) {
-
-            retryButton.addEventListener(
-                "click",
-                () => loadResults()
-            );
-        }
+        grid.innerHTML =
+            `<div class="empty-state">
+                <h3>Results unavailable</h3>
+                <p>${escapeHtml(
+                    error.message ||
+                    "Unable to load results."
+                )}</p>
+            </div>`;
     }
 }
-
-// ============================================================
-// RENDER RESULTS
-// ============================================================
 
 function renderResults() {
 
@@ -2608,174 +1572,94 @@ function renderResults() {
     }
 
     const results =
-        Array.isArray(allResults)
-            ? allResults
+        Array.isArray(
+            window.flexHubResults
+        )
+            ? window.flexHubResults
             : [];
-
-    // ------------------------------------------
-    // Only completed results
-    // ------------------------------------------
 
     let filtered =
         results.filter(
-            prediction => {
-
-                const status =
-                    normalizePredictionStatus(
-                        prediction
-                    );
-
-                return (
-                    status !== "pending"
-                );
-            }
+            prediction =>
+                prediction.status &&
+                prediction.status !== "pending"
         );
-
-    // ------------------------------------------
-    // Result status filter
-    // ------------------------------------------
 
     if (
         currentResultFilter &&
         currentResultFilter !== "all"
     ) {
 
-        const selectedStatus =
-            String(
-                currentResultFilter
-            )
-                .trim()
-                .toLowerCase();
-
         filtered =
             filtered.filter(
                 prediction =>
-                    normalizePredictionStatus(
-                        prediction
-                    ) === selectedStatus
+                    String(
+                        prediction.status
+                    ).toLowerCase() ===
+                    String(
+                        currentResultFilter
+                    ).toLowerCase()
             );
     }
 
-    // ------------------------------------------
-    // Empty
-    // ------------------------------------------
-
     if (!filtered.length) {
 
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    No results available
-                </h3>
-
+        grid.innerHTML =
+            `<div class="empty-state">
+                <h3>No results available</h3>
                 <p>
                     Completed prediction results
                     will appear here.
                 </p>
-
-            </div>
-        `;
+            </div>`;
 
         return;
     }
 
-    // ------------------------------------------
-    // Render
-    // ------------------------------------------
-
     grid.innerHTML =
         filtered
-            .map(
-                prediction =>
-                    createPredictionCard(
-                        prediction
-                    )
-            )
+        .map(createPredictionCard)
             .join("");
-
-    scheduleTeamBadgeLoad();
-
-    updateMatchCountdowns();
 }
 
-// ============================================================
-// PREDICTION STATISTICS
-// ============================================================
+// ======================================================
+// STATISTICS
+// ======================================================
 
 function updatePredictionStats() {
 
-    const predictions =
-        Array.isArray(
-            allPredictions
-        )
-            ? allPredictions
-            : [];
+    const total = allPredictions.length;
 
-    const total =
-        predictions.length;
+    const regular = allPredictions.filter(
+        prediction => prediction.category !== "vip"
+    ).length;
 
-    const regular =
-        predictions.filter(
-            prediction =>
-                normalizePredictionCategory(
-                    prediction
-                ) !== "vip"
-        ).length;
+    const pending = allPredictions.filter(
+        prediction => prediction.status === "pending"
+    ).length;
 
-    const pending =
-        predictions.filter(
-            prediction =>
-                normalizePredictionStatus(
-                    prediction
-                ) === "pending"
-        ).length;
+    const completed = allPredictions.filter(
+        prediction => prediction.status !== "pending"
+    ).length;
 
-    const completed =
-        predictions.filter(
-            prediction =>
-                normalizePredictionStatus(
-                    prediction
-                ) !== "pending"
-        ).length;
+    const won = allPredictions.filter(
+        prediction => prediction.status === "won"
+    ).length;
 
-    const won =
-        predictions.filter(
-            prediction =>
-                normalizePredictionStatus(
-                    prediction
-                ) === "won"
-        ).length;
+    const lost = allPredictions.filter(
+        prediction => prediction.status === "lost"
+    ).length;
 
-    const lost =
-        predictions.filter(
-            prediction =>
-                normalizePredictionStatus(
-                    prediction
-                ) === "lost"
-        ).length;
+    const voidPredictions = allPredictions.filter(
+        prediction => prediction.status === "void"
+    ).length;
 
-    const voidPredictions =
-        predictions.filter(
-            prediction =>
-                normalizePredictionStatus(
-                    prediction
-                ) === "void"
-        ).length;
+    const decided = won + lost;
 
-    const decided =
-        won + lost;
+    const winRate = decided > 0
+        ? Math.round((won / decided) * 100)
+        : 0;
 
-    const winRate =
-        decided > 0
-            ? Math.round(
-                (won / decided) * 100
-            )
-            : 0;
-
-    // ------------------------------------------
-    // Update dashboard numbers
-    // ------------------------------------------
 
     setText(
         "#totalPredictions",
@@ -2817,12 +1701,9 @@ function updatePredictionStats() {
         `${winRate}%`
     );
 
+
     updateVipPredictionCount();
 }
-
-// ============================================================
-// VIP PREDICTION COUNT
-// ============================================================
 
 async function updateVipPredictionCount() {
 
@@ -2852,8 +1733,6 @@ async function updateVipPredictionCount() {
             await fetch(
                 `${API_BASE_URL}/vip/predictions`,
                 {
-                    method: "GET",
-
                     headers: {
                         Authorization:
                             `Bearer ${vipToken}`
@@ -2862,20 +1741,6 @@ async function updateVipPredictionCount() {
             );
 
         if (!response.ok) {
-
-            // A VIP token can expire.
-            // Remove only the VIP token,
-            // not the normal user session.
-            if (
-                response.status === 401
-            ) {
-
-                localStorage.removeItem(
-                    STORAGE_KEYS.vipToken
-                );
-
-                updateStoredVipIndicator();
-            }
 
             element.textContent =
                 "0";
@@ -2889,11 +1754,7 @@ async function updateVipPredictionCount() {
         const predictions =
             Array.isArray(data)
                 ? data
-                : Array.isArray(
-                    data.predictions
-                )
-                    ? data.predictions
-                    : [];
+                : data.predictions || [];
 
         element.textContent =
             predictions.length;
@@ -2909,16 +1770,17 @@ async function updateVipPredictionCount() {
             "0";
     }
 }
-// ============================================================
+
+// ======================================================
 // VIP PAGE
-// ============================================================
+// ======================================================
 
 async function setupVipPage() {
 
     const userToken =
         getUserToken();
 
-    // VIP still requires a normal FLEX HUB account.
+    // VIP page requires an account
     if (!userToken) {
 
         window.location.href =
@@ -2927,6 +1789,7 @@ async function setupVipPage() {
         return;
     }
 
+    // Verify normal user session
     const sessionValid =
         await verifyUserForVipPage();
 
@@ -2938,15 +1801,11 @@ async function setupVipPage() {
     setupVipLogout();
 
     await checkVipStatus();
-
-    // Notification center should also work
-    // on the VIP page for logged-in users.
-    startNotificationCenter();
 }
 
-// ============================================================
+// ======================================================
 // VERIFY USER FOR VIP PAGE
-// ============================================================
+// ======================================================
 
 async function verifyUserForVipPage() {
 
@@ -2988,9 +1847,9 @@ async function verifyUserForVipPage() {
     }
 }
 
-// ============================================================
+// ======================================================
 // VIP ACCESS FORM
-// ============================================================
+// ======================================================
 
 function setupVipAccessForm() {
 
@@ -3003,14 +1862,16 @@ function setupVipAccessForm() {
         return;
     }
 
+    // Prevent duplicate listeners
     if (
-        form.dataset.flexHubVipReady ===
+        form.dataset.listenerAttached ===
         "true"
     ) {
+
         return;
     }
 
-    form.dataset.flexHubVipReady =
+    form.dataset.listenerAttached =
         "true";
 
     form.addEventListener(
@@ -3019,21 +1880,15 @@ function setupVipAccessForm() {
     );
 }
 
-// ============================================================
+// ======================================================
 // ACTIVATE VIP ACCESS
-// ============================================================
+// ======================================================
 
 async function handleVipAccess(event) {
 
     event.preventDefault();
 
-    const form =
-        event.currentTarget;
-
     const codeInput =
-        form.querySelector(
-            "#vipAccessCode"
-        ) ||
         document.querySelector(
             "#vipAccessCode"
         );
@@ -3041,12 +1896,10 @@ async function handleVipAccess(event) {
     const message =
         document.querySelector(
             "#vipMessage"
-        ) ||
-        findFormMessage(form);
+        );
 
     const code =
-        codeInput?.value
-            ?.trim() || "";
+        codeInput?.value.trim();
 
     if (!code) {
 
@@ -3073,16 +1926,10 @@ async function handleVipAccess(event) {
         return;
     }
 
-    const submitButton =
-        event.submitter ||
-        form.querySelector(
-            'button[type="submit"]'
-        );
-
     try {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             true,
             "Activating..."
         );
@@ -3123,7 +1970,6 @@ async function handleVipAccess(event) {
 
             throw new Error(
                 data.message ||
-                data.error ||
                 "Unable to activate VIP access."
             );
         }
@@ -3135,30 +1981,22 @@ async function handleVipAccess(event) {
             );
         }
 
-        // ------------------------------------------
-        // Store VIP session
-        // ------------------------------------------
-
         localStorage.setItem(
             STORAGE_KEYS.vipToken,
             data.token
         );
 
         if (codeInput) {
-            codeInput.value = "";
-        }
 
-        updateStoredVipIndicator();
+            codeInput.value =
+                "";
+        }
 
         showElementMessage(
             message,
             "VIP access activated successfully!",
             "success"
         );
-
-        // ------------------------------------------
-        // Immediately refresh VIP information
-        // ------------------------------------------
 
         await checkVipStatus();
 
@@ -3181,15 +2019,15 @@ async function handleVipAccess(event) {
     } finally {
 
         setButtonLoading(
-            submitButton,
+            event.submitter,
             false
         );
     }
 }
 
-// ============================================================
+// ======================================================
 // CHECK VIP STATUS
-// ============================================================
+// ======================================================
 
 async function checkVipStatus() {
 
@@ -3200,7 +2038,7 @@ async function checkVipStatus() {
 
         updateVipStatusUI(null);
 
-        return false;
+        return;
     }
 
     try {
@@ -3237,97 +2075,24 @@ async function checkVipStatus() {
 
             console.error(
                 "VIP status request failed:",
-                data.message ||
-                data.error
+                data.message
             );
 
             updateVipStatusUI(null);
 
-            return false;
+            return;
         }
 
         updateVipStatusUI(
             data
         );
 
-        // ------------------------------------------
-        // Active VIP
-        // ------------------------------------------
+       if (data.active === true) {
 
-        if (data.active === true) {
+    await loadVipPredictions();
+    await loadVipBettingCodes();       
 
-            // If the VIP token is missing, the status
-            // endpoint may still confirm the account.
-            // Do not erase the normal user session.
-            const vipToken =
-                getVipToken();
-
-            if (vipToken) {
-
-                await Promise.allSettled([
-                    loadVipPredictions(),
-                    loadVipBettingCodes()
-                ]);
-
-            }
-
-            updateStoredVipIndicator();
-
-            return true;
-        }
-
-        // ------------------------------------------
-        // No active VIP
-        // ------------------------------------------
-
-        const vipGrid =
-            document.querySelector(
-                "#vipPredictionsGrid"
-            );
-
-        if (vipGrid) {
-
-            vipGrid.innerHTML = `
-                <div class="empty-state">
-
-                    <h3>
-                        VIP access required
-                    </h3>
-
-                    <p>
-                        Activate your VIP subscription
-                        to view VIP predictions.
-                    </p>
-
-                </div>
-            `;
-        }
-
-        const vipCodes =
-            document.querySelector(
-                "#vipBettingCodesGrid"
-            );
-
-        if (vipCodes) {
-
-            vipCodes.innerHTML = `
-                <div class="empty-state">
-
-                    <h3>
-                        VIP access required
-                    </h3>
-
-                    <p>
-                        Activate your VIP subscription
-                        to view VIP betting codes.
-                    </p>
-
-                </div>
-            `;
-        }
-
-        return false;
-
+}
     } catch (error) {
 
         console.error(
@@ -3336,14 +2101,12 @@ async function checkVipStatus() {
         );
 
         updateVipStatusUI(null);
-
-        return false;
     }
 }
 
-// ============================================================
+// ======================================================
 // VIP STATUS UI
-// ============================================================
+// ======================================================
 
 function updateVipStatusUI(data) {
 
@@ -3362,17 +2125,7 @@ function updateVipStatusUI(data) {
             "#vipExpiry"
         );
 
-    const active =
-        Boolean(
-            data &&
-            data.active === true
-        );
-
-    // ------------------------------------------
-    // LOCKED
-    // ------------------------------------------
-
-    if (!active) {
+    if (!data || !data.active) {
 
         if (statusElement) {
 
@@ -3400,14 +2153,8 @@ function updateVipStatusUI(data) {
                 "—";
         }
 
-        updateStoredVipIndicator();
-
         return;
     }
-
-    // ------------------------------------------
-    // ACTIVE
-    // ------------------------------------------
 
     if (statusElement) {
 
@@ -3438,13 +2185,11 @@ function updateVipStatusUI(data) {
                 data.expiresAt
             );
     }
-
-    updateStoredVipIndicator();
 }
 
-// ============================================================
+// ======================================================
 // LOAD VIP PREDICTIONS
-// ============================================================
+// ======================================================
 
 async function loadVipPredictions() {
 
@@ -3462,31 +2207,24 @@ async function loadVipPredictions() {
 
     if (!vipToken) {
 
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    VIP access required
-                </h3>
-
+        grid.innerHTML =
+            `<div class="empty-state">
+                <h3>VIP access required</h3>
                 <p>
                     Activate your VIP subscription
                     to view this section.
                 </p>
-
-            </div>
-        `;
+            </div>`;
 
         return;
     }
 
     try {
 
-        grid.innerHTML = `
-            <div class="loading-state">
+        grid.innerHTML =
+            `<div class="loading-state">
                 <p>Loading VIP content...</p>
-            </div>
-        `;
+            </div>`;
 
         const response =
             await fetch(
@@ -3516,10 +2254,6 @@ async function loadVipPredictions() {
             data = {};
         }
 
-        // ------------------------------------------
-        // Expired VIP token
-        // ------------------------------------------
-
         if (!response.ok) {
 
             if (
@@ -3529,13 +2263,10 @@ async function loadVipPredictions() {
                 localStorage.removeItem(
                     STORAGE_KEYS.vipToken
                 );
-
-                updateStoredVipIndicator();
             }
 
             throw new Error(
                 data.message ||
-                data.error ||
                 "Unable to load VIP content."
             );
         }
@@ -3543,44 +2274,26 @@ async function loadVipPredictions() {
         const predictions =
             Array.isArray(data)
                 ? data
-                : Array.isArray(
-                    data.predictions
-                )
-                    ? data.predictions
-                    : [];
+                : data.predictions || [];
 
         if (!predictions.length) {
 
-            grid.innerHTML = `
-                <div class="empty-state">
-
-                    <h3>
-                        No VIP predictions yet
-                    </h3>
-
+            grid.innerHTML =
+                `<div class="empty-state">
+                    <h3>No VIP predictions yet</h3>
                     <p>
                         New VIP match previews
                         will appear here.
                     </p>
-
-                </div>
-            `;
+                </div>`;
 
             return;
         }
 
         grid.innerHTML =
             predictions
-                .map(
-                    prediction =>
-                        createPredictionCard(
-                            prediction
-                        )
-                )
+                .map(createPredictionCard)
                 .join("");
-
-        scheduleTeamBadgeLoad();
-        updateMatchCountdowns();
 
     } catch (error) {
 
@@ -3589,49 +2302,22 @@ async function loadVipPredictions() {
             error
         );
 
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    VIP content unavailable
-                </h3>
-
+        grid.innerHTML =
+            `<div class="empty-state">
+                <h3>VIP content unavailable</h3>
                 <p>
                     ${escapeHtml(
                         error.message ||
                         "Unable to load VIP predictions."
                     )}
                 </p>
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    data-retry-vip
-                >
-                    Try Again
-                </button>
-
-            </div>
-        `;
-
-        const retryButton =
-            grid.querySelector(
-                "[data-retry-vip]"
-            );
-
-        if (retryButton) {
-
-            retryButton.addEventListener(
-                "click",
-                () => loadVipPredictions()
-            );
-        }
+            </div>`;
     }
 }
 
-// ============================================================
+// ======================================================
 // VIP LOGOUT
-// ============================================================
+// ======================================================
 
 function setupVipLogout() {
 
@@ -3643,13 +2329,14 @@ function setupVipLogout() {
     buttons.forEach(button => {
 
         if (
-            button.dataset.flexHubVipLogoutReady ===
+            button.dataset.vipLogoutAttached ===
             "true"
         ) {
+
             return;
         }
 
-        button.dataset.flexHubVipLogoutReady =
+        button.dataset.vipLogoutAttached =
             "true";
 
         button.addEventListener(
@@ -3662,8 +2349,6 @@ function setupVipLogout() {
                     STORAGE_KEYS.vipToken
                 );
 
-                updateStoredVipIndicator();
-
                 window.location.href =
                     "index.html";
             }
@@ -3671,9 +2356,9 @@ function setupVipLogout() {
     });
 }
 
-// ============================================================
+// ======================================================
 // MAIN SIGN OUT
-// ============================================================
+// ======================================================
 
 function setupSignOut() {
 
@@ -3685,33 +2370,33 @@ function setupSignOut() {
     buttons.forEach(button => {
 
         if (
-            button.dataset.flexHubSignOutReady ===
+            button.dataset.signOutAttached ===
             "true"
         ) {
+
             return;
         }
 
-        button.dataset.flexHubSignOutReady =
+        button.dataset.signOutAttached =
             "true";
 
         button.addEventListener(
             "click",
-            event => {
+           async event => {
 
                 event.preventDefault();
 
-                clearUserSession();
+clearUserSession();
 
-                window.location.href =
-                    "index.html";
+window.location.href = "index.html";
             }
         );
     });
 }
 
-// ============================================================
+// ======================================================
 // MOBILE MENU
-// ============================================================
+// ======================================================
 
 function setupMobileMenu() {
 
@@ -3729,48 +2414,31 @@ function setupMobileMenu() {
         return;
     }
 
-    if (
-        menuButton.dataset.flexHubMenuReady ===
-        "true"
-    ) {
-        return;
-    }
-
-    menuButton.dataset.flexHubMenuReady =
-        "true";
-
-    // ------------------------------------------
-    // Toggle
-    // ------------------------------------------
-
     menuButton.addEventListener(
         "click",
-        event => {
+        () => {
 
-            event.preventDefault();
-
-            const isOpen =
-                nav.classList.toggle(
-                    "open"
-                );
+            nav.classList.toggle(
+                "open"
+            );
 
             menuButton.classList.toggle(
-                "active",
-                isOpen
+                "active"
             );
+
+            const expanded =
+                nav.classList.contains(
+                    "active"
+                );
 
             menuButton.setAttribute(
                 "aria-expanded",
-                isOpen
+                expanded
                     ? "true"
                     : "false"
             );
         }
     );
-
-    // ------------------------------------------
-    // Close after navigation
-    // ------------------------------------------
 
     nav
         .querySelectorAll("a")
@@ -3786,10 +2454,6 @@ function setupMobileMenu() {
         });
 }
 
-// ============================================================
-// CLOSE MOBILE MENU
-// ============================================================
-
 function closeMobileMenu() {
 
     const menuButton =
@@ -3803,10 +2467,6 @@ function closeMobileMenu() {
         );
 
     if (nav) {
-
-        nav.classList.remove(
-            "open"
-        );
 
         nav.classList.remove(
             "active"
@@ -3826,16 +2486,15 @@ function closeMobileMenu() {
     }
 }
 
-// ============================================================
+// ======================================================
 // WHATSAPP LINKS
-// ============================================================
+// ======================================================
 
 function setupWhatsAppLinks() {
 
     document
         .querySelectorAll(
-            'a[href*="wa.me"], ' +
-            'a[href*="whatsapp.com"]'
+            'a[href*="wa.me"]'
         )
         .forEach(link => {
 
@@ -3851,9 +2510,9 @@ function setupWhatsAppLinks() {
         });
 }
 
-// ============================================================
+// ======================================================
 // FOOTER YEAR
-// ============================================================
+// ======================================================
 
 function setupFooterYear() {
 
@@ -3870,56 +2529,45 @@ function setupFooterYear() {
                 year;
         });
 }
-// ============================================================
+
+// ======================================================
 // FORM VALUE HELPER
-// ============================================================
+// ======================================================
 
-function getFormValue(
-    form,
-    names
-) {
+function getFormValue(form, names) {
 
-    if (!form || !Array.isArray(names)) {
+    if (!form) {
         return "";
     }
 
     for (const name of names) {
 
-        if (!name) {
-            continue;
-        }
-
-        const selector =
-            `[name="${CSS.escape(name)}"]`;
-
         const element =
             form.querySelector(
-                selector
+                `[name="${name}"]`
             ) ||
             form.querySelector(
-                `#${CSS.escape(name)}`
+                `#${name}`
             );
 
-        if (!element) {
-            continue;
-        }
+        if (element) {
 
-        const value =
-            String(
-                element.value || ""
-            ).trim();
+            const value =
+                element.value?.trim();
 
-        if (value) {
-            return value;
+            if (value) {
+
+                return value;
+            }
         }
     }
 
     return "";
 }
 
-// ============================================================
+// ======================================================
 // FORM MESSAGE
-// ============================================================
+// ======================================================
 
 function findFormMessage(form) {
 
@@ -3936,16 +2584,13 @@ function findFormMessage(form) {
         ) ||
         form.querySelector(
             ".message"
-        ) ||
-        form.querySelector(
-            "[role='alert']"
         )
     );
 }
 
-// ============================================================
+// ======================================================
 // MESSAGE DISPLAY
-// ============================================================
+// ======================================================
 
 function showElementMessage(
     element,
@@ -3963,8 +2608,7 @@ function showElementMessage(
     element.classList.remove(
         "success",
         "error",
-        "info",
-        "warning"
+        "info"
     );
 
     element.classList.add(
@@ -3975,16 +2619,11 @@ function showElementMessage(
         message
             ? ""
             : "none";
-
-    element.setAttribute(
-        "role",
-        "alert"
-    );
 }
 
-// ============================================================
+// ======================================================
 // BUTTON LOADING
-// ============================================================
+// ======================================================
 
 function setButtonLoading(
     button,
@@ -4003,36 +2642,25 @@ function setButtonLoading(
         ) {
 
             button.dataset.originalText =
-                button.innerHTML;
+                button.textContent;
         }
 
         button.disabled =
             true;
 
-        button.setAttribute(
-            "aria-busy",
-            "true"
-        );
-
-        button.innerHTML =
-            escapeHtml(
-                loadingText
-            );
+        button.textContent =
+            loadingText;
 
     } else {
 
         button.disabled =
             false;
 
-        button.removeAttribute(
-            "aria-busy"
-        );
-
         if (
             button.dataset.originalText
         ) {
 
-            button.innerHTML =
+            button.textContent =
                 button.dataset.originalText;
 
             delete button.dataset.originalText;
@@ -4040,14 +2668,11 @@ function setButtonLoading(
     }
 }
 
-// ============================================================
+// ======================================================
 // SET TEXT
-// ============================================================
+// ======================================================
 
-function setText(
-    selector,
-    value
-) {
+function setText(selector, value) {
 
     const element =
         document.querySelector(
@@ -4061,80 +2686,55 @@ function setText(
     }
 }
 
-// ============================================================
+// ======================================================
 // STATUS FORMAT
-// ============================================================
+// ======================================================
 
-function formatStatus(
-    status
-) {
-
-    const normalized =
-        String(
-            status || "pending"
-        )
-            .trim()
-            .toLowerCase();
+function formatStatus(status) {
 
     const statuses = {
         pending: "Pending",
-        won: "Match Won",
-        lost: "Match Lost",
+        won: "match won",
+        lost: "match lost",
         void: "Void"
     };
 
     return (
-        statuses[normalized] ||
-        capitalize(
-            normalized
-        )
+        statuses[status] ||
+        capitalize(status)
     );
 }
 
-// ============================================================
+// ======================================================
 // PLAN FORMAT
-// ============================================================
+// ======================================================
 
-function formatPlan(
-    plan
-) {
-
-    const normalized =
-        String(
-            plan || ""
-        )
-            .trim()
-            .toLowerCase();
+function formatPlan(plan) {
 
     const plans = {
         "1_week": "1 Week VIP",
         "2_weeks": "2 Weeks VIP",
-        "1_month": "1 Month VIP",
-        "3_months": "3 Months VIP",
-        "6_months": "6 Months VIP",
-        "1_year": "1 Year VIP"
+        "1_month": "1 Month VIP"
     };
 
     return (
-        plans[normalized] ||
+        plans[plan] ||
         capitalize(
-            normalized
-                .replaceAll(
-                    "_",
-                    " "
-                )
-        ) ||
-        "VIP"
+            String(
+                plan || "VIP"
+            ).replaceAll(
+                "_",
+                " "
+            )
+        )
     );
 }
 
-// ============================================================
+// ======================================================
 // DATE FORMAT
-// ============================================================
+// ======================================================
 
-function formatMatchDate(
-    date
-) {
+function formatMatchDate(date) {
 
     if (!date) {
         return "";
@@ -4153,9 +2753,7 @@ function formatMatchDate(
             )
         ) {
 
-            return escapeHtml(
-                date
-            );
+            return escapeHtml(date);
         }
 
         return parsed.toLocaleDateString(
@@ -4169,19 +2767,15 @@ function formatMatchDate(
 
     } catch (error) {
 
-        return escapeHtml(
-            date
-        );
+        return escapeHtml(date);
     }
 }
 
-// ============================================================
+// ======================================================
 // VIP EXPIRY FORMAT
-// ============================================================
+// ======================================================
 
-function formatExpiry(
-    date
-) {
+function formatExpiry(date) {
 
     if (!date) {
         return "—";
@@ -4218,39 +2812,36 @@ function formatExpiry(
     }
 }
 
-// ============================================================
+// ======================================================
 // CAPITALIZE
-// ============================================================
+// ======================================================
 
-function capitalize(
-    value
-) {
+function capitalize(value) {
 
     if (!value) {
         return "";
     }
 
-    const text =
-        String(value);
-
     return (
-        text.charAt(0).toUpperCase() +
-        text.slice(1)
+        String(value)
+            .charAt(0)
+            .toUpperCase() +
+        String(value)
+            .slice(1)
     );
 }
 
-// ============================================================
+// ======================================================
 // HTML ESCAPE
-// ============================================================
+// ======================================================
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     if (
         value === null ||
         value === undefined
     ) {
+
         return "";
     }
 
@@ -4276,389 +2867,238 @@ function escapeHtml(
             "&#039;"
         );
 }
-
-// ============================================================
-// RETRY HELPER
-// ============================================================
-
-function createRetryButton(
-    text,
-    handler
-) {
-
-    const button =
-        document.createElement(
-            "button"
-        );
-
-    button.type =
-        "button";
-
-    button.className =
-        "primary-btn";
-
-    button.textContent =
-        text || "Try Again";
-
-    button.addEventListener(
-        "click",
-        handler
-    );
-
-    return button;
-}
-
-// ============================================================
 // FORGOT PASSWORD
-// ============================================================
+// =====================================================
 
-function startForgotPassword() {
+(function setupForgotPassword() {
+  function startForgotPassword() {
+    const existing = document.getElementById("forgotPasswordOverlay");
+    if (existing) existing.remove();
 
-    const existing =
-        document.getElementById(
-            "forgotPasswordOverlay"
-        );
-
-    if (existing) {
-        existing.remove();
-    }
-
-    const overlay =
-        document.createElement(
-            "div"
-        );
-
-    overlay.id =
-        "forgotPasswordOverlay";
-
-    overlay.className =
-        "forgot-password-overlay";
+    const overlay = document.createElement("div");
+    overlay.id = "forgotPasswordOverlay";
 
     overlay.innerHTML = `
-        <div class="forgot-password-backdrop"></div>
+      <div style="
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.75);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:99999;
+        padding:20px;
+      ">
+        <div style="
+          width:100%;
+          max-width:420px;
+          background:#fff;
+          border-radius:12px;
+          padding:25px;
+          box-shadow:0 20px 60px rgba(0,0,0,.35);
+        ">
+          <h2 style="margin:0 0 10px;color:#111;">
+            Forgot Password
+          </h2>
 
-        <div
-            class="forgot-password-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="forgotPasswordTitle"
-        >
+          <p style="margin:0 0 20px;color:#555;">
+            Enter the email address you used to create your FLEX HUB PREDICTIONS account.
+          </p>
 
-            <button
-                type="button"
-                class="forgot-password-close"
-                id="closeForgotPasswordButton"
-                aria-label="Close"
-            >
-                ×
-            </button>
+          <input
+            id="forgotPasswordEmail"
+            type="email"
+            placeholder="Enter your email"
+            autocomplete="email"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:12px;
+              border:1px solid #ccc;
+              border-radius:7px;
+              margin-bottom:12px;
+              font-size:15px;
+            "
+          >
 
-            <div class="forgot-password-icon">
-                🔐
-            </div>
+          <div
+            id="forgotPasswordMessage"
+            style="
+              display:none;
+              margin-bottom:12px;
+              padding:10px;
+              border-radius:7px;
+              font-size:14px;
+            "
+          ></div>
 
-            <h2 id="forgotPasswordTitle">
-                Forgot Password?
-            </h2>
+          <button
+            id="sendResetEmailButton"
+            type="button"
+            style="
+              width:100%;
+              padding:12px;
+              border:0;
+              border-radius:7px;
+              background:#111;
+              color:#fff;
+              font-size:15px;
+              cursor:pointer;
+              margin-bottom:10px;
+            "
+          >
+            Send Reset Link
+          </button>
 
-            <p>
-                Enter the email address you used
-                to create your FLEX HUB PREDICTIONS
-                account.
-            </p>
-
-            <input
-                id="forgotPasswordEmail"
-                type="email"
-                placeholder="Enter your email"
-                autocomplete="email"
-            >
-
-            <div
-                id="forgotPasswordMessage"
-                class="forgot-password-message"
-                style="display:none;"
-            ></div>
-
-            <button
-                id="sendResetEmailButton"
-                type="button"
-                class="primary-btn"
-            >
-                Send Reset Link
-            </button>
-
+          <button
+            id="closeForgotPasswordButton"
+            type="button"
+            style="
+              width:100%;
+              padding:10px;
+              border:0;
+              background:transparent;
+              color:#555;
+              cursor:pointer;
+              font-size:14px;
+            "
+          >
+            Back to Login
+          </button>
         </div>
+      </div>
     `;
 
-    document.body.appendChild(
-        overlay
-    );
+    document.body.appendChild(overlay);
 
     const emailInput =
-        document.getElementById(
-            "forgotPasswordEmail"
-        );
+      document.getElementById("forgotPasswordEmail");
 
     const sendButton =
-        document.getElementById(
-            "sendResetEmailButton"
-        );
+      document.getElementById("sendResetEmailButton");
 
     const closeButton =
-        document.getElementById(
-            "closeForgotPasswordButton"
-        );
+      document.getElementById("closeForgotPasswordButton");
 
     const messageBox =
-        document.getElementById(
-            "forgotPasswordMessage"
+      document.getElementById("forgotPasswordMessage");
+
+    closeButton.addEventListener("click", () => {
+      overlay.remove();
+    });
+
+    emailInput.focus();
+
+    sendButton.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#fff3cd";
+        messageBox.style.color = "#664d03";
+        messageBox.textContent = "Please enter your email address.";
+        return;
+      }
+
+      sendButton.disabled = true;
+      sendButton.textContent = "Sending...";
+
+      messageBox.style.display = "none";
+
+      try {
+        const response = await fetch(
+          "https://flex-hub-prediction.onrender.com/api/forgot-password",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email })
+          }
         );
 
-    // ------------------------------------------
-    // Close
-    // ------------------------------------------
+        const data = await response.json();
 
-    const closeOverlay = () => {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#d1e7dd";
+        messageBox.style.color = "#0f5132";
+        messageBox.textContent =
+          data.message ||
+          "If an account with that email exists, a password reset link has been sent.";
 
-        overlay.remove();
-    };
+        sendButton.textContent = "Email Sent";
+      } catch (error) {
+        console.error("Forgot password request failed:", error);
 
-    closeButton?.addEventListener(
-        "click",
-        closeOverlay
-    );
+        messageBox.style.display = "block";
+        messageBox.style.background = "#f8d7da";
+        messageBox.style.color = "#842029";
+        messageBox.textContent =
+          "Unable to send the reset request right now. Please try again.";
 
-    overlay
-        .querySelector(
-            ".forgot-password-backdrop"
-        )
-        ?.addEventListener(
-            "click",
-            closeOverlay
-        );
+        sendButton.disabled = false;
+        sendButton.textContent = "Send Reset Link";
+      }
+    });
+  }
 
-    // ------------------------------------------
-    // Escape key
-    // ------------------------------------------
+  function connectForgotPasswordButton() {
+    const button =
+      document.getElementById("forgotPasswordButton");
 
-    const escapeHandler =
-        event => {
+    if (!button) return false;
 
-            if (
-                event.key === "Escape"
-            ) {
-
-                closeOverlay();
-
-                document.removeEventListener(
-                    "keydown",
-                    escapeHandler
-                );
-            }
-        };
-
-    document.addEventListener(
-        "keydown",
-        escapeHandler
-    );
-
-    // ------------------------------------------
-    // Focus
-    // ------------------------------------------
-
-    setTimeout(
-        () => emailInput?.focus(),
-        50
-    );
-
-    // ------------------------------------------
-    // Send reset email
-    // ------------------------------------------
-
-    sendButton?.addEventListener(
-        "click",
-        async () => {
-
-            const email =
-                emailInput?.value
-                    ?.trim() || "";
-
-            if (!email) {
-
-                showElementMessage(
-                    messageBox,
-                    "Please enter your email address.",
-                    "warning"
-                );
-
-                return;
-            }
-
-            setButtonLoading(
-                sendButton,
-                true,
-                "Sending..."
-            );
-
-            showElementMessage(
-                messageBox,
-                "",
-                "info"
-            );
-
-            try {
-
-                const data =
-                    await apiRequest(
-                        "/forgot-password",
-                        {
-                            method: "POST",
-
-                            // This endpoint intentionally
-                            // does not need the user token.
-                            headers: {},
-
-                            body: JSON.stringify({
-                                email
-                            })
-                        }
-                    );
-
-                showElementMessage(
-                    messageBox,
-                    data.message ||
-                    "If an account with that email exists, a password reset link has been sent.",
-                    "success"
-                );
-
-                sendButton.disabled =
-                    true;
-
-                sendButton.textContent =
-                    "Email Sent";
-
-            } catch (error) {
-
-                console.error(
-                    "Forgot password request failed:",
-                    error
-                );
-
-                showElementMessage(
-                    messageBox,
-                    error.message ||
-                    "Unable to send the reset request right now. Please try again.",
-                    "error"
-                );
-
-                setButtonLoading(
-                    sendButton,
-                    false
-                );
-            }
-        }
-    );
-}
-
-// ============================================================
-// CONNECT FORGOT PASSWORD BUTTON
-// ============================================================
-
-function connectForgotPasswordButton() {
-
-    const buttons =
-        document.querySelectorAll(
-            "#forgotPasswordButton, " +
-            "[data-forgot-password]"
-        );
-
-    if (!buttons.length) {
-        return false;
+    if (button.dataset.forgotPasswordReady === "true") {
+      return true;
     }
 
-    buttons.forEach(button => {
+    button.dataset.forgotPasswordReady = "true";
 
-        if (
-            button.dataset.flexHubForgotReady ===
-            "true"
-        ) {
-            return;
-        }
-
-        button.dataset.flexHubForgotReady =
-            "true";
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                startForgotPassword();
-            }
-        );
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      startForgotPassword();
     });
 
     return true;
-}
+  }
 
-// Connect immediately if the page
-// has already finished loading.
-if (
-    document.readyState !==
-    "loading"
-) {
-
-    connectForgotPasswordButton();
-
-} else {
-
+  if (document.readyState === "loading") {
     document.addEventListener(
-        "DOMContentLoaded",
-        connectForgotPasswordButton
+      "DOMContentLoaded",
+      connectForgotPasswordButton
     );
-}
+  } else {
+    connectForgotPasswordButton();
+  }
 
-// ============================================================
-// FORGOT PASSWORD FALLBACK FINDER
-// ============================================================
+  // The login gate can be rendered dynamically, so keep checking
+  // briefly until the button exists.
+  let attempts = 0;
 
-(function watchForForgotPasswordButton() {
+  const finder = setInterval(() => {
+    attempts++;
 
-    let attempts = 0;
-
-    const finder =
-        setInterval(
-            () => {
-
-                attempts++;
-
-                if (
-                    connectForgotPasswordButton() ||
-                    attempts >= 30
-                ) {
-
-                    clearInterval(
-                        finder
-                    );
-                }
-
-            },
-            500
-        );
-
+    if (connectForgotPasswordButton() || attempts >= 30) {
+      clearInterval(finder);
+    }
+  }, 500);
 })();
+
+// =====================================================
+// END OF FORGOT PASSWORD
+// =====================================================
+
+// ======================================================
 // ============================================================
-// REGULAR BETTING CODES
+// BETTING CODES
+// ============================================================
+// ============================================================
+// BETTING CODES
 // ============================================================
 
 async function loadRegularBettingCodes() {
 
-    const container =
-        document.getElementById(
-            "bettingCodesGrid"
-        );
+    const container = document.getElementById("bettingCodesGrid");
 
     if (!container) {
         return;
@@ -4666,52 +3106,85 @@ async function loadRegularBettingCodes() {
 
     try {
 
-        container.innerHTML = `
-            <div class="loading-state">
-                <p>Loading betting codes...</p>
-            </div>
-        `;
+        const response = await fetch(
+            "https://flex-hub-prediction.onrender.com/api/betting-codes"
+        );
 
-        const data =
-            await apiRequest(
-                "/betting-codes"
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to load betting codes."
             );
+        }
 
-        const bettingCodes =
-            Array.isArray(
-                data.bettingCodes
-            )
-                ? data.bettingCodes
-                : [];
+        const bettingCodes = data.bettingCodes || [];
 
         if (!bettingCodes.length) {
 
             container.innerHTML = `
-                <div class="empty-state">
-                    <h3>
-                        No betting codes available
-                    </h3>
-
-                    <p>
-                        New betting codes will
-                        appear here.
-                    </p>
+                <div class="loading-state">
+                    No betting codes available.
                 </div>
             `;
 
             return;
         }
 
-        container.innerHTML =
-            bettingCodes
-                .map(
-                    code =>
-                        createBettingCodeCard(
-                            code,
-                            false
-                        )
-                )
-                .join("");
+        container.innerHTML = bettingCodes.map(code => `
+
+            <div class="betting-code-card">
+
+                <div class="prediction-card-header">
+
+                    <strong>
+                        ${escapeHtml(code.bookmaker)}
+                    </strong>
+
+                </div>
+
+                <div class="prediction-card-body">
+
+                    <div>
+                        <strong>BETTING CODE</strong>
+                    </div>
+
+                    <div style="
+                        font-size:24px;
+                        font-weight:800;
+                        margin:10px 0;
+                    ">
+                        ${escapeHtml(code.code)}
+                    </div>
+
+                    ${
+                        code.description
+                            ? `
+                                <div style="margin-bottom:15px;">
+                                    ${escapeHtml(code.description)}
+                                </div>
+                              `
+                            : ""
+                    }
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        style="
+                            margin-top:5px;
+                            cursor:pointer;
+                        "
+                        data-betting-code="${escapeHtml(code.code)}"
+                        onclick="copyBettingCode(this)"
+                    >
+                       📋 COPY CODE
+                    </button>
+
+                </div>
+
+            </div>
+
+        `).join("");
 
     } catch (error) {
 
@@ -4721,204 +3194,37 @@ async function loadRegularBettingCodes() {
         );
 
         container.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    Betting codes unavailable
-                </h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Unable to load betting codes."
-                    )}
-                </p>
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    data-retry-betting-codes
-                >
-                    Try Again
-                </button>
-
+            <div class="loading-state">
+                Unable to load betting codes.
             </div>
         `;
-
-        const retryButton =
-            container.querySelector(
-                "[data-retry-betting-codes]"
-            );
-
-        retryButton?.addEventListener(
-            "click",
-            () =>
-                loadRegularBettingCodes()
-        );
     }
 }
 
-// ============================================================
-// CREATE BETTING CODE CARD
-// ============================================================
-
-function createBettingCodeCard(
-    code,
-    vip = false
-) {
-
-    const bookmaker =
-        code?.bookmaker ||
-        "Bookmaker";
-
-    const bettingCode =
-        code?.code ||
-        "";
-
-    const description =
-        code?.description ||
-        "";
-
-    return `
-        <article class="
-            betting-code-card
-            ${vip ? "vip-betting-code" : ""}
-        ">
-
-            <div class="prediction-card-header">
-
-                <strong>
-                    ${escapeHtml(
-                        bookmaker
-                    )}
-                </strong>
-
-            </div>
-
-            <div class="prediction-card-body">
-
-                <span class="label">
-                    ${
-                        vip
-                            ? "VIP BETTING CODE"
-                            : "BETTING CODE"
-                    }
-                </span>
-
-                <div class="betting-code-value">
-                    ${escapeHtml(
-                        bettingCode
-                    )}
-                </div>
-
-                ${
-                    description
-                        ? `
-                            <div class="betting-code-description">
-                                ${escapeHtml(
-                                    description
-                                )}
-                            </div>
-                          `
-                        : ""
-                }
-
-                <button
-                    type="button"
-                    class="primary-btn"
-                    data-copy-betting-code="${escapeHtml(
-                        bettingCode
-                    )}"
-                >
-                    📋 COPY CODE
-                </button>
-
-            </div>
-
-        </article>
-    `;
-}
 
 // ============================================================
 // COPY BETTING CODE
 // ============================================================
 
-async function copyBettingCode(
-    button
-) {
+async function copyBettingCode(button) {
 
-    if (!button) {
-        return;
-    }
-
-    const code =
-        button.getAttribute(
-            "data-copy-betting-code"
-        ) ||
-        button.getAttribute(
-            "data-betting-code"
-        );
+    const code = button.getAttribute("data-betting-code");
 
     if (!code) {
         return;
     }
 
-    const originalText =
-        button.textContent;
+    const originalText = button.textContent;
 
     try {
 
-        if (
-            navigator.clipboard &&
-            navigator.clipboard.writeText
-        ) {
+        await navigator.clipboard.writeText(code);
 
-            await navigator.clipboard.writeText(
-                code
-            );
+        button.textContent = "COPIED ✓";
 
-        } else {
-
-            // Older browser fallback
-            const textarea =
-                document.createElement(
-                    "textarea"
-                );
-
-            textarea.value =
-                code;
-
-            textarea.style.position =
-                "fixed";
-
-            textarea.style.opacity =
-                "0";
-
-            document.body.appendChild(
-                textarea
-            );
-
-            textarea.select();
-
-            document.execCommand(
-                "copy"
-            );
-
-            textarea.remove();
-        }
-
-        button.textContent =
-            "COPIED ✓";
-
-        setTimeout(
-            () => {
-
-                button.textContent =
-                    originalText;
-
-            },
-            2000
-        );
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
 
     } catch (error) {
 
@@ -4927,45 +3233,19 @@ async function copyBettingCode(
             error
         );
 
-        button.textContent =
-            "COPY FAILED";
+        button.textContent = "COPY FAILED";
 
-        setTimeout(
-            () => {
-
-                button.textContent =
-                    originalText;
-
-            },
-            2000
-        );
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
     }
 }
 
+
 // ============================================================
-// COPY BUTTON EVENT DELEGATION
+// END BETTING CODES
 // ============================================================
-
-document.addEventListener(
-    "click",
-    event => {
-
-        const button =
-            event.target.closest(
-                "[data-copy-betting-code], " +
-                "[data-betting-code]"
-            );
-
-        if (!button) {
-            return;
-        }
-
-        copyBettingCode(
-            button
-        );
-    }
-);
-
+// ============================================================
 // ============================================================
 // VIP BETTING CODES
 // ============================================================
@@ -4973,99 +3253,43 @@ document.addEventListener(
 async function loadVipBettingCodes() {
 
     const container =
-        document.getElementById(
-            "vipBettingCodesGrid"
-        );
+        document.getElementById("vipBettingCodesGrid");
 
     if (!container) {
         return;
     }
 
-    const token =
-        getVipToken();
-
-    if (!token) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    VIP access required
-                </h3>
-
-                <p>
-                    Activate your VIP subscription
-                    to view VIP betting codes.
-                </p>
-
-            </div>
-        `;
-
-        return;
-    }
-
     try {
 
-        container.innerHTML = `
-            <div class="loading-state">
-                <p>Loading VIP betting codes...</p>
-            </div>
-        `;
+      const token =
+    getVipToken();
 
-        const response =
-            await fetch(
-                `${API_BASE_URL}/vip/betting-codes`,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Authorization":
-                            `Bearer ${token}`
-                    }
-                }
-            );
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = {};
+        if (!token) {
+            return;
         }
 
-        if (!response.ok) {
-
-            if (
-                response.status === 401
-            ) {
-
-                localStorage.removeItem(
-                    STORAGE_KEYS.vipToken
-                );
-
-                updateStoredVipIndicator();
+        const response = await fetch(
+            "https://flex-hub-prediction.onrender.com/api/vip/betting-codes",
+            {
+                headers: {
+                    Authorization:
+                        `Bearer ${token}`
+                }
             }
+        );
 
+        const data =
+            await response.json();
+
+        if (!response.ok) {
             throw new Error(
                 data.message ||
-                data.error ||
                 "Unable to load VIP betting codes."
             );
         }
 
         const bettingCodes =
-            Array.isArray(
-                data.bettingCodes
-            )
-                ? data.bettingCodes
-                : [];
+            data.bettingCodes || [];
 
         if (!bettingCodes.length) {
 
@@ -5088,15 +3312,74 @@ async function loadVipBettingCodes() {
         }
 
         container.innerHTML =
-            bettingCodes
-                .map(
-                    code =>
-                        createBettingCodeCard(
-                            code,
-                            true
-                        )
-                )
-                .join("");
+            bettingCodes.map(code => `
+
+                <div class="prediction-card">
+
+                    <div class="prediction-card-header">
+
+                        <strong>
+                            ${escapeHtml(
+                                code.bookmaker
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="prediction-card-body">
+
+                        <div>
+                            <strong>
+                                VIP BETTING CODE
+                            </strong>
+                        </div>
+
+                        <div style="
+                            font-size:24px;
+                            font-weight:800;
+                            margin:10px 0;
+                        ">
+                            ${escapeHtml(
+                                code.code
+                            )}
+                        </div>
+
+                        ${
+                            code.description
+                                ? `
+                                    <div
+                                        style="
+                                            margin-bottom:15px;
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            code.description
+                                        )}
+                                    </div>
+                                  `
+                                : ""
+                        }
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="
+                                margin-top:5px;
+                                cursor:pointer;
+                            "
+                            data-betting-code="${escapeHtml(
+                                code.code
+                            )}"
+                            onclick="copyBettingCode(this)"
+                        >
+                            📋 COPY CODE
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `).join("");
 
     } catch (error) {
 
@@ -5109,14 +3392,11 @@ async function loadVipBettingCodes() {
             <div class="empty-state">
 
                 <h3>
-                    VIP betting codes unavailable
+                    Unable to load VIP betting codes
                 </h3>
 
                 <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Please try again later."
-                    )}
+                    Please try again later.
                 </p>
 
             </div>
@@ -5124,158 +3404,65 @@ async function loadVipBettingCodes() {
     }
 }
 
-// ============================================================
-// TEAM BADGES
-// ============================================================
-
-const teamBadgeCache =
-    new Map();
-
-let teamBadgeLoadScheduled =
-    false;
 
 // ============================================================
-// SCHEDULE TEAM BADGE LOAD
+// END VIP BETTING CODES
 // ============================================================
-
-function scheduleTeamBadgeLoad() {
-
-    if (teamBadgeLoadScheduled) {
-        return;
-    }
-
-    teamBadgeLoadScheduled =
-        true;
-
-    setTimeout(
-        async () => {
-
-            teamBadgeLoadScheduled =
-                false;
-
-            await loadTeamBadges();
-
-        },
-        100
-    );
-}
-
-// ============================================================
-// LOAD TEAM BADGES
+// REAL TEAM BADGES
 // ============================================================
 
 async function loadTeamBadges() {
 
-    const badges =
-        Array.from(
-            document.querySelectorAll(
-                ".team-badge[data-team-name]"
-            )
-        );
+    const badges = document.querySelectorAll(
+        ".team-badge[data-team-name]"
+    );
 
-    if (!badges.length) {
-        return;
-    }
+    for (const badge of badges) {
 
-    for (
-        const badge of badges
-    ) {
-
-        if (
-            badge.querySelector(
-                "img"
-            )
-        ) {
+        // Do not request or replace a badge that is
+        // already loaded.
+        if (badge.querySelector("img")) {
             continue;
         }
 
         const teamName =
-            badge.getAttribute(
-                "data-team-name"
-            );
+            badge.getAttribute("data-team-name");
 
         if (!teamName) {
             continue;
         }
 
-        const normalizedName =
-            teamName
-                .trim()
-                .toLowerCase();
-
-        // ------------------------------------------
-        // Use cached badge
-        // ------------------------------------------
-
-        if (
-            teamBadgeCache.has(
-                normalizedName
-            )
-        ) {
-
-            const cachedUrl =
-                teamBadgeCache.get(
-                    normalizedName
-                );
-
-            if (cachedUrl) {
-
-                applyTeamBadge(
-                    badge,
-                    cachedUrl,
-                    teamName
-                );
-            }
-
-            continue;
-        }
-
         try {
 
-            const response =
-                await fetch(
-                    "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
-                    encodeURIComponent(
-                        teamName
-                    )
-                );
-
-            if (!response.ok) {
-
-                teamBadgeCache.set(
-                    normalizedName,
-                    null
-                );
-
-                continue;
-            }
-
-            const data =
-                await response.json();
-
-            const team =
-                Array.isArray(
-                    data.teams
-                )
-                    ? data.teams[0]
-                    : null;
-
-            const badgeUrl =
-                team?.strBadge ||
-                null;
-
-            teamBadgeCache.set(
-                normalizedName,
-                badgeUrl
+            const response = await fetch(
+                "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
+                encodeURIComponent(teamName)
             );
 
-            if (badgeUrl) {
+            const data = await response.json();
 
-                applyTeamBadge(
-                    badge,
-                    badgeUrl,
-                    teamName
-                );
+            const team =
+                data.teams &&
+                data.teams[0];
+
+            if (
+                team &&
+                team.strBadge
+            ) {
+
+                badge.innerHTML = `
+                    <img
+                        src="${team.strBadge}"
+                        alt="${escapeHtml(teamName)}"
+                        style="
+                            width:36px;
+                            height:36px;
+                            object-fit:contain;
+                            display:block;
+                        "
+                    >
+                `;
+
             }
 
         } catch (error) {
@@ -5286,173 +3473,41 @@ async function loadTeamBadges() {
                 error
             );
 
-            // Cache failures so that
-            // MutationObserver/re-renders don't
-            // hammer the external API.
-            teamBadgeCache.set(
-                normalizedName,
-                null
-            );
         }
     }
 }
 
-// ============================================================
-// APPLY TEAM BADGE
-// ============================================================
+// Watch prediction cards for team badges
+const teamBadgeObserver = new MutationObserver(() => {
 
-function applyTeamBadge(
-    badge,
-    imageUrl,
-    teamName
-) {
+    loadTeamBadges();
 
-    if (
-        !badge ||
-        !imageUrl
-    ) {
-        return;
-    }
+});
 
-    if (
-        badge.querySelector(
-            "img"
-        )
-    ) {
-        return;
-    }
+teamBadgeObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+});
 
-    const image =
-        document.createElement(
-            "img"
-        );
 
-    image.src =
-        imageUrl;
+// Load badges already on the page
+setTimeout(() => {
+    loadTeamBadges();
+}, 1000);
 
-    image.alt =
-        teamName;
-
-    image.loading =
-        "lazy";
-
-    image.decoding =
-        "async";
-
-    image.style.width =
-        "100%";
-
-    image.style.height =
-        "100%";
-
-    image.style.objectFit =
-        "contain";
-
-    image.style.display =
-        "block";
-
-    image.addEventListener(
-        "error",
-        () => {
-
-            image.remove();
-        },
-        {
-            once: true
-        }
-    );
-
-    badge.textContent =
-        "";
-
-    badge.appendChild(
-        image
-    );
-}
 
 // ============================================================
-// TEAM BADGE OBSERVER
+// END REAL TEAM BADGES
+// ============================================================
+// ============================================================
+// FLEX HUB LOGIN / REGISTER ANIMATION
 // ============================================================
 
-let teamBadgeObserver =
-    null;
+function showFlexHubAnimation(callback) {
 
-function setupTeamBadgeObserver() {
+    const overlay = document.createElement("div");
 
-    if (
-        teamBadgeObserver ||
-        !document.body
-    ) {
-        return;
-    }
-
-    teamBadgeObserver =
-        new MutationObserver(
-            mutations => {
-
-                let hasNewCards =
-                    false;
-
-                for (
-                    const mutation
-                    of mutations
-                ) {
-
-                    if (
-                        mutation.type ===
-                        "childList" &&
-                        mutation.addedNodes.length
-                    ) {
-
-                        hasNewCards =
-                            true;
-
-                        break;
-                    }
-                }
-
-                if (hasNewCards) {
-
-                    scheduleTeamBadgeLoad();
-                }
-            }
-        );
-
-    teamBadgeObserver.observe(
-        document.body,
-        {
-            childList: true,
-            subtree: true
-        }
-    );
-}
-
-setupTeamBadgeObserver();
-
-// ============================================================
-// FLEX HUB LOGIN ANIMATION
-// ============================================================
-
-function showFlexHubAnimation(
-    callback
-) {
-
-    const existing =
-        document.getElementById(
-            "flexHubAnimation"
-        );
-
-    if (existing) {
-        existing.remove();
-    }
-
-    const overlay =
-        document.createElement(
-            "div"
-        );
-
-    overlay.id =
-        "flexHubAnimation";
+    overlay.id = "flexHubAnimation";
 
     overlay.innerHTML = `
         <div class="flex-hub-animation-content">
@@ -5476,13 +3531,7 @@ function showFlexHubAnimation(
         </div>
     `;
 
-    const style =
-        document.createElement(
-            "style"
-        );
-
-    style.id =
-        "flexHubAnimationStyle";
+    const style = document.createElement("style");
 
     style.textContent = `
         #flexHubAnimation {
@@ -5508,9 +3557,7 @@ function showFlexHubAnimation(
             font-weight: 1000;
             letter-spacing: 2px;
             line-height: .9;
-            text-shadow:
-                0 0 25px
-                rgba(245,185,66,.45);
+            text-shadow: 0 0 25px rgba(245,185,66,.45);
         }
 
         .flex-hub-title {
@@ -5535,9 +3582,7 @@ function showFlexHubAnimation(
             font-size: 13px;
             letter-spacing: 4px;
             opacity: .75;
-            animation:
-                flexHubPulse
-                1s ease-in-out infinite;
+            animation: flexHubPulse 1s ease-in-out infinite;
         }
 
         @keyframes flexHubZoom {
@@ -5556,6 +3601,7 @@ function showFlexHubAnimation(
                 opacity: 1;
                 transform: scale(1);
             }
+
         }
 
         @keyframes flexHubFadeIn {
@@ -5567,6 +3613,7 @@ function showFlexHubAnimation(
             to {
                 opacity: 1;
             }
+
         }
 
         @keyframes flexHubPulse {
@@ -5578,367 +3625,197 @@ function showFlexHubAnimation(
             50% {
                 opacity: 1;
             }
+
         }
     `;
 
-    document.head.appendChild(
-        style
-    );
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
 
-    document.body.appendChild(
-        overlay
-    );
+    setTimeout(() => {
 
-    setTimeout(
-        () => {
+        // Remove the animation completely
+        overlay.remove();
+        style.remove();
 
-            overlay.remove();
-            style.remove();
-
-            if (
-                typeof callback ===
-                "function"
-            ) {
-
-                callback();
-            }
-
-        },
-        1300
-    );
-}
-
-// ============================================================
-// PWA INSTALL
-// ============================================================
-
-let deferredInstallPrompt =
-    null;
-
-window.addEventListener(
-    "beforeinstallprompt",
-    event => {
-
-        event.preventDefault();
-
-        deferredInstallPrompt =
-            event;
-
-        const installButton =
-            document.getElementById(
-                "installAppBtn"
-            );
-
-        if (installButton) {
-
-            installButton.style.display =
-                "inline-flex";
+        // Open the main website
+        if (typeof callback === "function") {
+            callback();
         }
-    }
-);
 
-function setupInstallButton() {
+    }, 1300);
+}
+// END OF FLEX HUB APP.JS
+// ======================================================
+// =====================================================
+
+// ============================================================
+// FLEX HUB PWA INSTALL BUTTON
+// ============================================================
+
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+
+    deferredInstallPrompt = event;
 
     const installButton =
-        document.getElementById(
-            "installAppBtn"
-        );
+        document.getElementById("installAppBtn");
+
+    if (installButton) {
+        installButton.style.display = "inline-block";
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const installButton =
+        document.getElementById("installAppBtn");
 
     if (!installButton) {
         return;
     }
 
-    if (
-        installButton.dataset.flexHubInstallReady ===
-        "true"
-    ) {
-        return;
-    }
-
-    installButton.dataset.flexHubInstallReady =
-        "true";
-
-    installButton.addEventListener(
-        "click",
-        async () => {
-
-            if (!deferredInstallPrompt) {
-
-                return;
-            }
-
-            deferredInstallPrompt.prompt();
-
-            try {
-
-                await deferredInstallPrompt.userChoice;
-
-            } catch (error) {
-
-                console.error(
-                    "PWA install error:",
-                    error
-                );
-            }
-
-            deferredInstallPrompt =
-                null;
-
-            installButton.style.display =
-                "none";
-        }
-    );
-}
-
-// ============================================================
-// USER MESSAGE / NOTIFICATION CENTER
-// ============================================================
-
-(function setupNotificationCenter() {
-
-    let notificationInitialized =
-        false;
-
-    // ------------------------------------------
-    // Escape HTML
-    // ------------------------------------------
-
-    function notificationEscapeHTML(
-        value
-    ) {
-
-        return String(
-            value ?? ""
-        )
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
-    }
-
-    // ------------------------------------------
-    // Notification styles
-    // ------------------------------------------
-
-    function addNotificationStyles() {
-
-        if (
-            document.getElementById(
-                "flexNotificationStyles"
-            )
-        ) {
+    installButton.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) {
             return;
         }
 
-        const style =
-            document.createElement(
-                "style"
-            );
+        deferredInstallPrompt.prompt();
 
-        style.id =
-            "flexNotificationStyles";
+        await deferredInstallPrompt.userChoice;
+
+        deferredInstallPrompt = null;
+
+        installButton.style.display = "none";
+    });
+});
+
+// ==================== USER NOTIFICATION CENTER ====================
+
+(function setupNotificationCenter() {
+
+    function notificationEscapeHTML(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function addNotificationStyles() {
+
+        if (document.getElementById("flexNotificationStyles")) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = "flexNotificationStyles";
 
         style.textContent = `
             #flexNotificationBell {
                 position: fixed;
                 right: 20px;
                 bottom: 85px;
-                width: 54px;
-                height: 54px;
+                width: 52px;
+                height: 52px;
                 border-radius: 50%;
-                border: 1px solid
-                    rgba(245,185,66,.35);
+                border: none;
                 cursor: pointer;
                 z-index: 9998;
-                font-size: 22px;
+                font-size: 23px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: #111722;
-                color: #ffffff;
-                box-shadow:
-                    0 8px 28px
-                    rgba(0,0,0,.28);
-                transition:
-                    transform .2s ease,
-                    box-shadow .2s ease;
-            }
-
-            #flexNotificationBell:hover {
-                transform: translateY(-2px);
-                box-shadow:
-                    0 10px 32px
-                    rgba(0,0,0,.35);
+                box-shadow: 0 4px 18px rgba(0,0,0,.25);
             }
 
             #flexNotificationBadge {
                 position: absolute;
                 top: -4px;
                 right: -4px;
-                min-width: 21px;
-                height: 21px;
+                min-width: 20px;
+                height: 20px;
                 padding: 0 5px;
                 border-radius: 20px;
                 font-size: 11px;
-                font-weight: 800;
+                font-weight: bold;
                 display: none;
                 align-items: center;
                 justify-content: center;
-                background: #e53935;
-                color: #ffffff;
-                border: 2px solid #111722;
             }
 
             #flexNotificationPanel {
                 position: fixed;
                 right: 20px;
-                bottom: 150px;
-                width: 360px;
-                max-width:
-                    calc(100vw - 30px);
+                bottom: 148px;
+                width: 350px;
+                max-width: calc(100vw - 30px);
                 max-height: 70vh;
                 overflow-y: auto;
                 z-index: 9999;
                 display: none;
-                border-radius: 16px;
+                border-radius: 14px;
                 padding: 18px;
-                background: #111722;
-                color: #ffffff;
-                border: 1px solid
-                    rgba(245,185,66,.18);
-                box-shadow:
-                    0 15px 50px
-                    rgba(0,0,0,.42);
-            }
-
-            #flexNotificationPanel
-            .flex-notification-open {
-                display: block;
+                box-shadow: 0 8px 30px rgba(0,0,0,.3);
             }
 
             #flexNotificationPanel.flex-notification-open {
                 display: block;
-                animation:
-                    flexNotificationOpen
-                    .2s ease;
-            }
-
-            @keyframes flexNotificationOpen {
-                from {
-                    opacity: 0;
-                    transform:
-                        translateY(8px)
-                        scale(.98);
-                }
-
-                to {
-                    opacity: 1;
-                    transform:
-                        translateY(0)
-                        scale(1);
-                }
             }
 
             .flex-notification-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 10px;
                 margin-bottom: 14px;
             }
 
             .flex-notification-header h3 {
                 margin: 0;
-                font-size: 18px;
             }
 
             #flexNotificationClose {
-                width: 34px;
-                height: 34px;
-                border: 0;
-                border-radius: 50%;
-                background:
-                    rgba(255,255,255,.08);
-                color: #ffffff;
+                border: none;
+                background: transparent;
                 cursor: pointer;
-                font-size: 21px;
-                line-height: 1;
+                font-size: 22px;
             }
 
             .flex-notification-item {
-                padding: 14px;
+                padding: 13px;
                 margin-bottom: 10px;
-                border-radius: 12px;
-                border: 1px solid
-                    rgba(255,255,255,.09);
-                background:
-                    rgba(255,255,255,.035);
+                border-radius: 10px;
+                border: 1px solid rgba(128,128,128,.25);
                 cursor: pointer;
-                transition:
-                    background .2s ease,
-                    border-color .2s ease;
-            }
-
-            .flex-notification-item:hover {
-                background:
-                    rgba(255,255,255,.07);
-                border-color:
-                    rgba(245,185,66,.25);
             }
 
             .flex-notification-item.unread {
-                border-color:
-                    rgba(245,185,66,.35);
-                background:
-                    rgba(245,185,66,.06);
+                font-weight: 600;
             }
 
             .flex-notification-title {
                 font-size: 15px;
-                font-weight: 800;
                 margin-bottom: 5px;
             }
 
             .flex-notification-message {
                 font-size: 14px;
                 line-height: 1.5;
-                opacity: .9;
             }
 
             .flex-notification-time {
-                margin-top: 8px;
+                margin-top: 7px;
                 font-size: 11px;
-                opacity: .55;
+                opacity: .65;
             }
 
             .flex-notification-empty {
                 text-align: center;
-                padding: 28px 10px;
-                opacity: .65;
-                line-height: 1.5;
-            }
-
-            .flex-notification-error {
-                text-align: center;
-                padding: 20px 10px;
-                color: #ffb4b4;
-                line-height: 1.5;
+                padding: 25px 10px;
+                opacity: .7;
             }
 
             @media (max-width: 600px) {
@@ -5951,416 +3828,194 @@ function setupInstallButton() {
                 #flexNotificationPanel {
                     right: 15px;
                     bottom: 138px;
-                    width:
-                        calc(100vw - 30px);
+                    width: calc(100vw - 30px);
                 }
+
             }
         `;
 
-        document.head.appendChild(
-            style
-        );
+        document.head.appendChild(style);
     }
 
-    // ------------------------------------------
-    // Create notification interface
-    // ------------------------------------------
 
     function createNotificationUI() {
 
-        if (
-            document.getElementById(
-                "flexNotificationBell"
-            )
-        ) {
+        if (document.getElementById("flexNotificationBell")) {
             return;
         }
 
         addNotificationStyles();
 
-        const bell =
-            document.createElement(
-                "button"
-            );
+        const bell = document.createElement("button");
 
-        bell.id =
-            "flexNotificationBell";
-
-        bell.type =
-            "button";
-
-        bell.setAttribute(
-            "aria-label",
-            "Notifications"
-        );
-
+        bell.id = "flexNotificationBell";
+        bell.type = "button";
+        bell.setAttribute("aria-label", "Notifications");
         bell.innerHTML = `
             🔔
-            <span
-                id="flexNotificationBadge"
-            ></span>
+            <span id="flexNotificationBadge"></span>
         `;
 
-        const panel =
-            document.createElement(
-                "div"
-            );
+        const panel = document.createElement("div");
 
-        panel.id =
-            "flexNotificationPanel";
+        panel.id = "flexNotificationPanel";
 
         panel.innerHTML = `
-            <div
-                class="flex-notification-header"
-            >
+            <div class="flex-notification-header">
 
-                <h3>
-                    Messages
-                </h3>
+                <h3>Notifications</h3>
 
                 <button
                     type="button"
                     id="flexNotificationClose"
-                    aria-label="Close messages"
+                    aria-label="Close notifications"
                 >
                     ×
                 </button>
 
             </div>
 
-            <div
-                id="flexNotificationList"
-            >
-                <div
-                    class="flex-notification-empty"
-                >
-                    Loading messages...
+            <div id="flexNotificationList">
+                <div class="flex-notification-empty">
+                    Loading notifications...
                 </div>
             </div>
         `;
 
-        document.body.appendChild(
-            bell
-        );
+        document.body.appendChild(bell);
+        document.body.appendChild(panel);
 
-        document.body.appendChild(
-            panel
-        );
+        bell.addEventListener("click", async () => {
 
-        // ------------------------------------------
-        // Open / close panel
-        // ------------------------------------------
+            panel.classList.toggle(
+                "flex-notification-open"
+            );
 
-        bell.addEventListener(
-            "click",
-            async event => {
+            if (panel.classList.contains("flex-notification-open")) {
+                await loadUserNotifications();
+            }
 
-                event.stopPropagation();
+        });
 
-                panel.classList.toggle(
+        document
+            .getElementById("flexNotificationClose")
+            .addEventListener("click", () => {
+
+                panel.classList.remove(
                     "flex-notification-open"
                 );
 
-                if (
-                    panel.classList.contains(
-                        "flex-notification-open"
-                    )
-                ) {
-
-                    await loadUserNotifications();
-                }
-            }
-        );
-
-        document
-            .getElementById(
-                "flexNotificationClose"
-            )
-            ?.addEventListener(
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-                    panel.classList.remove(
-                        "flex-notification-open"
-                    );
-                }
-            );
-
-        // ------------------------------------------
-        // Close when clicking outside
-        // ------------------------------------------
-
-        document.addEventListener(
-            "click",
-            event => {
-
-                if (
-                    !panel.contains(
-                        event.target
-                    ) &&
-                    !bell.contains(
-                        event.target
-                    )
-                ) {
-
-                    panel.classList.remove(
-                        "flex-notification-open"
-                    );
-                }
-            }
-        );
+            });
     }
 
-    // ------------------------------------------
-    // Load notifications
-    // ------------------------------------------
 
     async function loadUserNotifications() {
 
-        const list =
-            document.getElementById(
-                "flexNotificationList"
-            );
+        const list = document.getElementById(
+            "flexNotificationList"
+        );
 
-        const badge =
-            document.getElementById(
-                "flexNotificationBadge"
-            );
+        const badge = document.getElementById(
+            "flexNotificationBadge"
+        );
 
-        if (!list) {
-            return;
-        }
-
-        const token =
-            getUserToken();
-
-        if (!token) {
-
-            list.innerHTML = `
-                <div
-                    class="flex-notification-empty"
-                >
-                    Please login to view messages.
-                </div>
-            `;
-
-            if (badge) {
-                badge.style.display =
-                    "none";
-            }
-
-            return;
-        }
+        if (!list) return;
 
         try {
 
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/notifications`,
-                    {
-                        method: "GET",
+            const token = localStorage.getItem(
+                STORAGE_KEYS.userToken
+            );
 
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-
-                            "Authorization":
-                                `Bearer ${token}`
-                        }
-                    }
-                );
-
-            let data = {};
-
-            try {
-
-                data =
-                    await response.json();
-
-            } catch (error) {
-
-                data = {};
+            if (!token) {
+                return;
             }
 
-            if (!response.ok) {
-
-                // Normal account session expired.
-                if (
-                    response.status === 401
-                ) {
-
-                    clearUserSession();
-
-                    showAccountGate();
+            const response = await fetch(
+                API_BASE_URL + "/notifications",
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    }
                 }
+            );
 
+            const data = await response.json();
+
+            if (!response.ok) {
                 throw new Error(
                     data.message ||
-                    data.error ||
-                    "Unable to load messages."
+                    "Unable to load notifications."
                 );
             }
 
             const notifications =
-                Array.isArray(
-                    data.notifications
-                )
-                    ? data.notifications
-                    : [];
+                data.notifications || [];
 
             const unreadCount =
-                Number(
-                    data.unreadCount || 0
-                );
-
-            // --------------------------------------
-            // Badge
-            // --------------------------------------
+                Number(data.unreadCount || 0);
 
             if (badge) {
 
-                if (
-                    unreadCount > 0
-                ) {
+                if (unreadCount > 0) {
 
                     badge.textContent =
                         unreadCount > 99
                             ? "99+"
-                            : String(
-                                unreadCount
-                            );
+                            : unreadCount;
 
-                    badge.style.display =
-                        "flex";
+                    badge.style.display = "flex";
 
                 } else {
 
-                    badge.style.display =
-                        "none";
-                }
-            }
+                    badge.style.display = "none";
 
-            // --------------------------------------
-            // Empty
-            // --------------------------------------
+                }
+
+            }
 
             if (!notifications.length) {
 
                 list.innerHTML = `
-                    <div
-                        class="flex-notification-empty"
-                    >
-                        No messages yet.
+                    <div class="flex-notification-empty">
+                        No notifications yet.
                     </div>
                 `;
 
                 return;
             }
 
-            // --------------------------------------
-            // Render
-            // --------------------------------------
+            list.innerHTML = notifications.map(item => `
 
-            list.innerHTML =
-                notifications
-                    .map(
-                        item => {
+                <div
+                    class="flex-notification-item ${
+                        item.is_read ? "" : "unread"
+                    }"
+                    data-notification-id="${item.id}"
+                >
 
-                            const isUnread =
-                                !(
-                                    item.is_read ===
-                                    true ||
-                                    item.is_read ===
-                                    1
-                                );
+                    <div class="flex-notification-title">
+                        ${notificationEscapeHTML(item.title)}
+                    </div>
 
-                            let createdAt =
-                                "";
+                    <div class="flex-notification-message">
+                        ${notificationEscapeHTML(item.message)}
+                    </div>
 
-                            if (
-                                item.created_at
-                            ) {
-
-                                const date =
-                                    new Date(
-                                        item.created_at
-                                    );
-
-                                if (
-                                    !Number.isNaN(
-                                        date.getTime()
-                                    )
-                                ) {
-
-                                    createdAt =
-                                        date.toLocaleString();
-                                }
-                            }
-
-                            return `
-                                <div
-                                    class="
-                                        flex-notification-item
-                                        ${
-                                            isUnread
-                                                ? "unread"
-                                                : ""
-                                        }
-                                    "
-                                    data-notification-id="${escapeHtml(
-                                        item.id
-                                    )}"
-                                >
-
-                                    <div
-                                        class="
-                                            flex-notification-title
-                                        "
-                                    >
-                                        ${notificationEscapeHTML(
-                                            item.title ||
-                                            "FLEX HUB Message"
-                                        )}
-                                    </div>
-
-                                    <div
-                                        class="
-                                            flex-notification-message
-                                        "
-                                    >
-                                        ${notificationEscapeHTML(
-                                            item.message ||
-                                            ""
-                                        )}
-                                    </div>
-
-                                    ${
-                                        createdAt
-                                            ? `
-                                                <div
-                                                    class="
-                                                        flex-notification-time
-                                                    "
-                                                >
-                                                    ${notificationEscapeHTML(
-                                                        createdAt
-                                                    )}
-                                                </div>
-                                              `
-                                            : ""
-                                    }
-
-                                </div>
-                            `;
+                    <div class="flex-notification-time">
+                        ${
+                            item.created_at
+                                ? new Date(
+                                    item.created_at
+                                  ).toLocaleString()
+                                : ""
                         }
-                    )
-                    .join("");
+                    </div>
 
-            // --------------------------------------
-            // Mark notification as read
-            // --------------------------------------
+                </div>
+
+            `).join("");
 
             list
                 .querySelectorAll(
@@ -6373,74 +4028,50 @@ function setupInstallButton() {
                         async () => {
 
                             const id =
-                                item.dataset
-                                    .notificationId;
+                                item.dataset.notificationId;
 
-                            if (!id) {
-                                return;
-                            }
-
-                            await markNotificationRead(
-                                id
-                            );
+                            await markNotificationRead(id);
 
                             item.classList.remove(
                                 "unread"
                             );
 
                             await loadUserNotifications();
+
                         }
                     );
+
                 });
 
         } catch (error) {
 
-            console.error(
-                "Notification loading error:",
-                error
-            );
-
             list.innerHTML = `
-                <div
-                    class="flex-notification-error"
-                >
-                    ${notificationEscapeHTML(
-                        error.message ||
-                        "Unable to load messages."
-                    )}
+                <div class="flex-notification-empty">
+                    ${notificationEscapeHTML(error.message)}
                 </div>
             `;
         }
     }
 
-    // ------------------------------------------
-    // Mark notification as read
-    // ------------------------------------------
 
-    async function markNotificationRead(
-        id
-    ) {
-
-        const token =
-            getUserToken();
-
-        if (!token || !id) {
-            return;
-        }
+    async function markNotificationRead(id) {
 
         try {
 
+            const token = localStorage.getItem(
+                STORAGE_KEYS.userToken
+            );
+
+            if (!token) return;
+
             await fetch(
-                `${API_BASE_URL}/notifications/${encodeURIComponent(id)}/read`,
+                API_BASE_URL +
+                `/notifications/${id}/read`,
                 {
                     method: "POST",
-
                     headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Authorization":
-                            `Bearer ${token}`
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
                     }
                 }
             );
@@ -6451,107 +4082,43 @@ function setupInstallButton() {
                 "Notification read error:",
                 error
             );
+
         }
     }
 
-    // ------------------------------------------
-    // Start notification center
-    // ------------------------------------------
 
     function startNotificationCenter() {
 
-        const token =
-            getUserToken();
+        const token = localStorage.getItem(
+            STORAGE_KEYS.userToken
+        );
 
         if (!token) {
             return;
         }
 
-        if (
-            !notificationInitialized
-        ) {
+        createNotificationUI();
 
-            createNotificationUI();
-
-            notificationInitialized =
-                true;
-        }
-
-        // Load immediately.
         loadUserNotifications();
 
-        // --------------------------------------
-        // Refresh every 30 seconds
-        // --------------------------------------
-        // This allows admin messages to appear
-        // without the user refreshing the page.
-        // --------------------------------------
-
-        if (!notificationTimer) {
-
-            notificationTimer =
-                setInterval(
-                    () => {
-
-                        if (
-                            getUserToken()
-                        ) {
-
-                            loadUserNotifications();
-                        }
-
-                    },
-                    30000
-                );
-        }
+        setInterval(
+            loadUserNotifications,
+            60000
+        );
     }
 
-    // Expose only the function needed by
-    // the main application.
-    window.startFlexHubNotifications =
-        startNotificationCenter;
+
+    if (document.readyState === "loading") {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            startNotificationCenter
+        );
+
+    } else {
+
+        startNotificationCenter();
+
+    }
 
 })();
-
-// ============================================================
-// CONNECT NOTIFICATION STARTUP
-// ============================================================
-
-function startNotificationCenter() {
-
-    if (
-        typeof window
-            .startFlexHubNotifications ===
-        "function"
-    ) {
-
-        window.startFlexHubNotifications();
-    }
-}
-
-// ============================================================
-// FINAL STARTUP SAFETY
-// ============================================================
-
-if (
-    document.readyState !==
-    "loading"
-) {
-
-    scheduleTeamBadgeLoad();
-
-} else {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        () => {
-
-            scheduleTeamBadgeLoad();
-
-        }
-    );
-}
-
-// ============================================================
-// END OF FLEX HUB PREDICTIONS APP.JS
-// ============================================================
