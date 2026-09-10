@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -12,7 +11,12 @@
 
     <meta
         name="description"
-        content="FLEX HUB PREDICTIONS - Football match previews, predictions and analysis."
+        content="FLEX HUB PREDICTIONS - Football predictions, match analysis, betting codes and premium football selections."
+    >
+
+    <meta
+        name="theme-color"
+        content="#070707"
     >
 
     <title>FLEX HUB PREDICTIONS</title>
@@ -32,674 +36,570 @@
         rel="stylesheet"
         href="style.css"
     >
-
 </head>
-
 
 <body>
 
+    <!-- =====================================================
+         ACCOUNT GATE
+         ===================================================== -->
 
-<!-- =====================================================
-     ACCOUNT GATE
-===================================================== -->
+    <section
+        id="accountGate"
+        class="account-gate"
+    >
 
-<section
-    id="accountGate"
-    class="account-gate"
->
+        <div class="account-gate-overlay"></div>
 
-    <div class="account-gate-overlay"></div>
+        <div class="account-container">
 
+            <!-- BRAND -->
 
-    <div class="account-container">
-
-
-        <div class="brand-logo">
-
-            <span class="brand-flex">
-                FLEX
-            </span>
-
-            <span class="brand-hub">
-                HUB
-            </span>
-
-        </div>
-
-
-        <p class="brand-subtitle">
-            FOOTBALL PREDICTIONS
-        </p>
-
-
-        <!-- LOGIN -->
-
-        <div
-            id="loginPanel"
-            class="account-panel"
-        >
-
-
-            <div class="account-panel-header">
-
-                <span class="account-icon">
-                    ⚽
-                </span>
-
-                <h1>
-                    Welcome Back
-                </h1>
-
-                <p>
-                    Sign in to access FLEX HUB PREDICTIONS
-                </p>
-
+            <div class="brand-logo">
+                <span class="brand-flex">FLEX</span>
+                <span class="brand-hub">HUB</span>
             </div>
 
-
-            <form id="loginForm">
-
-
-                <div class="form-group">
-
-                    <label for="loginIdentifier">
-                        Username or Email
-                    </label>
-
-                    <input
-                        type="text"
-                        id="loginIdentifier"
-                        name="identifier"
-                        placeholder="Enter username or email"
-                        autocomplete="username"
-                        required
-                    >
-
-                </div>
+            <p class="brand-subtitle">
+                FOOTBALL PREDICTIONS
+            </p>
 
 
-                <div class="form-group">
+            <!-- LOGIN -->
 
-                    <label for="loginPassword">
-                        Password
-                    </label>
+            <div
+                id="loginPanel"
+                class="account-panel"
+            >
 
-                    <input
-                        type="password"
-                        id="loginPassword"
-                        name="password"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                        required
-                    >
+                <div class="account-panel-heading">
+
+                    <span class="account-kicker">
+                        WELCOME BACK
+                    </span>
+
+                    <h1>
+                        Sign in to FLEX HUB
+                    </h1>
+
+                    <p>
+                        Access predictions, results and your dashboard.
+                    </p>
 
                 </div>
 
 
-                <div class="form-options">
+                <form id="loginForm">
 
-                    <label class="checkbox-label">
+                    <div class="form-group">
+
+                        <label for="loginIdentifier">
+                            Username or Email
+                        </label>
 
                         <input
-                            type="checkbox"
-                            id="rememberMe"
+                            type="text"
+                            id="loginIdentifier"
+                            name="identifier"
+                            placeholder="Enter username or email"
+                            autocomplete="username"
+                            required
                         >
 
-                        <span>
-                            Remember me
-                        </span>
+                    </div>
 
-                    </label>
+
+                    <div class="form-group">
+
+                        <label for="loginPassword">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="loginPassword"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                    </div>
 
 
                     <button
-                        type="button"
-                        id="forgotPasswordButton"
-                        class="text-button"
+                        type="submit"
+                        class="account-submit"
                     >
-                        Forgot password?
+                        Sign In
                     </button>
 
-                </div>
+                </form>
 
 
                 <div
                     id="loginMessage"
-                    class="form-message"
-                    style="display:none;"
+                    class="account-message"
                 ></div>
 
 
-                <button
-                    type="submit"
-                    class="btn btn-primary btn-full"
-                >
-                    Sign In
-                </button>
+                <p class="account-switch">
 
-
-            </form>
-
-
-            <div class="account-switch">
-
-                <span>
                     Don't have an account?
-                </span>
 
-                <button
-                    type="button"
-                    id="showRegisterButton"
-                    class="text-button"
-                >
-                    Create Account
-                </button>
+                    <button
+                        type="button"
+                        data-show-register
+                    >
+                        Create Account
+                    </button>
 
-            </div>
-
-
-        </div>
-
-
-        <!-- REGISTER -->
-
-        <div
-            id="registerPanel"
-            class="account-panel"
-            style="display:none;"
-            hidden
-        >
-
-
-            <div class="account-panel-header">
-
-                <span class="account-icon">
-                    👤
-                </span>
-
-                <h1>
-                    Create Account
-                </h1>
-
-                <p>
-                    Join FLEX HUB PREDICTIONS
                 </p>
 
             </div>
 
 
-            <form id="registerForm">
+            <!-- REGISTER -->
 
+            <div
+                id="registerPanel"
+                class="account-panel"
+                style="display:none;"
+                hidden
+            >
 
-                <div class="form-group">
+                <div class="account-panel-heading">
 
-                    <label for="registerName">
-                        Full Name
-                    </label>
-
-                    <input
-                        type="text"
-                        id="registerName"
-                        name="name"
-                        placeholder="Enter your full name"
-                        autocomplete="name"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="registerUsername">
-                        Username
-                    </label>
-
-                    <input
-                        type="text"
-                        id="registerUsername"
-                        name="username"
-                        placeholder="Choose a username"
-                        autocomplete="username"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="registerEmail">
-                        Email Address
-                    </label>
-
-                    <input
-                        type="email"
-                        id="registerEmail"
-                        name="email"
-                        placeholder="Enter your email"
-                        autocomplete="email"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="registerPassword">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="registerPassword"
-                        name="password"
-                        placeholder="Create a password"
-                        autocomplete="new-password"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="registerConfirmPassword">
-                        Confirm Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="registerConfirmPassword"
-                        name="confirmPassword"
-                        placeholder="Confirm your password"
-                        autocomplete="new-password"
-                        required
-                    >
-
-                </div>
-
-
-                <label class="checkbox-label terms-checkbox">
-
-                    <input
-                        type="checkbox"
-                        id="registerTerms"
-                        required
-                    >
-
-                    <span>
-                        I agree to the website terms and conditions.
+                    <span class="account-kicker">
+                        JOIN THE COMMUNITY
                     </span>
 
-                </label>
+                    <h1>
+                        Create your account
+                    </h1>
+
+                    <p>
+                        Join FLEX HUB and access our football predictions.
+                    </p>
+
+                </div>
+
+
+                <form id="registerForm">
+
+                    <div class="form-group">
+
+                        <label for="registerName">
+                            Full Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="registerName"
+                            name="name"
+                            placeholder="Enter your full name"
+                            autocomplete="name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerUsername">
+                            Username
+                        </label>
+
+                        <input
+                            type="text"
+                            id="registerUsername"
+                            name="username"
+                            placeholder="Choose a username"
+                            autocomplete="username"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerEmail">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="registerEmail"
+                            name="email"
+                            placeholder="Enter your email"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerPassword">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="registerPassword"
+                            name="password"
+                            placeholder="Create a password"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="registerConfirmPassword">
+                            Confirm Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="registerConfirmPassword"
+                            name="confirmPassword"
+                            placeholder="Confirm your password"
+                            autocomplete="new-password"
+                        >
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="account-submit"
+                    >
+                        Create Account
+                    </button>
+
+                </form>
 
 
                 <div
                     id="registerMessage"
-                    class="form-message"
-                    style="display:none;"
+                    class="account-message"
                 ></div>
 
 
-                <button
-                    type="submit"
-                    class="btn btn-primary btn-full"
-                >
-                    Create Account
-                </button>
+                <p class="account-switch">
 
-
-            </form>
-
-
-            <div class="account-switch">
-
-                <span>
                     Already have an account?
-                </span>
 
-                <button
-                    type="button"
-                    id="showLoginButton"
-                    class="text-button"
-                >
-                    Sign In
-                </button>
+                    <button
+                        type="button"
+                        data-show-login
+                    >
+                        Sign In
+                    </button>
+
+                </p>
 
             </div>
 
 
+            <p class="account-footer">
+                © <span id="accountYear">2026</span>
+                FLEX HUB PREDICTIONS
+            </p>
+
         </div>
 
+    </section>
 
-        <p class="account-footer">
 
-            ©️
-            <span id="accountYear">
-                2026
+
+    <!-- =====================================================
+         MAIN WEBSITE
+         ===================================================== -->
+
+    <div
+        id="mainWebsite"
+        style="display:none;"
+    >
+
+        <!-- =================================================
+             HEADER
+             ================================================= -->
+
+        <header class="site-header">
+
+            <div class="container header-inner">
+
+
+                <!-- LOGO -->
+
+                <a
+                    href="index.html"
+                    class="site-logo"
+                    aria-label="FLEX HUB Predictions Home"
+                >
+
+                    <span>FLEX</span>
+                    HUB
+
+                    <small>
+                        PREDICTIONS
+                    </small>
+
+                </a>
+
+
+                <!-- MOBILE MENU -->
+
+                <button
+                    id="menuButton"
+                    class="menu-toggle"
+                    type="button"
+                    aria-label="Open navigation"
+                    aria-expanded="false"
+                >
+                    ☰
+                </button>
+
+
+                <!-- NAVIGATION -->
+
+                <nav
+                    id="mainNav"
+                    aria-label="Main navigation"
+                >
+
+                    <a href="index.html">
+                        Home
+                    </a>
+
+                    <a href="predictions.html">
+                        Predictions
+                    </a>
+
+                    <a href="leagues.html">
+                        Leagues
+                    </a>
+
+                    <a href="vip.html">
+                        VIP
+                    </a>
+
+                    <a href="results.html">
+                        Results
+                    </a>
+
+                    <a href="dashboard.html">
+                        Dashboard
+                    </a>
+
+
+                    <!-- USER -->
+
+                    <div class="nav-account">
+
+                        <span
+                            id="userName"
+                            class="user-name"
+                        >
+                            User
+                        </span>
+
+                        <button
+                            id="signOutButton"
+                            class="nav-signout"
+                            type="button"
+                        >
+                            Sign Out
+                        </button>
+
+                    </div>
+
+
+                    <!-- APP INSTALL -->
+
+                    <button
+                        id="installAppBtn"
+                        type="button"
+                        style="display:none;"
+                    >
+                        📲 Install FLEX HUB
+                    </button>
+
+                </nav>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             MAIN CONTENT STARTS IN PART 2
+             ================================================= -->
+
+        <main id="mainContent">
+           <!-- =========================================
+     HERO SECTION
+========================================= -->
+
+<section class="hero">
+
+    <div class="hero-overlay"></div>
+
+    <div class="container hero-container">
+
+        <div class="hero-text">
+
+            <span class="hero-tag">
+                ⚽ PREMIUM FOOTBALL ANALYSIS
             </span>
 
-            FLEX HUB PREDICTIONS
+            <h1>
+                Smart Football Predictions
+                For Better Betting Decisions
+            </h1>
 
-        </p>
+            <p>
+                FLEX HUB delivers match analysis,
+                betting codes, VIP predictions,
+                and football insights in one place.
+            </p>
 
+            <div class="hero-buttons">
+
+                <a href="predictions.html" class="btn-primary">
+                    View Predictions
+                </a>
+
+                <a href="vip.html" class="btn-secondary">
+                    VIP Access
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="hero-image">
+
+            <div class="hero-card">
+
+                <div class="hero-card-top">
+                    Today's Top Pick
+                </div>
+
+                <h3>
+                    Manchester City vs Arsenal
+                </h3>
+
+                <p>
+                    Over 2.5 Goals
+                </p>
+
+                <span>
+                    Confidence: 89%
+                </span>
+
+            </div>
+
+        </div>
 
     </div>
 
 </section>
 
+<!-- =========================================
+     STATS SECTION
+========================================= -->
 
-<!-- =====================================================
-     MAIN WEBSITE
-===================================================== -->
+<section class="stats">
 
-<div
-    id="mainWebsite"
-    style="display:none;"
->
+    <div class="container stats-grid">
 
+        <div class="stat-box">
+            <h2>500+</h2>
+            <p>Predictions</p>
+        </div>
 
-<!-- =====================================================
-     HEADER
-===================================================== -->
+        <div class="stat-box">
+            <h2>85%</h2>
+            <p>Success Rate</p>
+        </div>
 
-<header class="site-header">
+        <div class="stat-box">
+            <h2>1000+</h2>
+            <p>Members</p>
+        </div>
 
-    <div class="container header-inner">
-
-
-        <a
-            href="index.html"
-            class="site-logo"
-        >
-
-            <span>
-                FLEX
-            </span>
-
-            HUB
-
-            <small>
-                PREDICTIONS
-            </small>
-
-        </a>
-
-
-        <button
-            id="menuButton"
-            class="menu-toggle"
-            type="button"
-            aria-label="Open navigation"
-            aria-expanded="false"
-        >
-            ☰
-        </button>
-
-
-        <nav id="mainNav">
-
-
-            <a href="index.html">
-                Home
-            </a>
-
-
-            <a href="predictions.html">
-                Predictions
-            </a>
-
-
-            <a href="leagues.html">
-                Leagues
-            </a>
-
-
-            <a href="vip.html">
-                VIP
-            </a>
-
-
-            <a href="results.html">
-                Results
-            </a>
-
-
-            <a href="dashboard.html">
-                Dashboard
-            </a>
-
-
-            <div class="nav-account">
-
-                <span
-                    id="userName"
-                    class="user-name"
-                >
-                    User
-                </span>
-
-
-                <button
-                    id="signOutButton"
-                    class="nav-signout"
-                    type="button"
-                >
-                    Sign Out
-                </button>
-
-            </div>
-
-
-            <button
-                id="installAppBtn"
-                style="display:none;"
-            >
-                📲 Install FLEX HUB
-            </button>
-
-
-        </nav>
-
+        <div class="stat-box">
+            <h2>VIP</h2>
+            <p>Premium Access</p>
+        </div>
 
     </div>
 
-</header>
-<!-- =================================================
-     HOME PAGE
-================================================== -->
+</section>
 
-<main>
+<!-- =========================================
+     FEATURED PREDICTIONS
+========================================= -->
 
-
-    <!-- =================================================
-         HERO
-    ================================================== -->
-
-    <section
-        id="home"
-        class="hero-section"
-    >
-
-        <div class="container hero-content">
-
-
-            <div class="hero-text">
-
-                <span class="hero-badge">
-                    ⚽ FOOTBALL ANALYSIS
-                </span>
-
-
-                <h1>
-
-                    Welcome to
-
-                    <strong>
-                        FLEX HUB
-                    </strong>
-
-                    PREDICTIONS
-
-                </h1>
-
-
-                <p>
-                    Your football destination for
-                    match previews, editorial predictions,
-                    team analysis and winning selections.
-                </p>
-
-
-                <div class="hero-actions">
-
-
-                    <a
-                        href="predictions.html"
-                        class="btn btn-primary"
-                    >
-                        Explore Predictions
-                    </a>
-
-
-                    <a
-                        href="vip.html"
-                        class="btn btn-secondary"
-                    >
-                        👑 Explore VIP
-                    </a>
-
-
-                </div>
-
-            </div>
-
-
-            <!-- HERO CARD -->
-
-            <div class="hero-card">
-
-                <span>
-                    FLEX HUB
-                </span>
-
-
-                <strong>
-                    ⚽
-                </strong>
-
-
-                <small>
-                    Smart football analysis.
-                    Clear predictions.
-                </small>
-
-            </div>
-
-
-        </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         FEATURED PREDICTIONS
-    ================================================== -->
-
-    <section
-        id="featured"
-        class="section"
-    >
-
-        <div class="container">
-
-
-            <div class="section-heading">
-
-                <span>
-                    ⭐ FLEX HUB FEATURED
-                </span>
-
-
-                <h2>
-                    Featured Predictions
-                </h2>
-
-
-                <p>
-                    Our selected football predictions
-                    for today's matches.
-                </p>
-
-            </div>
-
-
-            <!-- FEATURED PREDICTIONS WILL LOAD HERE -->
-
-            <div
-    id="predictionsGrid"
-    class="prediction-grid"
-    data-home-featured-only="true"
->
-                <div class="loading-state">
-                    Loading featured predictions...
-                </div>
-
-            </div>
-
-
-            <div
-                class="section-action"
-                style="text-align:center;margin-top:25px;"
-            >
-
-                <a
-                    href="predictions.html"
-                    class="btn btn-primary"
-                >
-                    View All Predictions →
-                </a>
-
-            </div>
-
-
-        </div>
-
-    </section>
-    <!-- =================================================
-     BETTING CODES
-================================================== -->
-
-<section
-    id="bettingCodes"
-    class="section betting-codes-section"
->
+<section class="featured-section">
 
     <div class="container">
 
+        <div class="section-title">
 
-        <div class="section-heading">
+            <span>Predictions</span>
 
-            <span>
-                🎟️ BETTING CODES
-            </span>
-
-            <h2>
-                Today's Betting Codes
-            </h2>
+            <h2>Featured Matches</h2>
 
             <p>
-                Quick access to our latest regular
-                betting codes.
+                Today's selected football predictions.
             </p>
 
         </div>
 
+        <div
+            id="predictionsGrid"
+            class="prediction-grid"
+        >
 
-        <!-- BETTING CODES WILL LOAD HERE -->
+            <div class="loading-state">
+                Loading predictions...
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+            <!-- =========================================
+     EXCLUSIVE BETTING CODES
+========================================= -->
+
+<section class="codes-section">
+
+    <div class="container">
+
+        <div class="section-title">
+
+            <span>🎟️ EXCLUSIVE CODES</span>
+
+            <h2>Today's Betting Codes</h2>
+
+            <p>
+                Get our latest available betting codes
+                and use them on your favourite platform.
+            </p>
+
+        </div>
+
 
         <div
             id="bettingCodesGrid"
@@ -713,226 +613,526 @@
         </div>
 
 
-        <div
-            class="section-action"
-            style="text-align:center;margin-top:25px;"
-        >
+        <div class="section-button">
 
             <a
                 href="predictions.html"
-                class="btn btn-secondary"
+                class="btn-secondary"
             >
-                See More Predictions →
+                Explore More Predictions →
             </a>
 
         </div>
-
 
     </div>
 
 </section>
 
 
-<!-- =================================================
-     VIP PROMO
-================================================== -->
+<!-- =========================================
+     VIP / PREMIUM SECTION
+========================================= -->
 
-<section
-    class="section vip-promo"
->
+<section class="premium-section">
 
     <div class="container">
 
+        <div class="premium-box">
 
-        <div class="vip-promo-content">
+            <div class="premium-content">
 
-            <span class="vip-promo-icon">
-                👑
-            </span>
+                <span class="premium-tag">
+                    👑 FLEX HUB VIP
+                </span>
+
+                <h2>
+                    Take Your Betting
+                    To The Next Level
+                </h2>
+
+                <p>
+                    Get access to premium football selections,
+                    exclusive VIP predictions and carefully
+                    analysed matches.
+                </p>
 
 
-            <h2>
-                Want More Winning Selections?
-            </h2>
+                <div class="premium-features">
+
+                    <div class="premium-feature">
+                        <span>✓</span>
+                        <p>Exclusive VIP Predictions</p>
+                    </div>
+
+                    <div class="premium-feature">
+                        <span>✓</span>
+                        <p>Detailed Match Analysis</p>
+                    </div>
+
+                    <div class="premium-feature">
+                        <span>✓</span>
+                        <p>Premium Betting Selections</p>
+                    </div>
+
+                </div>
 
 
-            <p>
-                Get access to our premium VIP
-                predictions and exclusive selections.
-            </p>
+                <a
+                    href="vip.html"
+                    class="btn-primary"
+                >
+                    👑 Explore VIP
+                </a>
+
+            </div>
 
 
-            <a
-                href="vip.html"
-                class="btn btn-primary"
-            >
-                View VIP Predictions
-            </a>
+            <div class="premium-visual">
+
+                <div class="premium-circle">
+
+                    <span>FLEX</span>
+
+                    <strong>VIP</strong>
+
+                    <small>
+                        PREMIUM
+                    </small>
+
+                </div>
+
+            </div>
 
         </div>
-
 
     </div>
 
 </section>
-<!-- =================================================
+
+
+<!-- =========================================
+     COMMUNITY SECTION
+========================================= -->
+
+<section class="community-section">
+
+    <div class="container">
+
+        <div class="community-content">
+
+            <span class="community-tag">
+                THE FLEX HUB COMMUNITY
+            </span>
+
+            <h2>
+                More Than Predictions.
+                It's A Football Community.
+            </h2>
+
+            <p>
+                Follow the latest football action,
+                discover new predictions, check results,
+                and stay connected with the FLEX HUB community.
+            </p>
+
+
+            <div class="community-buttons">
+
+                <a
+                    href="results.html"
+                    class="btn-secondary"
+                >
+                    Check Results
+                </a>
+
+                <a
+                    href="dashboard.html"
+                    class="btn-primary"
+                >
+                    My Dashboard
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- =========================================
+     ENGINE ROOM / OUR TEAM
+========================================= -->
+
+<section class="team-section">
+
+    <div class="container">
+
+        <div class="section-title">
+
+            <span>⚡ THE ENGINE ROOM</span>
+
+            <h2>Meet The FLEX HUB Team</h2>
+
+            <p>
+                Behind every prediction is football research,
+                match analysis and a passion for the game.
+            </p>
+
+        </div>
+
+
+        <div class="team-grid">
+
+            <!-- TEAM MEMBER 1 -->
+
+            <div class="team-card">
+
+                <div class="team-avatar">
+                    FH
+                </div>
+
+                <div class="team-info">
+
+                    <span class="team-role">
+                        FOOTBALL ANALYST
+                    </span>
+
+                    <h3>
+                        FLEX HUB Analysis
+                    </h3>
+
+                    <p>
+                        Focused on match research,
+                        team form and football statistics.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- TEAM MEMBER 2 -->
+
+            <div class="team-card">
+
+                <div class="team-avatar">
+                    ⚽
+                </div>
+
+                <div class="team-info">
+
+                    <span class="team-role">
+                        PREDICTION TEAM
+                    </span>
+
+                    <h3>
+                        FLEX HUB Predictions
+                    </h3>
+
+                    <p>
+                        Carefully selected football
+                        predictions for every matchday.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- TEAM MEMBER 3 -->
+
+            <div class="team-card">
+
+                <div class="team-avatar">
+                    👑
+                </div>
+
+                <div class="team-info">
+
+                    <span class="team-role">
+                        VIP DESK
+                    </span>
+
+                    <h3>
+                        FLEX HUB VIP
+                    </h3>
+
+                    <p>
+                        Premium selections and exclusive
+                        analysis for our VIP community.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SUPPORT THE MOVEMENT
+========================================= -->
+
+<section class="support-section">
+
+    <div class="container">
+
+        <div class="support-box">
+
+            <div class="support-icon">
+                ❤️
+            </div>
+
+            <div class="support-content">
+
+                <span class="support-tag">
+                    SUPPORT FLEX HUB
+                </span>
+
+                <h2>
+                    Support The Movement
+                </h2>
+
+                <p>
+                    FLEX HUB is built around football,
+                    analysis and community. Your support
+                    helps us continue improving the platform
+                    and providing quality football content.
+                </p>
+
+
+                <div class="support-actions">
+
+                    <a
+                        href="dashboard.html"
+                        class="btn-primary"
+                    >
+                        Join The Community
+                    </a>
+
+                    <a
+                        href="predictions.html"
+                        class="btn-secondary"
+                    >
+                        Explore FLEX HUB
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     FINAL CALL TO ACTION
+========================================= -->
+
+<section class="final-cta">
+
+    <div class="container">
+
+        <div class="final-cta-content">
+
+            <span>
+                ⚽ FLEX HUB PREDICTIONS
+            </span>
+
+            <h2>
+                Ready For Today's Matches?
+            </h2>
+
+            <p>
+                Check the latest predictions,
+                results and premium selections.
+            </p>
+
+            <div class="final-cta-buttons">
+
+                <a
+                    href="predictions.html"
+                    class="btn-primary"
+                >
+                    View Predictions
+                </a>
+
+                <a
+                    href="vip.html"
+                    class="btn-secondary"
+                >
+                    Get VIP Access
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- =========================================
      FOOTER
-================================================== -->
+========================================= -->
 
 <footer class="site-footer">
 
-    <div class="container footer-inner">
+    <div class="container footer-container">
 
+
+        <!-- BRAND -->
 
         <div class="footer-brand">
 
             <a
                 href="index.html"
-                class="site-logo"
+                class="footer-logo"
             >
-
-                <span>
-                    FLEX
-                </span>
-
-                HUB
-
-                <small>
-                    PREDICTIONS
-                </small>
-
+                <span>FLEX</span> HUB
             </a>
 
-
             <p>
-                Football predictions, analysis
-                and match previews.
+                Football predictions, match analysis,
+                betting codes and premium football selections.
             </p>
+
+            <div class="footer-social-text">
+                ⚽ FOOTBALL • ANALYSIS • COMMUNITY
+            </div>
 
         </div>
 
 
-        <div class="footer-links">
+        <!-- EXPLORE -->
+
+        <div class="footer-column">
 
             <h3>
-                Quick Links
+                Explore
             </h3>
-
 
             <a href="index.html">
                 Home
             </a>
 
-
             <a href="predictions.html">
                 Predictions
             </a>
-
 
             <a href="leagues.html">
                 Leagues
             </a>
 
-
-            <a href="vip.html">
-                VIP
-            </a>
-
-
             <a href="results.html">
                 Results
-            </a>
-
-
-            <a href="dashboard.html">
-                Dashboard
             </a>
 
         </div>
 
 
-        <div class="footer-links">
+        <!-- PREMIUM -->
+
+        <div class="footer-column">
 
             <h3>
-                Important
+                Premium
             </h3>
-
 
             <a href="vip.html">
                 VIP Predictions
             </a>
 
-
             <a href="predictions.html">
                 Match Predictions
             </a>
 
-
-            <a href="results.html">
-                Results
+            <a href="dashboard.html">
+                My Dashboard
             </a>
 
         </div>
 
 
+        <!-- COMMUNITY -->
+
+        <div class="footer-column">
+
+            <h3>
+                FLEX HUB
+            </h3>
+
+            <a href="dashboard.html">
+                Join The Community
+            </a>
+
+            <a href="vip.html">
+                Become VIP
+            </a>
+
+            <a href="results.html">
+                Check Results
+            </a>
+
+        </div>
+
     </div>
 
 
+    <!-- FOOTER BOTTOM -->
+
     <div class="footer-bottom">
 
-        <p>
+        <div class="container footer-bottom-inner">
 
-            ©️
-            <span id="currentYear">
-                2026
-            </span>
+            <p>
+                © <span id="currentYear">2026</span>
+                FLEX HUB PREDICTIONS.
+                All rights reserved.
+            </p>
 
-            FLEX HUB PREDICTIONS.
-            All rights reserved.
+            <p>
+                Built for football fans ⚽
+            </p>
 
-        </p>
+        </div>
 
     </div>
 
 </footer>
 
-
 </main>
-
 
 </div>
 
 
-<!-- =================================================
-     SCRIPTS
-================================================== -->
+<!-- =========================================
+     JAVASCRIPT
+========================================= -->
 
-<script
-    src="app.js"
-    defer
-></script>
+<script src="app.js" defer></script>
 
 
 <script>
-
     if ("serviceWorker" in navigator) {
 
-        window.addEventListener(
-            "load",
-            () => {
+        window.addEventListener("load", () => {
 
-                navigator.serviceWorker.register(
-                    "sw.js"
-                );
+            navigator.serviceWorker.register("sw.js")
+                .catch(() => {
+                    // Service worker registration is optional.
+                });
 
-            }
-        );
+        });
 
     }
-
 </script>
 
-
 </body>
-
 </html>
