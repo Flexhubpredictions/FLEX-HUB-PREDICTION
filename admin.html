@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>FLEX HUB — Admin Panel</title>
 
 <style>
@@ -3540,7 +3539,7 @@ async function openAdmin() {
 
         loadUsers(),
 
-        loadActivityLogs(),
+        loadActivityLog(),
 
         loadBettingCodes(),
 
@@ -5295,7 +5294,7 @@ async function(id) {
         await apiRequest(
             `/admin/users/${id}/status`,
             {
-                method: "PUT",
+                method: "PATCH",
 
                 body: JSON.stringify({
                     is_active:
@@ -5983,7 +5982,7 @@ async function loadActivityLog() {
     }
 }
 
-function renderActivityLog(activities) {
+function renderActivityLog(activities = adminActivityLogs) {
 
     const tableBody =
         document.getElementById(
@@ -5992,7 +5991,7 @@ function renderActivityLog(activities) {
 
     if (!tableBody) return;
 
-    if (!activities.length) {
+    if (!Array.isArray(activities) || !activities.length) {
 
         tableBody.innerHTML = `
             <tr>
@@ -6031,27 +6030,20 @@ function renderActivityLog(activities) {
                 <tr>
 
                     <td>
-                        ${escapeHTML(
-                            admin
-                        )}
+                        ${escapeHTML(admin)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(action)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(target)}
                     </td>
 
                     <td>
                         ${escapeHTML(
-                            action
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            target
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            activity.ip_address ||
-                            "-"
+                            activity.ip_address || "-"
                         )}
                     </td>
 
@@ -6066,7 +6058,6 @@ function renderActivityLog(activities) {
 
         }).join("");
 }
-
 
 /* =========================================
    LOAD ADMIN DATA AFTER LOGIN
