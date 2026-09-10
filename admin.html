@@ -5796,138 +5796,102 @@ function renderNotifications() {
    SEND MESSAGE
 ========================================= */
 
-const notificationForm =
-    document.getElementById(
-        "notificationForm"
-    );
+const notificationForm = document.getElementById("notificationForm");
 
 if (notificationForm) {
 
-    notificationForm.addEventListener(
-        "submit",
-        async function(event) {
+    notificationForm.addEventListener("submit", async (event) => {
 
-            event.preventDefault();
+        event.preventDefault();
 
-            const audience =
-                document.getElementById(
-                    "notificationAudience"
-                )?.value;
+        const title =
+            document.getElementById("notificationTitle").value.trim();
 
-            const title =
-                document.getElementById(
-                    "notificationTitle"
-                )?.value.trim();
+        const message =
+            document.getElementById("notificationMessage").value.trim();
 
-            const message =
-                document.getElementById(
-                    "notificationMessage"
-                )?.value.trim();
+        const target =
+            document.getElementById("notificationAudience").value;
 
-            const messageBox =
-                document.getElementById(
-                    "notificationMessageBox"
-                );
+        const button =
+            document.getElementById("sendNotificationButton");
 
-            if (!audience) {
+        const messageBox =
+            document.getElementById("notificationMessageBox");
 
-                showMessage(
-                    messageBox,
-                    "Please select an audience.",
-                    "error"
-                );
 
-                return;
-            }
+        if (!title || !message) {
 
-            if (!title) {
-
-                showMessage(
-                    messageBox,
-                    "Please enter a message title.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (!message) {
-
-                showMessage(
-                    messageBox,
-                    "Please enter your message.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const confirmed =
-                confirm(
-                    `Send this message to ${
-                        audience === "all"
-                            ? "ALL users"
-                            : audience === "vip"
-                                ? "VIP users"
-                                : "REGULAR users"
-                    }?`
-                );
-
-            if (!confirmed) return;
-
-            const submitButton =
-                document.getElementById(
-                    "sendNotificationButton"
-                );
-
-            setButtonLoading(
-                submitButton,
-                true,
-                "Sending..."
+            showMessage(
+                messageBox,
+                "Please enter both a title and message.",
+                "error"
             );
 
-            try {
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * The exact backend route for ADMIN
-                 * sending notifications has not yet
-                 * been confirmed.
-                 *
-                 * Do not silently send to the wrong
-                 * endpoint.
-                 */
-
-                throw new Error(
-                    "The admin notification send endpoint still needs to be connected to the backend."
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Send notification error:",
-                    error
-                );
-
-                showMessage(
-                    messageBox,
-                    error.message ||
-                    "Failed to send message.",
-                    "error"
-                );
-
-            } finally {
-
-                setButtonLoading(
-                    submitButton,
-                    false
-                );
-            }
+            return;
         }
-    );
-}
 
+
+        try {
+
+            setButtonLoading(button, true, "Sending...");
+
+
+            const result = await apiRequest(
+                "/admin/notifications",
+                {
+                    method: "POST",
+
+                    body: JSON.stringify({
+                        title: title,
+                        message: message,
+                        target: target
+                    })
+                }
+            );
+
+
+            showMessage(
+                messageBox,
+                result.message || "Notification sent successfully.",
+                "success"
+            );
+
+
+            notificationForm.reset();
+
+
+            await loadNotifications();
+
+
+        } catch (error) {
+
+            console.error(
+                "Send notification error:",
+                error
+            );
+
+
+            showMessage(
+                messageBox,
+                error.message ||
+                "Unable to send notification.",
+                "error"
+            );
+
+        } finally {
+
+            setButtonLoading(
+                button,
+                false,
+                "Send Notification"
+            );
+
+        }
+
+    });
+
+}
 
 /* =========================================
    CLEAR MESSAGE FORM
