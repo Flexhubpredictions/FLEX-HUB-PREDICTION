@@ -1193,7 +1193,11 @@ app.get("/api/vip/status", requireUser, async (req, res) => {
   }
 });
 
-app.get("/api/predictions", async (req, res) => {
+app.get(
+  "/api/predictions",
+  requireUser,
+  requireRegularAccess,
+  async (req, res) => {
   try {
 
     let result;
@@ -1269,7 +1273,11 @@ app.get("/api/predictions", async (req, res) => {
 
   }
 });
-app.get("/api/predictions/:id", async (req, res) => {
+app.get(
+  "/api/predictions/:id",
+  requireUser,
+  requireRegularAccess,
+  async (req, res) => {
   try {
     const result = await db.query(
       `SELECT * FROM predictions
@@ -1627,7 +1635,11 @@ app.delete("/api/admin/betting-codes/:id", requireAdmin, async (req, res) => {
 });
 
 
-app.get("/api/betting-codes", async (req, res) => {
+app.get(
+  "/api/betting-codes",
+  requireUser,
+  requireRegularAccess,
+  async (req, res) => {
   try {
     const result = await db.query(
       `SELECT id, bookmaker, code, description, category, status, created_at
