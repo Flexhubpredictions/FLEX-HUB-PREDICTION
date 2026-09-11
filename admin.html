@@ -4712,54 +4712,56 @@ function renderResults() {
                             )}
                         </span>
                     </td>
+<td>
 
-                    <td>
+    ${
+        isArchived
+            ? `
+                <button
+                    type="button"
+                    class="danger-button"
+                    onclick="deleteMatchResult('${item.id}')"
+                >
+                    Delete
+                </button>
+              `
+            : `
+                <button
+                    type="button"
+                    class="success-button"
+                    onclick="setMatchResult(
+                        '${item.id}',
+                        'won'
+                    )"
+                >
+                    Won
+                </button>
 
-                        ${
-                            isArchived
-                                ? `
-                                    <span>
-                                        Archived Result
-                                    </span>
-                                  `
-                                : `
-                                    <button
-                                        type="button"
-                                        class="success-button"
-                                        onclick="setMatchResult(
-                                            '${item.id}',
-                                            'won'
-                                        )"
-                                    >
-                                        Won
-                                    </button>
+                <button
+                    type="button"
+                    class="danger-button"
+                    onclick="setMatchResult(
+                        '${item.id}',
+                        'lost'
+                    )"
+                >
+                    Lost
+                </button>
 
-                                    <button
-                                        type="button"
-                                        class="danger-button"
-                                        onclick="setMatchResult(
-                                            '${item.id}',
-                                            'lost'
-                                        )"
-                                    >
-                                        Lost
-                                    </button>
+                <button
+                    type="button"
+                    class="warning-button"
+                    onclick="setMatchResult(
+                        '${item.id}',
+                        'void'
+                    )"
+                >
+                    Void
+                </button>
+              `
+    }
 
-                                    <button
-                                        type="button"
-                                        class="warning-button"
-                                        onclick="setMatchResult(
-                                            '${item.id}',
-                                            'void'
-                                        )"
-                                    >
-                                        Void
-                                    </button>
-                                  `
-                        }
-
-                    </td>
-
+</td>
                 </tr>
             `;
 
@@ -4809,6 +4811,36 @@ async function setMatchResult(
         await loadResults();
 
         updateStats();
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+    async function deleteMatchResult(id) {
+
+    const confirmed =
+        window.confirm(
+            "Are you sure you want to delete this match result?"
+        );
+
+    if (!confirmed) return;
+
+    try {
+
+        await apiRequest(
+            "/results/" + id,
+            {
+                method: "DELETE"
+            }
+        );
+
+        await loadResults();
+
+        alert(
+            "Match result deleted successfully."
+        );
 
     } catch (error) {
 
