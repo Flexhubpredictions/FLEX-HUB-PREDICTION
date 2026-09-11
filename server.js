@@ -495,6 +495,48 @@ app.get("/api/admin/users", requireAdmin, async (req, res) => {
         });
     }
 });
+app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { is_active } = req.body;
+
+        if (typeof is_active !== "boolean") {
+            return res.status(400).json({
+                message: "is_active must be true or false."
+            });
+        }
+
+        const result = await db.query(
+            `
+            UPDATE users
+            SET is_active = $1
+            WHERE id = $2
+            RETURNING id, name, username, email, is_active, created_at
+            `,
+            [is_active, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "User not found."
+            });
+        }
+
+        res.json({
+            message: is_active
+                ? "User activated successfully."
+                : "User deactivated successfully.",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Admin user status update error:", error);
+
+        res.status(500).json({
+            message: "Unable to update user status."
+        });
+    }
+});
 
 
 app.patch("/api/admin/users/:id/status", requireAdmin, async (req, res) => {
