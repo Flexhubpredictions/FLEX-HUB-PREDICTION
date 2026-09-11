@@ -2317,7 +2317,60 @@
             </div>
 
         </section>
+<!-- =========================================================
+     MATCH RESULTS
+     ========================================================= -->
 
+<section class="admin-section">
+
+    <div class="section-header">
+        <div>
+            <h2>Match Results</h2>
+            <p>
+                Manage completed prediction results.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            class="secondary-button"
+            id="refreshResultsButton"
+        >
+            Refresh Results
+        </button>
+    </div>
+
+    <div class="table-wrapper">
+
+        <table class="admin-table">
+
+            <thead>
+                <tr>
+                    <th>League</th>
+                    <th>Match</th>
+                    <th>Date</th>
+                    <th>Prediction</th>
+                    <th>Category</th>
+                    <th>Result</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="resultsTableBody">
+
+                <tr>
+                    <td colspan="7">
+                        Loading match results...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
 
         <!-- =================================================
              END OF ADMIN CONTENT
@@ -2507,6 +2560,7 @@ async function openAdmin() {
 
     await Promise.allSettled([
         loadPredictions(),
+        loadResults(),
         loadSubscriptions(),
         loadBettingCodes(),
         loadUsers(),
@@ -4487,7 +4541,310 @@ function startAdminAutoRefresh() {
         );
 }
 
+/* =========================================================
+   MATCH RESULTS
+   ========================================================= */
 
+let adminResults = [];
+
+
+async function loadResults() {
+
+    const table =
+        document.getElementById(
+            "resultsTableBody"
+        );
+
+    if (!table) return;
+
+    try {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Loading match results...
+                </td>
+            </tr>
+        `;
+
+        /*
+         * We already load all predictions through
+         * /api/admin/predictions.
+         *
+         * Completed predictions are the results.
+         */
+
+        adminResults =
+            adminPredictions.filter(
+                item =>
+                    String(
+                        item.status || "pending"
+                    ).toLowerCase() !== "pending"
+            );
+
+        renderResults();
+
+    } catch (error) {
+
+        console.error(
+            "Load results error:",
+            error
+        );
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Unable to load match results.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+function renderResults() {
+
+    const table =
+        document.getElementById(
+            "resultsTableBody"
+        );
+
+    if (!table) return;
+
+    if (!adminResults.length) {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    No completed match results yet.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    table.innerHTML =
+        adminResults.map(item => {
+
+            const status =
+                String(
+                    item.status || "pending"
+                ).toLowerCase();
+
+            let statusClass =
+                "status-pending";
+
+            if (status === "won") {
+                statusClass = "status-won";
+            }
+
+            if (status === "lost") {
+                statusClass = "status-lost";
+            }
+
+            if (status === "void") {
+                statusClass = "status-void";
+            }
+
+            return `
+                <tr>
+
+                    <td>
+                        ${escapeHTML(
+                            item.league || "—"
+                        )}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(
+                                item.home_team || "—"
+                            )}
+                        </strong>
+
+                        <span>
+                            vs
+                        </span>
+
+                        <strong>
+                            ${escapeHTML(
+                                item.away_team || "—"
+                            )}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.match_date || "—"
+                        )}
+
+                        <br>
+
+                        <small>
+                            ${escapeHTML(
+                                item.match_time || ""
+                            )}
+                        </small>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.prediction || "—"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.category || "regular"
+                        )}
+                    </td>
+
+                    <td>
+                        <span
+                            class="status-badge ${statusClass}"
+                        >
+                            ${escapeHTML(status)}
+                        </span>
+                    </td>
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="success-button"
+                            onclick="setMatchResult(
+                                '${item.id}',
+                                'won'
+                            )"
+                        >
+                            Won
+                        </button>
+
+                        <button
+                            type="button"
+                            class="danger-button"
+                            onclick="setMatchResult(
+                                '${item.id}',
+                                'lost'
+                            )"
+                        >
+                            Lost
+                        </button>
+
+                        <button
+                            type="button"
+                            class="warning-button"
+                            onclick="setMatchResult(
+                                '${item.id}',
+                                'void'
+                            )"
+                        >
+                            Void
+                        </button>
+
+                    </td>
+
+                </tr>
+            `;
+
+        }).join("");
+}
+
+
+/* =========================================================
+   SET MATCH RESULT
+   ========================================================= */
+
+async function setMatchResult(
+    id,
+    status
+) {
+
+    const names = {
+        won: "WON",
+        lost: "LOST",
+        void: "VOID"
+    };
+
+    const confirmed =
+        window.confirm(
+            "Mark this prediction as " +
+            names[status] +
+            "?"
+        );
+
+    if (!confirmed) return;
+
+    try {
+
+        await apiRequest(
+            "/predictions/" +
+            id +
+            "/status",
+            {
+                method: "PATCH",
+
+                body: JSON.stringify({
+                    status
+                })
+            }
+        );
+
+        await loadPredictions();
+
+        await loadResults();
+
+        updateStats();
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+/* =========================================================
+   REFRESH RESULTS
+   ========================================================= */
+
+const refreshResultsButton =
+    document.getElementById(
+        "refreshResultsButton"
+    );
+
+if (refreshResultsButton) {
+
+    refreshResultsButton.addEventListener(
+        "click",
+        async () => {
+
+            refreshResultsButton.disabled =
+                true;
+
+            refreshResultsButton.textContent =
+                "Refreshing...";
+
+            try {
+
+                await loadPredictions();
+
+                await loadResults();
+
+                updateStats();
+
+            } finally {
+
+                refreshResultsButton.disabled =
+                    false;
+
+                refreshResultsButton.textContent =
+                    "Refresh Results";
+            }
+        }
+    );
+}
+    
 /* =========================================================
    FINAL SESSION START
    ========================================================= */
