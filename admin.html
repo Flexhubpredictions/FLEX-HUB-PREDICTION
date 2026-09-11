@@ -2581,13 +2581,44 @@ async function checkSession() {
     const token = getToken();
 
     if (!token) {
+
         showLoginPage();
+
         return;
+    }
+
+    /*
+     * A saved admin token exists.
+     * Hide the login screen immediately so it
+     * does not flash while the session is verified.
+     */
+    const loginPage =
+        document.getElementById(
+            "loginPage"
+        );
+
+    const adminApp =
+        document.getElementById(
+            "adminApp"
+        );
+
+    if (loginPage) {
+
+        loginPage.style.display =
+            "none";
+    }
+
+    if (adminApp) {
+
+        adminApp.style.display =
+            "block";
     }
 
     try {
 
-        await apiRequest("/admin/me");
+        await apiRequest(
+            "/admin/me"
+        );
 
         await openAdmin();
 
@@ -2598,7 +2629,6 @@ async function checkSession() {
         showLoginPage();
     }
 }
-
 
 /* =========================================================
    LOGIN
