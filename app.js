@@ -598,7 +598,7 @@ async function checkUserSession() {
 
     try {
 
-        // Validate the saved login first
+        // Validate the saved login
         const userData =
             await apiRequest(
                 "/user/me"
@@ -619,53 +619,16 @@ async function checkUserSession() {
         updateUserUI();
 
         /*
-         * Open the website immediately after
-         * the login session is confirmed.
+         * TEMPORARY:
+         * Regular GH₵50 payment access is bypassed
+         * while Paystack account activation is pending.
          *
-         * This prevents the login gate from appearing
-         * while the regular-access request is loading.
+         * Logged-in users can enter the website
+         * immediately.
          */
         openMainWebsite();
 
-        /*
-         * Check regular access in the background.
-         * If access has expired, show the payment gate.
-         */
-        try {
-
-            const access =
-                await apiRequest(
-                    "/regular-access/status"
-                );
-
-            if (
-                access &&
-                access.active === true
-            ) {
-
-                return true;
-            }
-
-            // Access is not active
-            showRegularPaymentGate(
-                access
-            );
-
-            return false;
-
-        } catch (accessError) {
-
-            console.error(
-                "Regular access check failed:",
-                accessError
-            );
-
-            /*
-             * Keep the website open if the access
-             * status request temporarily fails.
-             */
-            return true;
-        }
+        return true;
 
     } catch (error) {
 
