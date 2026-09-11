@@ -3968,7 +3968,7 @@ function renderUsers() {
                 user.name,
                 user.username,
                 user.email,
-                user.status
+                user.is_active
             ]
             .filter(Boolean)
             .some(value =>
@@ -3993,13 +3993,11 @@ function renderUsers() {
 
     table.innerHTML = users.map(user => {
 
-        const status =
-            String(
-                user.status || "active"
-            ).toLowerCase();
+     const active = user.is_active !== false;
 
-        const active =
-            status === "active";
+const status = active
+    ? "active"
+    : "disabled";
 
         return `
             <tr>
@@ -4091,41 +4089,33 @@ if (userSearchInput) {
    USER STATUS
    ========================================================= */
 
-async function toggleUserStatus(
-    id,
-    currentStatus
-) {
-
+async function toggleUserStatus(id, currentStatus) {
     const active =
-        String(currentStatus)
-            .toLowerCase() === "active";
+        String(currentStatus).toLowerCase() === "active";
 
-    const newStatus =
-        active
-            ? "disabled"
-            : "active";
+    const newActive = !active;
 
     try {
-
         await apiRequest(
-            "/admin/users/" + id + "/status",
+            "/admin/users/" + id,
             {
                 method: "PATCH",
-
                 body: JSON.stringify({
-                    status: newStatus
+                    is_active: newActive
                 })
             }
         );
 
         await loadUsers();
+        updateStats();
 
     } catch (error) {
-
-        alert(error.message);
+        alert(
+            error.message ||
+            "Unable to update user status."
+        );
     }
 }
-
 
 /* =========================================================
    DELETE USER
