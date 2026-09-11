@@ -1684,6 +1684,225 @@ app.get("/api/vip/betting-codes", requireVip, async (req, res) => {
   }
 });
 // ==================== END BETTING CODES ====================
+// ==================== PAYSTACK PAYMENTS ====================
+
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
+app.post("/api/payments/initialize", requireUser, async (req, res) => {
+  try {
+    if (!PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({
+        message: "Paystack is not configured on the server."
+      });
+    }
+
+    const userResult = await db.query(
+      `SELECT id, name, username, email
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found."
+      });
+    }
+
+    const response = await fetch(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: 5000,
+          currency: "GHS",
+          callback_url:
+            process.env.PAYSTACK_CALLBACK_URL ||
+            "https://flexhubpredictions.com/payment-success.html",
+          metadata: {
+            user_id: user.id,
+            username: user.username,
+            payment_type: "regular_access"
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.status) {
+      console.error("Paystack initialization error:", data);
+
+      return res.status(400).json({
+        message:
+          data.message ||
+          "Unable to initialize Paystack payment."
+      });
+    }
+
+    res.json({
+      success: true,
+      authorization_url: data.data.authorization_url,
+      access_code: data.data.access_code,
+      reference: data.data.reference
+    });
+
+  } catch (error) {
+    console.error("Paystack initialize error:", error);
+
+    res.status(500).json({
+      message: "Unable to start payment."
+    });
+  }
+});
+
+
+app.get("/api/payments/verify/:reference", requireUser, async (req, res) => {
+  try {
+    if (!PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({
+        message: "Paystack is not configured on the server."
+      });
+    }
+
+    const reference = String(req.params.reference || "").trim();
+
+    if (!reference) {
+      return res.status(400).json({
+        message: "Payment reference is required."
+      });
+    }
+
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.status || !data.data) {
+      return res.status(400).json({
+        message: data.message || "Unable to verify payment."
+      });
+    }
+
+    const payment = data.data;
+
+    if (payment.status !== "success") {
+      return res.status(400).json({
+        message: "Payment has not been completed."
+      });
+    }
+
+    if (payment.currency !== "GHS") {
+      return res.status(400).json({
+        message: "Invalid payment currency."
+      });
+    }
+
+    if (Number(payment.amount) !== 5000) {
+      return res.status(400).json({
+        message: "Invalid payment amount."
+      });
+    }
+
+    const metadata = payment.metadata || {};
+
+    if (
+      String(metadata.payment_type || "") !==
+      "regular_access"
+    ) {
+      return res.status(400).json({
+        message: "Invalid payment type."
+      });
+    }
+
+    if (
+      Number(metadata.user_id) !==
+      Number(req.user.id)
+    ) {
+      return res.status(403).json({
+        message: "This payment does not belong to your account."
+      });
+    }
+
+    const userResult = await db.query(
+      `SELECT id, regular_access_expires_at
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found."
+      });
+    }
+
+    const now = new Date();
+
+    let startDate = now;
+
+    if (
+      user.regular_access_expires_at &&
+      new Date(user.regular_access_expires_at) > now
+    ) {
+      startDate = new Date(user.regular_access_expires_at);
+    }
+
+    const expiresAt = new Date(
+      startDate.getTime() +
+      30 * 24 * 60 * 60 * 1000
+    );
+
+    await db.query(
+      `UPDATE users
+       SET regular_access_expires_at = $1
+       WHERE id = $2`,
+      [expiresAt.toISOString(), req.user.id]
+    );
+
+    await logActivity(
+      user,
+      "REGULAR_ACCESS_PAYMENT",
+      `Paystack payment successful. Reference: ${reference}. Access expires: ${expiresAt.toISOString()}`
+    );
+
+    res.json({
+      success: true,
+      message: "Payment successful. Regular access activated.",
+      reference,
+      accessActive: true,
+      expiresAt: expiresAt.toISOString()
+    });
+
+  } catch (error) {
+    console.error("Paystack verification error:", error);
+
+    res.status(500).json({
+      message: "Unable to verify payment."
+    });
+  }
+});
+
+// ==================== END PAYSTACK PAYMENTS ====================
 app.use((req, res) => {
   res.status(404).json({ message: "API route not found." });
 });
