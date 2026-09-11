@@ -253,15 +253,163 @@ function getTokenFromRequest(req) {
 function requireUser(req, res, next) {
   try {
     const token = getTokenFromRequest(req);
-    if (!token) return res.status(401).json({ message: "Please login first." });
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Please login first."
+      });
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== "user") return res.status(401).json({ message: "Invalid user token." });
+
+    if (decoded.type !== "user") {
+      return res.status(401).json({
+        message: "Invalid user token."
+      });
+    }
+
     req.user = decoded;
     next();
+
   } catch {
-    return res.status(401).json({ message: "Your session has expired. Please login again." });
+    return res.status(401).json({
+      message: "Your session has expired. Please login again."
+    });
   }
 }
+
+
+/*
+=========================================================
+REGULAR ACCESS PROTECTION
+=========================================================
+*/
+
+async function requireRegularAccess(req, res, next) {
+  try {
+
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Please login first."
+      });
+    }
+
+    const result = await db.query(
+      `SELECT
+         id,
+         name,
+         username,
+         email,
+         is_active,
+         regular_access_expires_at
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [userId]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found."
+      });
+    }
+
+    if (user.is_active === false) {
+      return res.status(403).json({
+        message: "Your account has been disabled by the administrator."
+      });
+    }
+
+    if (
+      !user.regular_access_expires_at ||
+      new Date(user.regular_access_expires_at) <= new Date()
+    ) {
+      return res.status(402).json({
+        message: "Regular access has expired. Please make a GHS 50 payment to continue.",
+        code: "REGULAR_ACCESS_REQUIRED",
+        accessActive: false,
+        expiresAt: user.regular_access_expires_at || null
+      });
+    }
+
+    req.regularAccess = {
+      active: true,
+      expiresAt: user.regular_access_expires_at
+    };
+
+    next();
+
+  } catch (error) {
+
+    console.error("Regular access check error:", error);
+
+    return res.status(500).json({
+      message: "Unable to verify your regular access."
+    });
+  }
+}
+app.get("/api/regular-access/status", requireUser, async (req, res) => {
+  try {
+
+    const result = await db.query(
+      `SELECT
+         regular_access_expires_at
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found."
+      });
+    }
+
+    const expiresAt = user.regular_access_expires_at;
+
+    const active =
+      !!expiresAt &&
+      new Date(expiresAt) > new Date();
+
+    let remainingMilliseconds = 0;
+    let remainingDays = 0;
+
+    if (active) {
+      remainingMilliseconds =
+        new Date(expiresAt).getTime() - Date.now();
+
+      remainingDays = Math.max(
+        0,
+        Math.ceil(
+          remainingMilliseconds /
+          (1000 * 60 * 60 * 24)
+        )
+      );
+    }
+
+    res.json({
+      active,
+      expiresAt: expiresAt || null,
+      remainingDays
+    });
+
+  } catch (error) {
+
+    console.error("Regular access status error:", error);
+
+    res.status(500).json({
+      message: "Unable to load regular access status."
+    });
+  }
+});
+
 app.post("/api/logout", requireUser, async (req, res) => {
   try {
     const result = await db.query(
