@@ -3457,18 +3457,26 @@ async function checkSession() {
 
         await apiRequest("/admin/me");
 
-        openAdmin();
+        await openAdmin();
 
     } catch (error) {
 
-        console.error("Admin session check failed:", error);
+        console.error(
+            "Admin session check failed:",
+            error
+        );
 
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        /*
+         * Keep the saved admin token.
+         * Do not destroy the login session
+         * because of a temporary API failure.
+         */
 
         showLoginPage();
-    }
-}
 
+    }
+
+}
 function showLoginPage() {
 
     const loginPage =
