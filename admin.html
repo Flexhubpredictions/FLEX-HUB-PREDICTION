@@ -5997,10 +5997,7 @@ async function loadActivityLog() {
 
 function renderActivityLog(activities = adminActivityLogs) {
 
-    const tableBody =
-        document.getElementById(
-            "activityLogTableBody"
-        );
+    const tableBody = document.getElementById("activityLogTableBody");
 
     if (!tableBody) return;
 
@@ -6017,59 +6014,74 @@ function renderActivityLog(activities = adminActivityLogs) {
         return;
     }
 
-    tableBody.innerHTML =
-        activities.map(activity => {
+    tableBody.innerHTML = activities.map(activity => {
 
-            const action =
-                activity.action ||
-                activity.activity ||
-                activity.type ||
-                "-";
+        const dateTime =
+            activity.created_at ||
+            activity.createdAt ||
+            activity.date ||
+            activity.timestamp ||
+            "-";
 
-            const admin =
-                activity.admin ||
-                activity.admin_username ||
-                activity.username ||
-                activity.user ||
-                "Admin";
+        const name =
+            activity.name ||
+            "-";
 
-            const target =
-                activity.target ||
-                activity.target_type ||
-                activity.description ||
-                "-";
+        const username =
+            activity.username ||
+            activity.user_username ||
+            "-";
 
-            return `
-                <tr>
+        const action =
+            activity.action ||
+            activity.activity ||
+            activity.type ||
+            "-";
 
-                    <td>
-                        ${escapeHTML(admin)}
-                    </td>
+        const details =
+            activity.details ||
+            activity.description ||
+            activity.target ||
+            "-";
 
-                    <td>
-                        ${escapeHTML(action)}
-                    </td>
+        let formattedDate = dateTime;
 
-                    <td>
-                        ${escapeHTML(target)}
-                    </td>
+        if (dateTime !== "-") {
 
-                    <td>
-                        ${escapeHTML(
-                            activity.ip_address || "-"
-                        )}
-                    </td>
+            const date = new Date(dateTime);
 
-                    <td>
-                        ${formatDate(
-                            activity.created_at
-                        )}
-                    </td>
+            if (!isNaN(date.getTime())) {
+                formattedDate = date.toLocaleString();
+            }
+        }
 
-                </tr>
-            `;
+        return `
+            <tr>
 
-        }).join("");
+                <td>
+                    ${escapeHTML(formattedDate)}
+                </td>
+
+                <td>
+                    ${escapeHTML(name)}
+                </td>
+
+                <td>
+                    ${escapeHTML(username)}
+                </td>
+
+                <td>
+                    ${escapeHTML(action)}
+                </td>
+
+                <td>
+                    ${escapeHTML(details)}
+                </td>
+
+            </tr>
+        `;
+
+    }).join("");
 }
 
 /* =========================================
