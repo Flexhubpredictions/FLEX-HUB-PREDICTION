@@ -580,15 +580,15 @@ if (data.token) {
         );
     }
 }
-
 // ======================================================
-// CHECK USER SESSION
-// ======================================================
+ // CHECK USER SESSION
+ // ======================================================
 
 async function checkUserSession() {
 
     const token = getUserToken();
 
+    // No saved login
     if (!token) {
 
         showAccountGate();
@@ -598,46 +598,74 @@ async function checkUserSession() {
 
     try {
 
-        const data =
+        // Validate the saved login first
+        const userData =
             await apiRequest(
                 "/user/me"
             );
 
-        if (!data.user) {
+        if (!userData.user) {
 
             throw new Error(
                 "Invalid user session."
             );
         }
 
+        // Keep the latest user information
         saveUser(
-            data.user
+            userData.user
         );
 
         updateUserUI();
 
-        // Check regular access before opening the main website
-        const access =
-            await apiRequest(
-                "/regular-access/status"
+        /*
+         * Open the website immediately after
+         * the login session is confirmed.
+         *
+         * This prevents the login gate from appearing
+         * while the regular-access request is loading.
+         */
+        openMainWebsite();
+
+        /*
+         * Check regular access in the background.
+         * If access has expired, show the payment gate.
+         */
+        try {
+
+            const access =
+                await apiRequest(
+                    "/regular-access/status"
+                );
+
+            if (
+                access &&
+                access.active === true
+            ) {
+
+                return true;
+            }
+
+            // Access is not active
+            showRegularPaymentGate(
+                access
             );
 
-        if (
-            access &&
-            access.active === true
-        ) {
+            return false;
 
-            openMainWebsite();
+        } catch (accessError) {
 
+            console.error(
+                "Regular access check failed:",
+                accessError
+            );
+
+            /*
+             * Keep the website open if the access
+             * status request temporarily fails.
+             */
             return true;
         }
-
-        // No active regular access
-        showRegularPaymentGate(
-            access
-        );
-
-        return false;
 
     } catch (error) {
 
@@ -646,19 +674,6 @@ async function checkUserSession() {
             error
         );
 
-        // Payment/access required is not a session failure
-        if (
-            error.message &&
-            error.message.includes(
-                "Regular access"
-            )
-        ) {
-
-            showRegularPaymentGate();
-
-            return false;
-        }
-
         clearUserSession();
 
         showAccountGate();
@@ -666,7 +681,6 @@ async function checkUserSession() {
         return false;
     }
 }
-
 // ======================================================
 // ACCOUNT GATE
 // ======================================================
