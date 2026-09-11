@@ -749,7 +749,7 @@ function showRegularPaymentGate(access = null) {
                 <p class="regular-payment-info">
                     Pay GHS 50 to unlock all regular
                     predictions and betting codes for
-                    <strong>14 days</strong>.
+                    <strong>30 days</strong>.
                 </p>
 
                 <button
