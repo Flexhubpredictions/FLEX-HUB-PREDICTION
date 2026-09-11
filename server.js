@@ -250,7 +250,7 @@ function getTokenFromRequest(req) {
   return authHeader.split(" ")[1];
 }
 
-function requireUser(req, res, next) {
+async function requireUser(req, res, next) {
   try {
     const token = getTokenFromRequest(req);
 
@@ -268,6 +268,25 @@ function requireUser(req, res, next) {
       });
     }
 
+    const result = await db.query(
+      "SELECT id, is_active FROM users WHERE id = $1",
+      [decoded.id]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({
+        message: "User account not found."
+      });
+    }
+
+    if (user.is_active === false) {
+      return res.status(403).json({
+        message: "Your account has been disabled by the administrator."
+      });
+    }
+
     req.user = decoded;
     next();
 
@@ -277,8 +296,6 @@ function requireUser(req, res, next) {
     });
   }
 }
-
-
 /*
 =========================================================
 REGULAR ACCESS PROTECTION
@@ -829,15 +846,48 @@ async function requireVip(req, res, next) {
     if (!token) return res.status(401).json({ message: "VIP access required." });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== "vip") return res.status(401).json({ message: "Invalid VIP token." });
+   if (decoded.type !== "vip") {
+  return res.status(401).json({
+    message: "Invalid VIP token."
+  });
+}
 
-    const { rows } = await db.query(
-      "SELECT * FROM vip_subscriptions WHERE id = $1",
-      [decoded.subscriptionId]
-    );
+const userResult = await db.query(
+  "SELECT id, is_active FROM users WHERE id = $1",
+  [decoded.id]
+);
+
+const user = userResult.rows[0];
+
+if (!user) {
+  return res.status(401).json({
+    message: "User account not found."
+  });
+}
+
+if (user.is_active === false) {
+  return res.status(403).json({
+    message: "Your account has been disabled by the administrator."
+  });
+}
+
+const { rows } = await db.query(
+  "SELECT * FROM vip_subscriptions WHERE id = $1",
+  [decoded.subscriptionId]
+);
     const subscription = rows[0];
 
-    if (!subscription) return res.status(401).json({ message: "VIP subscription not found." });
+    if (!subscription) {
+  return res.status(401).json({
+    message: "VIP subscription not found."
+  });
+}
+
+if (String(subscription.user_id) !== String(decoded.id)) {
+  return res.status(401).json({
+    message: "Invalid VIP subscription."
+  });
+}
 
     if (subscription.status !== "active") {
       return res.status(401).json({ message: "VIP subscription is not active." });
@@ -921,7 +971,13 @@ app.post("/api/login", async (req, res) => {
     );
     const user = result.rows[0];
 
-    if (!user) return res.status(401).json({ message: "Invalid login details." });
+   if (!user) return res.status(401).json({ message: "Invalid login details." });
+
+if (user.is_active === false) {
+  return res.status(403).json({
+    message: "Your account has been disabled by the administrator."
+  });
+}
 
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) return res.status(401).json({ message: "Invalid login details." });
