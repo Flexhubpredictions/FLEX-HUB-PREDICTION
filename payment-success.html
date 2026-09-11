@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Payment Successful - FLEX HUB PREDICTIONS</title>
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: #0b1220;
+            color: white;
+            text-align: center;
+        }
+
+        .payment-card {
+            width: min(90%, 430px);
+            padding: 35px 25px;
+            border-radius: 18px;
+            background: #111c2e;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+        }
+
+        .payment-icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        #paymentMessage {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 13px 22px;
+            border-radius: 10px;
+            background: #16a34a;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="payment-card">
+
+        <div class="payment-icon">
+            ⏳
+        </div>
+
+        <h1>
+            Processing Payment
+        </h1>
+
+        <p id="paymentMessage">
+            Please wait while we confirm your payment...
+        </p>
+
+        <a
+            href="./"
+            class="back-button"
+            id="backButton"
+            style="display:none;"
+        >
+            Return to FLEX HUB
+        </a>
+
+    </div>
+
+    <script>
+        const API_BASE_URL =
+            "https://flex-hub-prediction.onrender.com/api";
+
+        const message =
+            document.getElementById(
+                "paymentMessage"
+            );
+
+        const backButton =
+            document.getElementById(
+                "backButton"
+            );
+
+        async function verifyPayment() {
+
+            try {
+
+                const params =
+                    new URLSearchParams(
+                        window.location.search
+                    );
+
+                const reference =
+                    params.get("reference");
+
+                const token =
+                    localStorage.getItem(
+                        "flexHubUserToken"
+                    );
+
+                if (!reference) {
+                    throw new Error(
+                        "Payment reference was not found."
+                    );
+                }
+
+                if (!token) {
+                    throw new Error(
+                        "Please log in again to activate your access."
+                    );
+                }
+
+                const response =
+                    await fetch(
+                        `${API_BASE_URL}/payments/verify/${encodeURIComponent(reference)}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Authorization":
+                                    `Bearer ${token}`
+                            }
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        "Payment verification failed."
+                    );
+                }
+
+                message.textContent =
+                    data.message ||
+                    "Payment successful. Your regular access has been activated.";
+
+                document.querySelector(
+                    ".payment-icon"
+                ).textContent = "✅";
+
+                document.querySelector(
+                    "h1"
+                ).textContent =
+                    "Payment Successful";
+
+                backButton.style.display =
+                    "inline-block";
+
+            } catch (error) {
+
+                console.error(
+                    "Payment verification error:",
+                    error
+                );
+
+                message.textContent =
+                    error.message ||
+                    "We could not verify your payment.";
+
+                document.querySelector(
+                    ".payment-icon"
+                ).textContent = "❌";
+
+                document.querySelector(
+                    "h1"
+                ).textContent =
+                    "Payment Verification";
+
+                backButton.style.display =
+                    "inline-block";
+            }
+        }
+
+        verifyPayment();
+    </script>
+
+</body>
+</html>
