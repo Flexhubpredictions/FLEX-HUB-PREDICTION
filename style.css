@@ -3327,3 +3327,197 @@ input:focus-visible {
         height: 110px;
     }
 }
+
+/* =========================================================
+   FLEX HUB ENGINE ROOM
+   OUR PHILOSOPHY
+========================================================= */
+.engine-philosophy {
+    position: relative;
+    max-width: 1100px;
+    margin:
+        70px auto 0;
+    padding:
+        55px 0 10px;
+    border-top:
+        1px solid var(--border);
+}
+/* =========================================================
+   PHILOSOPHY HEADING
+========================================================= */
+.engine-philosophy-heading {
+    max-width: 760px;
+    margin:
+        0 auto 38px;
+    text-align: center;
+}
+.engine-philosophy-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    padding:
+        7px 13px;
+    border:
+        1px solid var(--blue-border);
+    border-radius: 30px;
+    background:
+        rgba(22, 119, 255, 0.07);
+    color:
+        var(--blue-light);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+}
+.engine-philosophy-heading h2 {
+    margin:
+        15px 0 12px;
+    color:
+        var(--white);
+    font-size:
+        clamp(28px, 4vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    font-weight: 950;
+}
+.engine-philosophy-heading h2 span {
+    color:
+        var(--gold);
+}
+.engine-philosophy-heading p {
+    max-width: 680px;
+    margin:
+        0 auto;
+    color:
+        var(--muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+/* =========================================================
+   PHILOSOPHY CARDS
+========================================================= */
+.engine-philosophy-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+.engine-philosophy-card {
+    position: relative;
+    overflow: hidden;
+    padding:
+        26px 23px;
+    min-height: 220px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20, 27, 37, 0.96),
+            rgba(7, 10, 15, 0.98)
+        );
+    border:
+        1px solid var(--border);
+    border-radius: 18px;
+    box-shadow:
+        0 15px 35px rgba(0, 0, 0, 0.25);
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+.engine-philosophy-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background:
+        linear-gradient(
+            90deg,
+            var(--gold),
+            var(--blue)
+        );
+    opacity: 0.55;
+}
+.engine-philosophy-card::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    right: -65px;
+    bottom: -65px;
+    border-radius: 50%;
+    background:
+        rgba(22, 119, 255, 0.07);
+    filter:
+        blur(20px);
+    pointer-events: none;
+}
+.engine-philosophy-card:hover {
+    transform:
+        translateY(-5px);
+    border-color:
+        var(--blue-border);
+    box-shadow:
+        0 22px 45px rgba(0, 0, 0, 0.35),
+        0 0 25px rgba(22, 119, 255, 0.05);
+}
+/* =========================================================
+   PHILOSOPHY ICON
+========================================================= */
+.engine-philosophy-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(244, 197, 66, 0.13),
+            rgba(22, 119, 255, 0.08)
+        );
+    border:
+        1px solid var(--gold-border);
+    font-size: 21px;
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.20);
+}
+.engine-philosophy-card h3 {
+    margin:
+        0 0 9px;
+    color:
+        var(--white);
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+}
+.engine-philosophy-card p {
+    color:
+        var(--muted);
+    font-size: 12px;
+    line-height: 1.75;
+}
+/* =========================================================
+   MOBILE
+========================================================= */
+@media (max-width: 700px) {
+    .engine-philosophy {
+        margin-top: 55px;
+        padding-top: 40px;
+    }
+    .engine-philosophy-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+    .engine-philosophy-card {
+        min-height: auto;
+        padding: 23px 20px;
+    }
+    .engine-philosophy-heading h2 {
+        font-size: 30px;
+    }
+    .engine-philosophy-heading p {
+        font-size: 12px;
+    }
+}
