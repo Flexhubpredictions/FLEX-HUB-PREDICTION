@@ -4547,7 +4547,6 @@ function startAdminAutoRefresh() {
 
 let adminResults = [];
 
-
 async function loadResults() {
 
     const table =
@@ -4567,29 +4566,15 @@ async function loadResults() {
             </tr>
         `;
 
-        /*
-         * Load ALL completed results from the backend.
-         *
-         * This includes:
-         * 1. Current completed predictions
-         * 2. Older archived results
-         */
-
         const response =
             await apiRequest(
-                "/predictions?results=true"
+                "/admin/results"
             );
 
         adminResults =
-            Array.isArray(response)
-                ? response
-                : (
-                    Array.isArray(
-                        response.results
-                    )
-                        ? response.results
-                        : []
-                );
+            Array.isArray(response.results)
+                ? response.results
+                : [];
 
         renderResults();
 
@@ -4609,6 +4594,7 @@ async function loadResults() {
         `;
     }
 }
+
 function renderResults() {
 
     const table =
