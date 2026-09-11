@@ -2498,155 +2498,108 @@ async function checkSession() {
    ADMIN LOGIN
 ========================================= */
 
-const adminLoginForm =
-    document.getElementById(
-        "adminLoginForm"
-    );
 
+const adminLoginForm = document.getElementById("adminLoginForm");
 
 if (adminLoginForm) {
+    adminLoginForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-    adminLoginForm.addEventListener(
-        "submit",
-        async function(event) {
+        const usernameInput =
+            document.getElementById("adminUsername");
 
-            event.preventDefault();
+        const passwordInput =
+            document.getElementById("adminPassword");
 
+        const loginButton =
+            document.getElementById("adminLoginButton");
 
-            const username =
-                document.getElementById(
-                    "adminUsername"
-                ).value.trim();
+        const loginMessage =
+            document.getElementById("loginMessage");
 
+        const username =
+            usernameInput ? usernameInput.value.trim() : "";
 
-            const password =
-                document.getElementById(
-                    "adminPassword"
-                ).value;
+        const password =
+            passwordInput ? passwordInput.value : "";
 
-
-            const button =
-                document.getElementById(
-                    "adminLoginButton"
-                );
-
-
-            const message =
-                document.getElementById(
-                    "loginMessage"
-                );
-
-
-            if (!username || !password) {
-
-                showMessage(
-                    message,
-                    "Please enter your username and password.",
-                    "error"
-                );
-
-                return;
-
+        if (!username || !password) {
+            if (loginMessage) {
+                loginMessage.textContent =
+                    "Please enter your username and password.";
+                loginMessage.className = "error-message";
             }
-
-
-            try {
-
-                setButtonLoading(
-                    button,
-                    true,
-                    "Logging in..."
-                );
-
-
-                showMessage(
-                    message,
-                    ""
-                );
-
-
-                const data =
-                    await apiRequest(
-                        "/admin/login",
-                        {
-                            method: "POST",
-
-                            body:
-                                JSON.stringify({
-                                    username,
-                                    password
-                                })
-                        }
-                    );
-
-
-                if (!data.token) {
-
-                    throw new Error(
-                        "Admin login did not return a token."
-                    );
-
-                }
-
-
-                /*
-                 * Save the admin token.
-                 *
-                 * This is what allows the admin
-                 * panel to survive page refreshes.
-                 */
-
-                localStorage.setItem(
-                    ADMIN_TOKEN_KEY,
-                    data.token
-                );
-
-
-                showMessage(
-                    message,
-                    "Login successful.",
-                    "success"
-                );
-
-
-                /*
-                 * Open the admin panel.
-                 */
-
-                await openAdmin();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Admin login error:",
-                    error
-                );
-
-
-                showMessage(
-                    message,
-                    error.message ||
-                    "Unable to log in.",
-                    "error"
-                );
-
-
-            } finally {
-
-                setButtonLoading(
-                    button,
-                    false,
-                    "LOGIN TO ADMIN PANEL"
-                );
-
-            }
-
+            return;
         }
-    );
 
+        setButtonLoading(
+            loginButton,
+            true,
+            "Login"
+        );
+
+        try {
+            const data = await apiRequest("/admin/login", {
+                method: "POST",
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            console.log("Admin login response:", data);
+
+            if (!data || !data.token) {
+                throw new Error(
+                    data?.message ||
+                    data?.error ||
+                    "Login failed. No admin token was returned."
+                );
+            }
+
+            localStorage.setItem(
+                ADMIN_TOKEN_KEY,
+                data.token
+            );
+
+            if (loginMessage) {
+                loginMessage.textContent =
+                    "Login successful.";
+                loginMessage.className =
+                    "success-message";
+            }
+
+            await openAdmin();
+
+        } catch (error) {
+
+            console.error(
+                "Admin login error:",
+                error
+            );
+
+            localStorage.removeItem(
+                ADMIN_TOKEN_KEY
+            );
+
+            if (loginMessage) {
+                loginMessage.textContent =
+                    error.message ||
+                    "Unable to log in.";
+                loginMessage.className =
+                    "error-message";
+            }
+
+        } finally {
+
+            setButtonLoading(
+                loginButton,
+                false,
+                "Login"
+            );
+        }
+    });
 }
-
 
 /* =========================================
    LOGOUT
