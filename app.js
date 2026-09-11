@@ -33,6 +33,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = getStoredUser();
 
+    /*
+     * Prevent the account gate from flashing
+     * when a logged-in user refreshes the page.
+     */
+    const savedToken = getUserToken();
+
+    const accountGate =
+        document.getElementById(
+            "accountGate"
+        );
+
+    const mainWebsite =
+        document.getElementById(
+            "mainWebsite"
+        );
+
+    if (
+        savedToken &&
+        accountGate &&
+        mainWebsite
+    ) {
+
+        accountGate.style.display = "none";
+
+        mainWebsite.style.display = "";
+    }
+
     setupAccountForms();
     setupNavigation();
     setupSearch();
@@ -44,15 +71,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupWhatsAppLinks();
 
     // VIP page
-    if (document.body.classList.contains("vip-page")) {
+    if (
+        document.body.classList.contains(
+            "vip-page"
+        )
+    ) {
+
         await setupVipPage();
+
         return;
     }
 
     // Main website
     await checkUserSession();
 });
-
 // ======================================================
 // STORAGE
 // ======================================================
