@@ -2655,3 +2655,15 @@ input:focus-visible {
     }
 
 }
+
+/* =========================================================
+   ADMIN PANEL VISIBILITY
+   ========================================================= */
+
+.login-page {
+    display: flex;
+}
+
+.admin-app {
+    display: none;
+}
