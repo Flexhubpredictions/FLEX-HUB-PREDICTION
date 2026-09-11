@@ -4654,6 +4654,16 @@ function renderResults() {
                 statusClass = "status-void";
             }
 
+            const category =
+                String(
+                    item.category || "regular"
+                ).toLowerCase();
+
+            const isArchived =
+                item.source === "archived" ||
+                item.archived === true ||
+                item.prediction_result === true;
+
             return `
                 <tr>
 
@@ -4703,7 +4713,7 @@ function renderResults() {
 
                     <td>
                         ${escapeHTML(
-                            item.category || "regular"
+                            category
                         )}
                     </td>
 
@@ -4711,44 +4721,56 @@ function renderResults() {
                         <span
                             class="status-badge ${statusClass}"
                         >
-                            ${escapeHTML(status)}
+                            ${escapeHTML(
+                                status.toUpperCase()
+                            )}
                         </span>
                     </td>
 
                     <td>
 
-                        <button
-                            type="button"
-                            class="success-button"
-                            onclick="setMatchResult(
-                                '${item.id}',
-                                'won'
-                            )"
-                        >
-                            Won
-                        </button>
+                        ${
+                            isArchived
+                                ? `
+                                    <span>
+                                        Archived Result
+                                    </span>
+                                  `
+                                : `
+                                    <button
+                                        type="button"
+                                        class="success-button"
+                                        onclick="setMatchResult(
+                                            '${item.id}',
+                                            'won'
+                                        )"
+                                    >
+                                        Won
+                                    </button>
 
-                        <button
-                            type="button"
-                            class="danger-button"
-                            onclick="setMatchResult(
-                                '${item.id}',
-                                'lost'
-                            )"
-                        >
-                            Lost
-                        </button>
+                                    <button
+                                        type="button"
+                                        class="danger-button"
+                                        onclick="setMatchResult(
+                                            '${item.id}',
+                                            'lost'
+                                        )"
+                                    >
+                                        Lost
+                                    </button>
 
-                        <button
-                            type="button"
-                            class="warning-button"
-                            onclick="setMatchResult(
-                                '${item.id}',
-                                'void'
-                            )"
-                        >
-                            Void
-                        </button>
+                                    <button
+                                        type="button"
+                                        class="warning-button"
+                                        onclick="setMatchResult(
+                                            '${item.id}',
+                                            'void'
+                                        )"
+                                    >
+                                        Void
+                                    </button>
+                                  `
+                        }
 
                     </td>
 
@@ -4757,8 +4779,6 @@ function renderResults() {
 
         }).join("");
 }
-
-
 /* =========================================================
    SET MATCH RESULT
    ========================================================= */
