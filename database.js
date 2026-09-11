@@ -165,6 +165,15 @@ async function init() {
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
   `);
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS regular_access_expires_at TIMESTAMPTZ;
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS last_payment_reference TEXT;
+  `);
 
   await pool.query(`
     ALTER TABLE predictions
