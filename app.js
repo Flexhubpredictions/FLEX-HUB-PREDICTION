@@ -672,128 +672,34 @@ function showAccountGate() {
             "none";
     }
 }
+
 /* =========================================================
-   REGULAR ACCESS PAYMENT GATE
+   REGULAR ACCESS PAYMENT GATE — TEMPORARILY DISABLED
    ========================================================= */
 
 function showRegularPaymentGate(access = null) {
 
-    const accountGate =
-        document.getElementById("accountGate");
+    /*
+     * Regular GHS 50 payment gate is temporarily disabled
+     * while Paystack account activation is being reviewed.
+     *
+     * Logged-in users can access the website directly.
+     */
 
-    const mainWebsite =
-        document.getElementById("mainWebsite");
-
-    if (accountGate) {
-        accountGate.style.display = "none";
-    }
-
-    if (mainWebsite) {
-        mainWebsite.style.display = "none";
-    }
-
-    let paymentGate =
-        document.getElementById("regularPaymentGate");
-
-    if (!paymentGate) {
-
-        paymentGate =
-            document.createElement("div");
-
-        paymentGate.id =
-            "regularPaymentGate";
-
-        paymentGate.innerHTML = `
-            <div class="regular-payment-card">
-
-                <div class="regular-payment-icon">
-                    🔒
-                </div>
-
-                <h2>
-                    Regular Access Required
-                </h2>
-
-                <p>
-                    Your regular prediction access is
-                    currently inactive.
-                </p>
-
-                <div class="regular-payment-price">
-                    GHS 50
-                </div>
-
-                <p class="regular-payment-info">
-                    Pay GHS 50 to unlock all regular
-                    predictions and betting codes for
-                    <strong>30 days</strong>.
-                </p>
-
-                <button
-                    type="button"
-                    id="regularPaymentButton"
-                    class="regular-payment-button"
-                >
-                    Pay GHS 50
-                </button>
-
-                <button
-                    type="button"
-                    id="regularPaymentLogout"
-                    class="regular-payment-logout"
-                >
-                    Logout
-                </button>
-
-                <div
-                    id="regularPaymentMessage"
-                    class="regular-payment-message"
-                ></div>
-
-                <div
-                    id="regularAccessExpiry"
-                    class="regular-access-expiry"
-                ></div>
-
-                <p class="regular-payment-note">
-                    VIP access is separate and is not affected
-                    by this payment.
-                </p>
-
-            </div>
-        `;
-
-        document.body.appendChild(
-            paymentGate
-        );
-
-        setupRegularPaymentGate();
-    }
-
-    paymentGate.style.display = "flex";
-    refreshRegularAccessStatus();
-
-    const expiry =
+    const paymentGate =
         document.getElementById(
-            "regularAccessExpiry"
+            "regularPaymentGate"
         );
 
-    if (
-        expiry &&
-        access &&
-        access.expiresAt
-    ) {
+    if (paymentGate) {
 
-        const expiryDate =
-            new Date(
-                access.expiresAt
-            );
-
-        expiry.textContent =
-            "Your previous access expired on " +
-            expiryDate.toLocaleString();
+        paymentGate.style.display =
+            "none";
     }
+
+    openMainWebsite();
 }
+
 /* =========================================================
    REGULAR PAYMENT GATE SETUP — PAYSTACK
    ========================================================= */
