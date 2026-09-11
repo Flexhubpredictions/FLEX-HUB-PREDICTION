@@ -2421,3 +2421,237 @@ input:focus-visible {
         0 0 25px rgba(244, 197, 66, 0.55),
         0 0 40px rgba(244, 197, 66, 0.25);
 }
+
+/* =========================================================
+   REGULAR ACCESS PAYMENT GATE
+   ========================================================= */
+
+#regularPaymentGate {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(5, 10, 25, 0.98),
+            rgba(10, 20, 45, 0.98)
+        );
+
+    overflow-y: auto;
+}
+
+.regular-payment-card {
+    width: 100%;
+    max-width: 460px;
+
+    padding: 38px 28px;
+
+    text-align: center;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+
+    border-radius: 22px;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.45);
+
+    backdrop-filter: blur(16px);
+}
+
+.regular-payment-icon {
+    width: 72px;
+    height: 72px;
+
+    margin: 0 auto 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(255, 193, 7, 0.14);
+
+    font-size: 32px;
+}
+
+.regular-payment-card h2 {
+    margin: 0 0 12px;
+
+    color: #ffffff;
+
+    font-size: 27px;
+
+    font-weight: 800;
+}
+
+.regular-payment-card > p {
+    margin: 0 auto 18px;
+
+    max-width: 380px;
+
+    color: rgba(255, 255, 255, 0.72);
+
+    font-size: 15px;
+
+    line-height: 1.6;
+}
+
+.regular-payment-price {
+    margin: 20px 0;
+
+    color: #ffffff;
+
+    font-size: 42px;
+
+    font-weight: 900;
+}
+
+.regular-payment-info {
+    margin-bottom: 24px !important;
+}
+
+.regular-payment-info strong {
+    color: #ffffff;
+}
+
+.regular-payment-button {
+    width: 100%;
+
+    min-height: 52px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #ffffff;
+
+    color: #111111;
+
+    font-size: 16px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.regular-payment-button:hover {
+    transform: translateY(-2px);
+
+    opacity: 0.92;
+
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+.regular-payment-button:active {
+    transform: translateY(0);
+}
+
+.regular-payment-logout {
+    margin-top: 14px;
+
+    width: 100%;
+
+    min-height: 45px;
+
+    border: 1px solid rgba(255, 255, 255, 0.16);
+
+    border-radius: 12px;
+
+    background: transparent;
+
+    color: rgba(255, 255, 255, 0.72);
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.regular-payment-logout:hover {
+    background: rgba(255, 255, 255, 0.08);
+
+    color: #ffffff;
+}
+
+.regular-payment-message {
+    display: none;
+
+    margin-top: 18px;
+    padding: 12px 14px;
+
+    border-radius: 10px;
+
+    background: rgba(255, 193, 7, 0.10);
+
+    border: 1px solid rgba(255, 193, 7, 0.20);
+
+    color: #ffffff;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+.regular-access-expiry {
+    margin-top: 15px;
+
+    color: rgba(255, 255, 255, 0.50);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.regular-payment-note {
+    margin-top: 24px !important;
+    margin-bottom: 0 !important;
+
+    font-size: 12px !important;
+
+    color: rgba(255, 255, 255, 0.42) !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    #regularPaymentGate {
+        padding: 15px;
+    }
+
+    .regular-payment-card {
+        padding: 30px 20px;
+
+        border-radius: 18px;
+    }
+
+    .regular-payment-card h2 {
+        font-size: 23px;
+    }
+
+    .regular-payment-price {
+        font-size: 36px;
+    }
+
+}
