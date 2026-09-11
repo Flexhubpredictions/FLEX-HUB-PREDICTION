@@ -4568,19 +4568,28 @@ async function loadResults() {
         `;
 
         /*
-         * We already load all predictions through
-         * /api/admin/predictions.
+         * Load ALL completed results from the backend.
          *
-         * Completed predictions are the results.
+         * This includes:
+         * 1. Current completed predictions
+         * 2. Older archived results
          */
 
-        adminResults =
-            adminPredictions.filter(
-                item =>
-                    String(
-                        item.status || "pending"
-                    ).toLowerCase() !== "pending"
+        const response =
+            await apiRequest(
+                "/predictions?results=true"
             );
+
+        adminResults =
+            Array.isArray(response)
+                ? response
+                : (
+                    Array.isArray(
+                        response.results
+                    )
+                        ? response.results
+                        : []
+                );
 
         renderResults();
 
@@ -4600,8 +4609,6 @@ async function loadResults() {
         `;
     }
 }
-
-
 function renderResults() {
 
     const table =
