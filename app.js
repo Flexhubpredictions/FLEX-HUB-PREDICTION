@@ -3318,7 +3318,10 @@ function escapeHtml(value) {
 
 async function loadRegularBettingCodes() {
 
-    const container = document.getElementById("bettingCodesGrid");
+    const container =
+        document.getElementById(
+            "bettingCodesGrid"
+        );
 
     if (!container) {
         return;
@@ -3326,19 +3329,23 @@ async function loadRegularBettingCodes() {
 
     try {
 
-        const response = await fetch(
-            "https://flex-hub-prediction.onrender.com/api/betting-codes"
-        );
+        container.innerHTML = `
+            <div class="loading-state">
+                Loading betting codes...
+            </div>
+        `;
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.message || "Unable to load betting codes."
+        const data =
+            await apiRequest(
+                "/betting-codes"
             );
-        }
 
-        const bettingCodes = data.bettingCodes || [];
+        const bettingCodes =
+            Array.isArray(data.bettingCodes)
+                ? data.bettingCodes
+                : Array.isArray(data.codes)
+                    ? data.codes
+                    : [];
 
         if (!bettingCodes.length) {
 
@@ -3351,60 +3358,75 @@ async function loadRegularBettingCodes() {
             return;
         }
 
-        container.innerHTML = bettingCodes.map(code => `
+        container.innerHTML =
+            bettingCodes.map(code => `
 
-            <div class="betting-code-card">
+                <div class="betting-code-card">
 
-                <div class="prediction-card-header">
+                    <div class="prediction-card-header">
 
-                    <strong>
-                        ${escapeHtml(code.bookmaker)}
-                    </strong>
+                        <strong>
+                            ${escapeHtml(
+                                code.bookmaker || ""
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="prediction-card-body">
+
+                        <div>
+                            <strong>
+                                BETTING CODE
+                            </strong>
+                        </div>
+
+                        <div style="
+                            font-size:24px;
+                            font-weight:800;
+                            margin:10px 0;
+                        ">
+                            ${escapeHtml(
+                                code.code || ""
+                            )}
+                        </div>
+
+                        ${
+                            code.description
+                                ? `
+                                    <div
+                                        style="
+                                            margin-bottom:15px;
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            code.description
+                                        )}
+                                    </div>
+                                  `
+                                : ""
+                        }
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="
+                                margin-top:5px;
+                                cursor:pointer;
+                            "
+                            data-betting-code="${escapeHtml(
+                                code.code || ""
+                            )}"
+                            onclick="copyBettingCode(this)"
+                        >
+                            📋 COPY CODE
+                        </button>
+
+                    </div>
 
                 </div>
 
-                <div class="prediction-card-body">
-
-                    <div>
-                        <strong>BETTING CODE</strong>
-                    </div>
-
-                    <div style="
-                        font-size:24px;
-                        font-weight:800;
-                        margin:10px 0;
-                    ">
-                        ${escapeHtml(code.code)}
-                    </div>
-
-                    ${
-                        code.description
-                            ? `
-                                <div style="margin-bottom:15px;">
-                                    ${escapeHtml(code.description)}
-                                </div>
-                              `
-                            : ""
-                    }
-
-                    <button
-                        type="button"
-                        class="primary-btn"
-                        style="
-                            margin-top:5px;
-                            cursor:pointer;
-                        "
-                        data-betting-code="${escapeHtml(code.code)}"
-                        onclick="copyBettingCode(this)"
-                    >
-                       📋 COPY CODE
-                    </button>
-
-                </div>
-
-            </div>
-
-        `).join("");
+            `).join("");
 
     } catch (error) {
 
@@ -3420,7 +3442,6 @@ async function loadRegularBettingCodes() {
         `;
     }
 }
-
 
 // ============================================================
 // COPY BETTING CODE
