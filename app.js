@@ -3955,126 +3955,302 @@ document.addEventListener("DOMContentLoaded", () => {
 
         style.id = "flexNotificationStyles";
 
-        style.textContent = `
-            #flexNotificationBell {
-                position: fixed;
-                right: 20px;
-                bottom: 85px;
-                width: 52px;
-                height: 52px;
-                border-radius: 50%;
-                border: none;
-                cursor: pointer;
-                z-index: 9998;
-                font-size: 23px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4px 18px rgba(0,0,0,.25);
-            }
+       style.textContent = `
+    /* =====================================================
+       FLEX HUB NOTIFICATION CENTER
+       ===================================================== */
 
-            #flexNotificationBadge {
-                position: absolute;
-                top: -4px;
-                right: -4px;
-                min-width: 20px;
-                height: 20px;
-                padding: 0 5px;
-                border-radius: 20px;
-                font-size: 11px;
-                font-weight: bold;
-                display: none;
-                align-items: center;
-                justify-content: center;
-            }
+    #flexNotificationBell {
+        position: fixed;
+        right: 20px;
+        bottom: 85px;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        z-index: 9998;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 5px 20px rgba(0,0,0,.35);
+    }
 
-            #flexNotificationPanel {
-                position: fixed;
-                right: 20px;
-                bottom: 148px;
-                width: 350px;
-                max-width: calc(100vw - 30px);
-                max-height: 70vh;
-                overflow-y: auto;
-                z-index: 9999;
-                display: none;
-                border-radius: 14px;
-                padding: 18px;
-                box-shadow: 0 8px 30px rgba(0,0,0,.3);
-            }
+    #flexNotificationBadge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 21px;
+        height: 21px;
+        padding: 0 6px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
 
-            #flexNotificationPanel.flex-notification-open {
-                display: block;
-            }
 
-            .flex-notification-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
-            }
+    /* =====================================================
+       NOTIFICATION BOARD
+       ===================================================== */
 
-            .flex-notification-header h3 {
-                margin: 0;
-            }
+    #flexNotificationPanel {
+        position: fixed;
+        right: 20px;
+        bottom: 150px;
 
-            #flexNotificationClose {
-                border: none;
-                background: transparent;
-                cursor: pointer;
-                font-size: 22px;
-            }
+        width: 390px;
+        max-width: calc(100vw - 30px);
 
-            .flex-notification-item {
-                padding: 13px;
-                margin-bottom: 10px;
-                border-radius: 10px;
-                border: 1px solid rgba(128,128,128,.25);
-                cursor: pointer;
-            }
+        max-height: 72vh;
 
-            .flex-notification-item.unread {
-                font-weight: 600;
-            }
+        overflow-y: auto;
 
-            .flex-notification-title {
-                font-size: 15px;
-                margin-bottom: 5px;
-            }
+        z-index: 9999;
 
-            .flex-notification-message {
-                font-size: 14px;
-                line-height: 1.5;
-            }
+        display: none;
 
-            .flex-notification-time {
-                margin-top: 7px;
-                font-size: 11px;
-                opacity: .65;
-            }
+        border-radius: 18px;
 
-            .flex-notification-empty {
-                text-align: center;
-                padding: 25px 10px;
-                opacity: .7;
-            }
+        padding: 18px;
 
-            @media (max-width: 600px) {
+        box-shadow:
+            0 12px 40px rgba(0,0,0,.45);
 
-                #flexNotificationBell {
-                    right: 15px;
-                    bottom: 75px;
-                }
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
 
-                #flexNotificationPanel {
-                    right: 15px;
-                    bottom: 138px;
-                    width: calc(100vw - 30px);
-                }
+    #flexNotificationPanel.flex-notification-open {
+        display: block;
+    }
 
-            }
-        `;
 
+    /* =====================================================
+       BOARD HEADER
+       ===================================================== */
+
+    .flex-notification-header {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        margin-bottom: 16px;
+
+        padding-bottom: 12px;
+
+        border-bottom:
+            1px solid rgba(128,128,128,.25);
+    }
+
+    .flex-notification-header h3 {
+        margin: 0;
+
+        font-size: 19px;
+
+        font-weight: 800;
+    }
+
+    #flexNotificationClose {
+        width: 34px;
+        height: 34px;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background: rgba(128,128,128,.15);
+
+        cursor: pointer;
+
+        font-size: 22px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION BOARD / CARD
+       ===================================================== */
+
+    .flex-notification-item {
+
+        position: relative;
+
+        padding: 17px;
+
+        margin-bottom: 13px;
+
+        border-radius: 14px;
+
+        border:
+            1px solid rgba(128,128,128,.25);
+
+        cursor: pointer;
+
+        transition:
+            transform .18s ease,
+            box-shadow .18s ease,
+            border-color .18s ease;
+
+        overflow-wrap: anywhere;
+
+        word-break: break-word;
+    }
+
+    .flex-notification-item:hover {
+
+        transform: translateY(-2px);
+
+        box-shadow:
+            0 6px 20px rgba(0,0,0,.18);
+    }
+
+
+    /* UNREAD MESSAGE */
+
+    .flex-notification-item.unread {
+
+        font-weight: 600;
+
+        border-width: 2px;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION TITLE
+       ===================================================== */
+
+    .flex-notification-title {
+
+        font-size: 16px;
+
+        line-height: 1.35;
+
+        font-weight: 800;
+
+        margin-bottom: 9px;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION MESSAGE BOARD
+       ===================================================== */
+
+    .flex-notification-message {
+
+        font-size: 15px;
+
+        line-height: 1.65;
+
+        font-weight: 400;
+
+        white-space: pre-wrap;
+
+        overflow-wrap: anywhere;
+
+        word-break: break-word;
+    }
+
+
+    /* =====================================================
+       DATE / TIME
+       ===================================================== */
+
+    .flex-notification-time {
+
+        margin-top: 12px;
+
+        padding-top: 9px;
+
+        border-top:
+            1px solid rgba(128,128,128,.18);
+
+        font-size: 11px;
+
+        line-height: 1.4;
+
+        opacity: .65;
+    }
+
+
+    /* =====================================================
+       EMPTY / LOADING BOARD
+       ===================================================== */
+
+    .flex-notification-empty {
+
+        text-align: center;
+
+        padding: 30px 15px;
+
+        opacity: .7;
+
+        font-size: 14px;
+    }
+
+
+    /* =====================================================
+       MOBILE
+       ===================================================== */
+
+    @media (max-width: 600px) {
+
+        #flexNotificationBell {
+
+            right: 15px;
+
+            bottom: 75px;
+
+            width: 52px;
+
+            height: 52px;
+        }
+
+        #flexNotificationPanel {
+
+            right: 15px;
+
+            bottom: 138px;
+
+            width: calc(100vw - 30px);
+
+            max-height: 70vh;
+
+            padding: 15px;
+
+            border-radius: 16px;
+        }
+
+        .flex-notification-item {
+
+            padding: 15px;
+
+            border-radius: 13px;
+        }
+
+        .flex-notification-title {
+
+            font-size: 15px;
+        }
+
+        .flex-notification-message {
+
+            font-size: 14px;
+
+            line-height: 1.65;
+        }
+    }
+`;
         document.head.appendChild(style);
     }
 
@@ -4237,8 +4413,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 >
 
                     <div class="flex-notification-title">
-                        ${notificationEscapeHTML(item.title)}
-                    </div>
+
+    <span>
+        ${notificationEscapeHTML(item.title)}
+    </span>
+
+    ${
+        !item.is_read
+            ? `
+                <span
+                    style="
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        margin-left:8px;
+                        padding:3px 7px;
+                        border-radius:20px;
+                        font-size:9px;
+                        font-weight:800;
+                        letter-spacing:.5px;
+                    "
+                >
+                    NEW
+                </span>
+              `
+            : ""
+    }
+
+</div>
 
                     <div class="flex-notification-message">
                         ${notificationEscapeHTML(item.message)}
