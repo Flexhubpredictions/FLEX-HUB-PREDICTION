@@ -3991,6 +3991,46 @@ document.addEventListener("DOMContentLoaded", () => {
         align-items: center;
         justify-content: center;
     }
+    /* BRIGHT NOTIFICATION ALERT */
+
+#flexNotificationBadge {
+    background: #ff1744;
+    color: #ffffff;
+    border: 3px solid #07100c;
+    font-size: 13px;
+    font-weight: 900;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 50%;
+    box-shadow:
+        0 0 10px rgba(255, 23, 68, .9),
+        0 0 20px rgba(255, 23, 68, .6);
+    z-index: 10000;
+}
+
+#flexNotificationBell.has-unread {
+    animation: flexNotificationPulse 1.5s infinite;
+}
+
+@keyframes flexNotificationPulse {
+
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+        box-shadow:
+            0 0 12px rgba(255, 23, 68, .7),
+            0 0 25px rgba(255, 23, 68, .4);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+}
 
 
     /* =====================================================
@@ -4373,24 +4413,41 @@ document.addEventListener("DOMContentLoaded", () => {
             const unreadCount =
                 Number(data.unreadCount || 0);
 
-            if (badge) {
+          const bell =
+    document.getElementById(
+        "flexNotificationBell"
+    );
 
-                if (unreadCount > 0) {
+if (badge) {
 
-                    badge.textContent =
-                        unreadCount > 99
-                            ? "99+"
-                            : unreadCount;
+    if (unreadCount > 0) {
 
-                    badge.style.display = "flex";
+        badge.textContent =
+            unreadCount > 99
+                ? "99+"
+                : unreadCount;
 
-                } else {
+        badge.style.display = "flex";
 
-                    badge.style.display = "none";
+        if (bell) {
+            bell.classList.add(
+                "has-unread"
+            );
+        }
 
-                }
+    } else {
 
-            }
+        badge.style.display = "none";
+
+        if (bell) {
+            bell.classList.remove(
+                "has-unread"
+            );
+        }
+
+    }
+
+}
 
             if (!notifications.length) {
 
