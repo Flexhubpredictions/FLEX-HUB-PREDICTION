@@ -583,8 +583,7 @@ async function handleRegister(event) {
 
 async function checkUserSession() {
 
-    const token =
-        getUserToken();
+    const token = getUserToken();
 
     if (!token) {
 
@@ -593,7 +592,6 @@ async function checkUserSession() {
         return false;
     }
 
-    openMainWebsite();
     try {
 
         const data =
@@ -614,9 +612,28 @@ async function checkUserSession() {
 
         updateUserUI();
 
-        openMainWebsite();
+        // Check regular access before opening the main website
+        const access =
+            await apiRequest(
+                "/regular-access/status"
+            );
 
-        return true;
+        if (
+            access &&
+            access.active === true
+        ) {
+
+            openMainWebsite();
+
+            return true;
+        }
+
+        // No active regular access
+        showRegularPaymentGate(
+            access
+        );
+
+        return false;
 
     } catch (error) {
 
@@ -624,6 +641,19 @@ async function checkUserSession() {
             "Session check failed:",
             error
         );
+
+        // Payment/access required is not a session failure
+        if (
+            error.message &&
+            error.message.includes(
+                "Regular access"
+            )
+        ) {
+
+            showRegularPaymentGate();
+
+            return false;
+        }
 
         clearUserSession();
 
@@ -659,6 +689,191 @@ function showAccountGate() {
 
         website.style.display =
             "none";
+    }
+}
+/* =========================================================
+   REGULAR ACCESS PAYMENT GATE
+   ========================================================= */
+
+function showRegularPaymentGate(access = null) {
+
+    const accountGate =
+        document.getElementById("accountGate");
+
+    const mainWebsite =
+        document.getElementById("mainWebsite");
+
+    if (accountGate) {
+        accountGate.style.display = "none";
+    }
+
+    if (mainWebsite) {
+        mainWebsite.style.display = "none";
+    }
+
+    let paymentGate =
+        document.getElementById("regularPaymentGate");
+
+    if (!paymentGate) {
+
+        paymentGate =
+            document.createElement("div");
+
+        paymentGate.id =
+            "regularPaymentGate";
+
+        paymentGate.innerHTML = `
+            <div class="regular-payment-card">
+
+                <div class="regular-payment-icon">
+                    🔒
+                </div>
+
+                <h2>
+                    Regular Access Required
+                </h2>
+
+                <p>
+                    Your regular prediction access is
+                    currently inactive.
+                </p>
+
+                <div class="regular-payment-price">
+                    GHS 50
+                </div>
+
+                <p class="regular-payment-info">
+                    Pay GHS 50 to unlock all regular
+                    predictions and betting codes for
+                    <strong>14 days</strong>.
+                </p>
+
+                <button
+                    type="button"
+                    id="regularPaymentButton"
+                    class="regular-payment-button"
+                >
+                    Pay GHS 50
+                </button>
+
+                <button
+                    type="button"
+                    id="regularPaymentLogout"
+                    class="regular-payment-logout"
+                >
+                    Logout
+                </button>
+
+                <div
+                    id="regularPaymentMessage"
+                    class="regular-payment-message"
+                ></div>
+
+                <div
+                    id="regularAccessExpiry"
+                    class="regular-access-expiry"
+                ></div>
+
+                <p class="regular-payment-note">
+                    VIP access is separate and is not affected
+                    by this payment.
+                </p>
+
+            </div>
+        `;
+
+        document.body.appendChild(
+            paymentGate
+        );
+
+        setupRegularPaymentGate();
+    }
+
+    paymentGate.style.display = "flex";
+
+    const expiry =
+        document.getElementById(
+            "regularAccessExpiry"
+        );
+
+    if (
+        expiry &&
+        access &&
+        access.expiresAt
+    ) {
+
+        const expiryDate =
+            new Date(
+                access.expiresAt
+            );
+
+        expiry.textContent =
+            "Your previous access expired on " +
+            expiryDate.toLocaleString();
+    }
+}
+/* =========================================================
+   REGULAR PAYMENT GATE SETUP
+   ========================================================= */
+
+function setupRegularPaymentGate() {
+
+    const paymentButton =
+        document.getElementById(
+            "regularPaymentButton"
+        );
+
+    const logoutButton =
+        document.getElementById(
+            "regularPaymentLogout"
+        );
+
+    const message =
+        document.getElementById(
+            "regularPaymentMessage"
+        );
+
+    if (paymentButton) {
+
+        paymentButton.addEventListener(
+            "click",
+            function () {
+
+                if (message) {
+
+                    message.textContent =
+                        "Payment setup is not connected yet. Please check back shortly.";
+
+                    message.style.display =
+                        "block";
+                }
+
+            }
+        );
+    }
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            function () {
+
+                clearUserSession();
+
+                const gate =
+                    document.getElementById(
+                        "regularPaymentGate"
+                    );
+
+                if (gate) {
+                    gate.style.display =
+                        "none";
+                }
+
+                showAccountGate();
+
+            }
+        );
     }
 }
 
