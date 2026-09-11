@@ -1294,7 +1294,6 @@ app.get("/api/vip/status", requireUser, async (req, res) => {
 app.get(
   "/api/predictions",
   requireUser,
-  requireRegularAccess,
   async (req, res) => {
   try {
 
@@ -1374,7 +1373,6 @@ app.get(
 app.get(
   "/api/predictions/:id",
   requireUser,
-  requireRegularAccess,
   async (req, res) => {
   try {
     const result = await db.query(
@@ -1777,7 +1775,6 @@ app.delete("/api/admin/betting-codes/:id", requireAdmin, async (req, res) => {
 app.get(
   "/api/betting-codes",
   requireUser,
-  requireRegularAccess,
   async (req, res) => {
   try {
     const result = await db.query(
