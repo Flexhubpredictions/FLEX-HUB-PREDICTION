@@ -1292,6 +1292,47 @@ app.get(
     res.status(500).json({ message: "Unable to load prediction." });
   }
 });
+
+// =========================================================
+// ADMIN — GET ARCHIVED MATCH RESULTS
+// =========================================================
+
+app.get("/api/admin/results", requireAdmin, async (req, res) => {
+  try {
+
+    const result = await db.query(
+      `SELECT
+          id,
+          league,
+          home_team,
+          away_team,
+          match_date,
+          match_time,
+          prediction,
+          analysis,
+          category,
+          status
+       FROM prediction_results
+       ORDER BY match_date DESC, match_time DESC`
+    );
+
+    res.json({
+      results: result.rows
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Load admin results error:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Unable to load match results."
+    });
+
+  }
+});
 app.delete("/api/results/:id", requireAdmin, async (req, res) => {
   try {
 
