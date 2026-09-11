@@ -2667,3 +2667,536 @@ input:focus-visible {
 .admin-app {
     display: none;
 }
+/* =========================================================
+   FLEX HUB ENGINE ROOM
+   PREMIUM BLACK • GOLD • BLUE
+   ========================================================= */
+.engine-room-section {
+    position: relative;
+    overflow: hidden;
+    padding: 85px 0;
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(244, 197, 66, 0.07),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 85% 70%,
+            rgba(22, 119, 255, 0.08),
+            transparent 34%
+        ),
+        linear-gradient(
+            180deg,
+            var(--black-2),
+            var(--black)
+        );
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+/* =========================================================
+   SECTION HEADING
+   ========================================================= */
+.engine-room-heading {
+    max-width: 760px;
+    margin:
+        0 auto 48px;
+    text-align: center;
+}
+.engine-room-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    padding:
+        7px 13px;
+    border:
+        1px solid var(--gold-border);
+    border-radius: 30px;
+    background:
+        rgba(244, 197, 66, 0.07);
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    box-shadow:
+        0 0 20px rgba(244, 197, 66, 0.05);
+}
+.engine-room-heading h2 {
+    margin-top: 15px;
+    color: var(--white);
+    font-size:
+        clamp(32px, 5vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -2px;
+    font-weight: 950;
+}
+.engine-room-heading h2 span {
+    color: var(--gold);
+}
+.engine-room-heading p {
+    max-width: 650px;
+    margin:
+        14px auto 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+/* =========================================================
+   TEAM GRID
+   ========================================================= */
+.engine-room-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+/* =========================================================
+   TEAM CARD
+   ========================================================= */
+.engine-card {
+    position: relative;
+    overflow: hidden;
+    padding: 22px;
+    min-width: 0;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20, 27, 37, 0.98),
+            rgba(7, 10, 15, 0.98)
+        );
+    border:
+        1px solid var(--border);
+    border-radius: 20px;
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.30);
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+.engine-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background:
+        linear-gradient(
+            90deg,
+            var(--gold),
+            var(--blue)
+        );
+    opacity: 0.55;
+}
+.engine-card::after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: -80px;
+    top: -80px;
+    border-radius: 50%;
+    background:
+        rgba(22, 119, 255, 0.08);
+    filter: blur(25px);
+    pointer-events: none;
+}
+.engine-card:hover {
+    transform: translateY(-6px);
+    border-color:
+        var(--gold-border);
+    box-shadow:
+        0 22px 50px rgba(0, 0, 0, 0.40),
+        0 0 25px rgba(244, 197, 66, 0.05);
+}
+/* =========================================================
+   LEAD CARD
+   ========================================================= */
+.engine-card-lead {
+    grid-column:
+        1 / -1;
+    min-height: 285px;
+    display: grid;
+    grid-template-columns:
+        150px 1fr;
+    align-items: center;
+    gap: 32px;
+    padding: 32px;
+    background:
+        radial-gradient(
+            circle at 85% 40%,
+            rgba(244, 197, 66, 0.12),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 10% 70%,
+            rgba(22, 119, 255, 0.08),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #141b25,
+            #070a0f
+        );
+    border-color:
+        rgba(244, 197, 66, 0.28);
+    box-shadow:
+        0 25px 65px rgba(0, 0, 0, 0.42),
+        0 0 40px rgba(244, 197, 66, 0.05);
+}
+.engine-card-lead:hover {
+    border-color:
+        rgba(244, 197, 66, 0.50);
+    box-shadow:
+        0 28px 70px rgba(0, 0, 0, 0.45),
+        0 0 45px rgba(244, 197, 66, 0.08);
+}
+/* =========================================================
+   CARD TOP
+   ========================================================= */
+.engine-card-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.engine-card-lead .engine-card-top {
+    position: absolute;
+    top: 22px;
+    left: 25px;
+    right: 25px;
+    margin: 0;
+}
+.engine-badge {
+    display: inline-flex;
+    align-items: center;
+    padding:
+        6px 10px;
+    border-radius: 8px;
+    background:
+        rgba(22, 119, 255, 0.08);
+    border:
+        1px solid var(--blue-border);
+    color: var(--blue-light);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.engine-badge-lead {
+    background:
+        rgba(244, 197, 66, 0.12);
+    border-color:
+        var(--gold-border);
+    color:
+        var(--gold-light);
+    box-shadow:
+        0 0 18px rgba(244, 197, 66, 0.06);
+}
+.engine-number {
+    color:
+        rgba(255, 255, 255, 0.20);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+/* =========================================================
+   CUSTOM AVATARS
+   ========================================================= */
+.engine-avatar {
+    position: relative;
+    z-index: 2;
+    width: 76px;
+    height: 76px;
+    margin-bottom: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background:
+        linear-gradient(
+            145deg,
+            #182333,
+            #080c12
+        );
+    border:
+        2px solid rgba(22, 119, 255, 0.35);
+    color:
+        var(--blue-light);
+    font-size: 21px;
+    font-weight: 950;
+    letter-spacing: -1px;
+    box-shadow:
+        inset 0 0 25px rgba(22, 119, 255, 0.08),
+        0 10px 30px rgba(0, 0, 0, 0.30);
+}
+.engine-avatar::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border:
+        1px solid rgba(22, 119, 255, 0.12);
+}
+.engine-avatar-lead {
+    width: 130px;
+    height: 130px;
+    margin: 0;
+    border:
+        3px solid var(--gold);
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(244, 197, 66, 0.18),
+            transparent 45%
+        ),
+        linear-gradient(
+            145deg,
+            #1a2028,
+            #070a0f
+        );
+    color:
+        var(--gold-light);
+    font-size: 43px;
+    box-shadow:
+        0 0 35px rgba(244, 197, 66, 0.15),
+        inset 0 0 35px rgba(244, 197, 66, 0.06);
+}
+.engine-avatar-lead::before {
+    border-color:
+        rgba(244, 197, 66, 0.18);
+}
+/* =========================================================
+   CARD BODY
+   ========================================================= */
+.engine-card-body {
+    position: relative;
+    z-index: 2;
+}
+.engine-card-body h3 {
+    margin:
+        0 0 6px;
+    color:
+        var(--white);
+    font-size: 21px;
+    line-height: 1.15;
+    font-weight: 950;
+    letter-spacing: -0.4px;
+}
+.engine-card-body h3 small {
+    display: inline-block;
+    margin-left: 5px;
+    color:
+        var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.engine-role {
+    display: block;
+    margin-bottom: 18px;
+    color:
+        var(--gold);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    line-height: 1.5;
+    text-transform: uppercase;
+}
+/* =========================================================
+   FOOTBALL ANALYSIS POSITION
+   ========================================================= */
+.engine-position {
+    margin-bottom: 17px;
+    padding:
+        12px 13px;
+    border-left:
+        3px solid var(--gold);
+    border-radius:
+        0 10px 10px 0;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(244, 197, 66, 0.08),
+            rgba(22, 119, 255, 0.03)
+        );
+}
+.engine-position span {
+    display: block;
+    margin-bottom: 4px;
+    color:
+        #6f7a89;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.engine-position strong {
+    display: block;
+    color:
+        var(--white);
+    font-size: 11px;
+    line-height: 1.45;
+    font-weight: 900;
+}
+.engine-card-body p {
+    color:
+        var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+}
+/* =========================================================
+   LEAD CARD BODY
+   ========================================================= */
+.engine-card-lead .engine-card-body {
+    padding-top: 15px;
+}
+.engine-card-lead .engine-card-body h3 {
+    font-size: 34px;
+    letter-spacing: -1px;
+}
+.engine-card-lead .engine-role {
+    color:
+        var(--gold-light);
+    font-size: 10px;
+}
+.engine-card-lead .engine-position {
+    max-width: 580px;
+}
+.engine-card-lead .engine-position strong {
+    font-size: 13px;
+    color:
+        var(--gold-light);
+}
+.engine-card-lead .engine-card-body p {
+    max-width: 700px;
+    font-size: 13px;
+}
+/* =========================================================
+   ENGINE ROOM FOOTER
+   ========================================================= */
+.engine-room-footer {
+    margin-top: 38px;
+    padding-top: 22px;
+    border-top:
+        1px solid var(--border);
+    text-align: center;
+}
+.engine-room-footer span {
+    color:
+        var(--gold);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.engine-room-footer p {
+    margin-top: 6px;
+    color:
+        var(--muted);
+    font-size: 12px;
+}
+/* =========================================================
+   TABLET
+   ========================================================= */
+@media (max-width: 1000px) {
+    .engine-room-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+    .engine-card-lead {
+        grid-column:
+            1 / -1;
+    }
+}
+/* =========================================================
+   MOBILE
+   ========================================================= */
+@media (max-width: 600px) {
+    .engine-room-section {
+        padding:
+            60px 0;
+    }
+    .engine-room-heading {
+        margin-bottom: 35px;
+    }
+    .engine-room-heading h2 {
+        font-size: 34px;
+        letter-spacing: -1.5px;
+    }
+    .engine-room-heading p {
+        font-size: 13px;
+    }
+    .engine-room-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    .engine-card,
+    .engine-card-lead {
+        grid-column: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: 0;
+        padding: 20px;
+    }
+    .engine-card-lead {
+        gap: 0;
+    }
+    .engine-card-lead .engine-card-top {
+        position: relative;
+        top: auto;
+        left: auto;
+        right: auto;
+        width: 100%;
+        margin-bottom: 22px;
+    }
+    .engine-avatar-lead {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 22px;
+        font-size: 34px;
+    }
+    .engine-card-lead .engine-card-body {
+        padding-top: 0;
+    }
+    .engine-card-lead .engine-card-body h3 {
+        font-size: 29px;
+    }
+    .engine-card-body h3 small {
+        display: block;
+        margin:
+            5px 0 0;
+    }
+    .engine-position {
+        width: 100%;
+    }
+}
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+@media (max-width: 380px) {
+    .engine-room-heading h2 {
+        font-size: 30px;
+    }
+    .engine-card,
+    .engine-card-lead {
+        padding: 17px;
+    }
+    .engine-avatar {
+        width: 68px;
+        height: 68px;
+        font-size: 19px;
+    }
+    .engine-avatar-lead {
+        width: 88px;
+        height: 88px;
+        font-size: 30px;
+    }
+    .engine-card-lead .engine-card-body h3 {
+        font-size: 26px;
+    }
+}
+
