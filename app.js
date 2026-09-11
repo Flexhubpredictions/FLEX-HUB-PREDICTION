@@ -399,7 +399,7 @@ async function handleLogin(event) {
             "success"
         );
 
-       showFlexHubAnimation(openMainWebsite);
+       showFlexHubAnimation(checkUserSession);
 
     } catch (error) {
 
@@ -544,15 +544,19 @@ async function handleRegister(event) {
             "Account created successfully.",
             "success"
         );
+if (data.token) {
 
-        if (data.token) {
+    saveUser(
+        data.user,
+        data.token
+    );
 
-            openMainWebsite();
+    await checkUserSession();
 
-        } else {
+} else {
 
-            switchToLoginPanel();
-        }
+    switchToLoginPanel();
+}
 
     } catch (error) {
 
@@ -790,6 +794,7 @@ function showRegularPaymentGate(access = null) {
     }
 
     paymentGate.style.display = "flex";
+    refreshRegularAccessStatus();
 
     const expiry =
         document.getElementById(
@@ -1005,6 +1010,40 @@ function updateUserUI() {
                 currentUser.email ||
                 "—";
         });
+}
+/* =========================================================
+   REGULAR ACCESS STATUS
+   ========================================================= */
+
+async function refreshRegularAccessStatus() {
+
+    try {
+
+        const access =
+            await apiRequest(
+                "/regular-access/status"
+            );
+
+        window.flexHubRegularAccess =
+            access;
+
+        return access;
+
+    } catch (error) {
+
+        console.error(
+            "Regular access status failed:",
+            error
+        );
+
+        window.flexHubRegularAccess = {
+            active: false,
+            expiresAt: null,
+            remainingDays: 0
+        };
+
+        return window.flexHubRegularAccess;
+    }
 }
 
 // ======================================================
