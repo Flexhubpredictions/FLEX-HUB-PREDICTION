@@ -818,7 +818,7 @@ function showRegularPaymentGate(access = null) {
     }
 }
 /* =========================================================
-   REGULAR PAYMENT GATE SETUP
+   REGULAR PAYMENT GATE SETUP — PAYSTACK
    ========================================================= */
 
 function setupRegularPaymentGate() {
@@ -842,15 +842,66 @@ function setupRegularPaymentGate() {
 
         paymentButton.addEventListener(
             "click",
-            function () {
+            async function () {
 
                 if (message) {
-
                     message.textContent =
-                        "Payment setup is not connected yet. Please check back shortly.";
-
+                        "Connecting to Paystack...";
                     message.style.display =
                         "block";
+                }
+
+                paymentButton.disabled = true;
+                paymentButton.textContent =
+                    "Please wait...";
+
+                try {
+
+                    const data =
+                        await apiRequest(
+                            "/payments/initialize",
+                            {
+                                method: "POST"
+                            }
+                        );
+
+                    if (
+                        !data ||
+                        !data.authorization_url
+                    ) {
+                        throw new Error(
+                            "Unable to start payment."
+                        );
+                    }
+
+                    if (message) {
+                        message.textContent =
+                            "Redirecting to Paystack...";
+                    }
+
+                    window.location.href =
+                        data.authorization_url;
+
+                } catch (error) {
+
+                    console.error(
+                        "Paystack payment error:",
+                        error
+                    );
+
+                    if (message) {
+                        message.textContent =
+                            error.message ||
+                            "Unable to start payment. Please try again.";
+                        message.style.display =
+                            "block";
+                    }
+
+                    paymentButton.disabled =
+                        false;
+
+                    paymentButton.textContent =
+                        "Pay GHS 50";
                 }
 
             }
