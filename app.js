@@ -1222,10 +1222,10 @@ if (!grid && !hasDashboardStats) {
    async function loadPredictions() {
 
 const grid =
-document.querySelector(”#predictionsGrid”);
+document.querySelector("#predictionsGrid");
 
 const hasDashboardStats =
-document.querySelector(”#totalPredictions”);
+document.querySelector("#totalPredictions");
 
 if (!grid && !hasDashboardStats) {
 return;
