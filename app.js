@@ -1320,11 +1320,12 @@ const newPredictionsCount =
 
 if (newPredictionsAlert && newPredictionsCount) {
 
-    const newCount =
-        allPredictions.filter(
-            prediction =>
-                prediction.status !== "completed"
-        ).length;
+  const newCount =
+    allPredictions.filter(
+        prediction =>
+            prediction.featured === true &&
+            prediction.status !== "completed"
+    ).length;
 
     newPredictionsCount.textContent = newCount;
 
