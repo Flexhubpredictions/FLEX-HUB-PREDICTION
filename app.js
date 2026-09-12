@@ -1217,6 +1217,7 @@ if (!grid && !hasDashboardStats) {
             Array.isArray(data)
                 ? data
                 : data.predictions || [];
+       updateNewPredictionsAlert(allPredictions);
 
      if (grid) {
     renderPredictions();
@@ -4622,3 +4623,23 @@ if (badge) {
     }
 
 })();
+
+function updateNewPredictionsAlert(predictions) {
+const alert = document.getElementById(“newPredictionsAlert”);
+const countElement = document.getElementById(“newPredictionsCount”);
+
+if (!alert || !countElement) {
+    return;
+}
+const availablePredictions = Array.isArray(predictions)
+    ? predictions.filter(prediction => prediction.status !== "completed")
+    : [];
+const count = availablePredictions.length;
+if (count > 0) {
+    countElement.textContent = count;
+    alert.style.display = "inline-flex";
+} else {
+    alert.style.display = "none";
+}
+
+}
