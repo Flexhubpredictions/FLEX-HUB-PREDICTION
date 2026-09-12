@@ -1308,12 +1308,34 @@ function renderPredictions() {
             "#predictionsGrid"
         );
 
-    if (!grid) {
-        return;
-    }
+  if (!grid) {
+    return;
+}
 
-    let predictions =
-        [...allPredictions];
+const newPredictionsAlert =
+    document.querySelector("#newPredictionsAlert");
+
+const newPredictionsCount =
+    document.querySelector("#newPredictionsCount");
+
+if (newPredictionsAlert && newPredictionsCount) {
+
+    const newCount =
+        allPredictions.filter(
+            prediction =>
+                prediction.status !== "completed"
+        ).length;
+
+    newPredictionsCount.textContent = newCount;
+
+    newPredictionsAlert.style.display =
+        newCount > 0
+            ? "inline-flex"
+            : "none";
+}
+
+let predictions =
+    [...allPredictions];
     // Home page: show featured predictions only
     if (
         grid.dataset.homeFeaturedOnly === "true"
