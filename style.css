@@ -703,12 +703,12 @@ img {
 
     position: absolute;
 
-    left: -80px;
-    bottom: -70px;
+    left: -20px;
+    bottom: -40px;
 
     font-size: 260px;
 
-    opacity: 0.035;
+    opacity: 0.12;
 
     transform: rotate(-18deg);
 
