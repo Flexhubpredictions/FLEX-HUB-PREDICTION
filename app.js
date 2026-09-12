@@ -1218,6 +1218,29 @@ if (!grid && !hasDashboardStats) {
                 ? data
                 : data.predictions || [];
 
+       
+       const newPredictionsAlert =
+document.querySelector(”#newPredictionsAlert”);
+
+const newPredictionsCount =
+document.querySelector(”#newPredictionsCount”);
+
+if (newPredictionsAlert && newPredictionsCount) {
+
+const activePredictions =
+    allPredictions.filter(
+        prediction =>
+            prediction.status !== "completed"
+    );
+newPredictionsCount.textContent =
+    activePredictions.length;
+newPredictionsAlert.style.display =
+    activePredictions.length > 0
+        ? "inline-flex"
+        : "none";
+
+}
+
      if (grid) {
     renderPredictions();
 }
