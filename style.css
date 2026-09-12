@@ -697,6 +697,36 @@ img {
 
     border-bottom: 1px solid var(--border);
 }
+/* FOOTBALL BACKGROUND */
+.hero-section::before {
+    content: "⚽";
+
+    position: absolute;
+
+    left: -80px;
+    bottom: -70px;
+
+    font-size: 260px;
+
+    opacity: 0.035;
+
+    transform: rotate(-18deg);
+
+    pointer-events: none;
+
+    animation: footballFloat 8s ease-in-out infinite;
+}
+
+@keyframes footballFloat {
+    0%,
+    100% {
+        transform: translateY(0) rotate(-18deg);
+    }
+
+    50% {
+        transform: translateY(-18px) rotate(-12deg);
+    }
+}
 
 .hero-section::after {
     content: "";
