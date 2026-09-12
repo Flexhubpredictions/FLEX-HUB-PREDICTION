@@ -1219,26 +1219,57 @@ if (!grid && !hasDashboardStats) {
                 : data.predictions || [];
 
        
-       const newPredictionsAlert =
-document.querySelector(”#newPredictionsAlert”);
+   async function loadPredictions() {
 
-const newPredictionsCount =
-document.querySelector(”#newPredictionsCount”);
+const grid =
+document.querySelector(”#predictionsGrid”);
 
-if (newPredictionsAlert && newPredictionsCount) {
+const hasDashboardStats =
+document.querySelector(”#totalPredictions”);
 
-const activePredictions =
-    allPredictions.filter(
-        prediction =>
-            prediction.status !== "completed"
+if (!grid && !hasDashboardStats) {
+return;
+}
+
+try {
+
+if (grid) {
+    grid.innerHTML =
+        `<div class="loading-state">
+            <p>Loading predictions...</p>
+        </div>`;
+}
+const data =
+    await apiRequest(
+        "/predictions"
     );
-newPredictionsCount.textContent =
-    activePredictions.length;
-newPredictionsAlert.style.display =
-    activePredictions.length > 0
-        ? "inline-flex"
-        : "none";
+allPredictions =
+    Array.isArray(data)
+        ? data
+        : data.predictions || [];
+if (grid) {
+    renderPredictions();
+}
+updatePredictionStats();
 
+} catch (error) {
+
+console.error(
+    "Prediction loading error:",
+    error
+);
+if (grid) {
+    grid.innerHTML =
+        `<div class="empty-state">
+            <h3>Predictions unavailable</h3>
+            <p>${escapeHtml(
+                error.message ||
+                "Unable to load predictions."
+            )}</p>
+        </div>`;
+}
+
+}
 }
 
      if (grid) {
