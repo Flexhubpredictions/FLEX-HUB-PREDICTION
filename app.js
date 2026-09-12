@@ -1217,7 +1217,6 @@ if (!grid && !hasDashboardStats) {
             Array.isArray(data)
                 ? data
                 : data.predictions || [];
-       updateNewPredictionsAlert(allPredictions);
 
      if (grid) {
     renderPredictions();
