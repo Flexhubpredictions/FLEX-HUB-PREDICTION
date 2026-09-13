@@ -5792,3 +5792,54 @@ console.log(
 console.log(
     "Regular, VIP and VVIP systems initialized."
 );
+
+// =====================================================
+// SIGN OUT BUTTON
+// =====================================================
+
+function setupSignOut() {
+    const signOutButton = document.getElementById("signOutButton");
+
+    if (!signOutButton) {
+        return;
+    }
+
+    signOutButton.addEventListener("click", function () {
+        try {
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            localStorage.removeItem(STORAGE_KEYS.USER_TOKEN);
+
+            // Also clear premium access tokens
+            localStorage.removeItem(STORAGE_KEYS.VIP_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.VVIP_TOKEN);
+
+            currentUser = null;
+
+            // Return user to account/login screen
+            showAccountGate();
+
+            // Clear user-related UI
+            updateUserUI(null);
+
+            // Show login panel if available
+            const loginPanel = document.getElementById("loginPanel");
+            const registerPanel = document.getElementById("registerPanel");
+
+            if (loginPanel) {
+                loginPanel.classList.remove("hidden");
+            }
+
+            if (registerPanel) {
+                registerPanel.classList.add("hidden");
+            }
+
+            showTemporaryMessage(
+                "You have been signed out successfully.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error("Sign out error:", error);
+        }
+    });
+}
