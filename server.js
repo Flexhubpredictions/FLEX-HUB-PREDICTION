@@ -4247,6 +4247,84 @@ app.delete(
     }
   }
 );
+// ============================================================
+// PUBLIC - BOOKING CODES
+// ============================================================
+
+app.get(
+  "/api/betting-codes",
+  async (req, res) => {
+    try {
+
+      const category =
+        cleanString(req.query.category);
+
+      let result;
+
+      if (
+        category &&
+        ["regular", "vip"].includes(category)
+      ) {
+
+        result = await db.query(
+          `
+          SELECT
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status,
+            created_at
+          FROM betting_codes
+          WHERE category = $1
+            AND status = 'active'
+          ORDER BY id DESC
+          `,
+          [category]
+        );
+
+      } else {
+
+        result = await db.query(
+          `
+          SELECT
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status,
+            created_at
+          FROM betting_codes
+          WHERE status = 'active'
+          ORDER BY id DESC
+          `
+        );
+
+      }
+
+      return res.json({
+        success: true,
+        codes: result.rows
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Public booking codes error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to load booking codes."
+      });
+
+    }
+  }
+);
 
 // ============================================================
 // CLEAN EXPIRED VIP SUBSCRIPTIONS
