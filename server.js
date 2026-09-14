@@ -50,8 +50,6 @@ app.use(
     cors({
         origin: function (origin, callback) {
 
-            // Allow requests with no origin
-            // such as some server-to-server requests.
             if (!origin) {
                 return callback(null, true);
             }
@@ -60,14 +58,9 @@ app.use(
                 return callback(null, true);
             }
 
-            console.log(
-                "CORS blocked origin:",
-                origin
-            );
+            console.log("CORS blocked origin:", origin);
 
-            return callback(
-                new Error("Not allowed by CORS")
-            );
+            return callback(null, false);
         },
 
         credentials: true,
@@ -88,7 +81,6 @@ app.use(
     })
 );
 
-app.options("*", cors());
 
 app.use(express.json());
 
