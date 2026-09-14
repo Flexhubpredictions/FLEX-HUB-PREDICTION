@@ -6201,6 +6201,57 @@ async function checkAdminSession() {
         );
     }
 }
+    /* =========================================================
+   REFRESH ALL ADMIN DATA
+   ========================================================= */
+
+async function refreshAdminData(showLoading = true) {
+
+    if (!adminToken) {
+        throw new Error("Admin session not found.");
+    }
+
+    try {
+
+        if (showLoading) {
+            showMessage(
+                "predictionMessage",
+                "Refreshing admin data...",
+                "success"
+            );
+        }
+
+        await Promise.allSettled([
+            loadPredictions(),
+            loadVvipPredictions(),
+            loadSubscriptions(),
+            loadVvipSubscriptions(),
+            loadUsers(),
+            loadNotifications(),
+            loadActivityLogs(),
+            loadResults()
+        ]);
+
+        updateDashboardStats();
+
+        if (showLoading) {
+            showMessage(
+                "predictionMessage",
+                "Admin data refreshed successfully.",
+                "success"
+            );
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Refresh admin data error:",
+            error
+        );
+
+        throw error;
+    }
+}
         /* =========================================================
            EVENT LISTENERS
            ========================================================= */
