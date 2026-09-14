@@ -266,7 +266,7 @@ async function apiRequest(
 
     const response =
         await fetch(
-            '${API_BASE_URL}${endpoint}',
+       `${API_BASE_URL}${endpoint}`
             requestOptions
         );
 
@@ -3152,7 +3152,7 @@ async function loadVipPredictions() {
         if (vipToken) {
 
             headers.Authorization =
-                `Bearer ${vipToken}`;
+    `Bearer ${token}`;
 
         }
 
