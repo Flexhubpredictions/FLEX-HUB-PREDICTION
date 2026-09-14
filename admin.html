@@ -2588,22 +2588,15 @@ async function refreshAdminData(
 ) {
 
     const results =
-        await Promise.allSettled([
-
-            loadPredictions(),
-
-            loadSubscriptions(),
-
-            loadResults(),
-
-            loadUsers(),
-
-            loadNotifications(),
-
-            loadActivityLogs()
-
-        ]);
-
+       await Promise.allSettled([
+    loadPredictions(),
+    loadSubscriptions(),
+    loadBettingCodes(),
+    loadResults(),
+    loadUsers(),
+    loadNotifications(),
+    loadActivityLogs()
+]);
 
     const failures =
         results.filter(
@@ -5311,6 +5304,8 @@ window.copyGeneratedCode =
 
 window.handleAdminLogout =
     handleAdminLogout;
+    window.deleteBookingCode = deleteBookingCode;
+window.toggleBookingCodeStatus = toggleBookingCodeStatus;
 
 
 /* ============================================================
@@ -5424,6 +5419,71 @@ document.addEventListener(
             document.getElementById(
                 "subscriptionForm"
             );
+        // ======================================================
+// BOOKING CODE EVENT LISTENERS
+// ======================================================
+
+const bookingCodeForm =
+    document.getElementById("bookingCodeForm");
+
+if (bookingCodeForm) {
+    bookingCodeForm.addEventListener(
+        "submit",
+        saveBookingCode
+    );
+}
+
+
+const clearBookingCodeButton =
+    document.getElementById(
+        "clearBookingCodeButton"
+    );
+
+if (clearBookingCodeButton) {
+    clearBookingCodeButton.addEventListener(
+        "click",
+        clearBookingCodeForm
+    );
+}
+
+
+const refreshBookingCodesButton =
+    document.getElementById(
+        "refreshBookingCodesButton"
+    );
+
+if (refreshBookingCodesButton) {
+    refreshBookingCodesButton.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                setButtonLoading(
+                    refreshBookingCodesButton,
+                    true,
+                    "Refreshing..."
+                );
+
+                await loadBettingCodes();
+
+            } catch (error) {
+
+                alert(
+                    error.message ||
+                    "Failed to refresh booking codes."
+                );
+
+            } finally {
+
+                setButtonLoading(
+                    refreshBookingCodesButton,
+                    false
+                );
+            }
+        }
+    );
+}
 
 
         if (subscriptionForm) {
