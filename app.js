@@ -4695,7 +4695,22 @@ function setupNavigation() {
     );
 
 }
+function closeMobileMenu() {
+    const menuButton = getElement("menuButton");
+    const mainNav = getElement("mainNav");
 
+    if (mainNav) {
+        mainNav.classList.remove("active");
+        mainNav.classList.remove("open");
+    }
+
+    if (menuButton) {
+        menuButton.classList.remove("active");
+        menuButton.setAttribute("aria-expanded", "false");
+    }
+
+    document.body.classList.remove("menu-open");
+}
 
 /* ============================================================
    MOBILE MENU
