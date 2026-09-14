@@ -5203,13 +5203,13 @@ function injectNotificationStyles() {
 
 }
 
-
 // ======================================================
 // PWA INSTALL
 // ======================================================
 
-let deferredInstallPrompt =
-    null;
+// deferredInstallPrompt is already declared earlier
+// in app.js. Do not declare it again here.
+
 
 
 function setupPWAInstall() {
