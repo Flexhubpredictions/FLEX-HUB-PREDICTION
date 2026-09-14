@@ -3573,13 +3573,14 @@ async function loadVipStatus() {
             );
 
 
-        const active =
-            Boolean(
-                data?.active ??
-                data?.success === true &&
-                data?.subscription?.status === "active"
-            );
-
+     const active =
+    Boolean(
+        data?.active ??
+        (
+            data?.success === true &&
+            data?.subscription?.status === "active"
+        )
+    );
 
         window.vipAccessActive =
             active;
