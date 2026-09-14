@@ -40,17 +40,19 @@ const FRONTEND_URL =
 // ======================================================
 
 const allowedOrigins = [
+    "https://flexhubpredictions.com",
+    "https://www.flexhubpredictions.com",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "http://localhost:3000",
-    FRONTEND_URL
-].filter(Boolean);
+    "http://localhost:3000"
+];
 
 app.use(
     cors({
         origin: function (origin, callback) {
-            // Allow requests without an Origin header
-            // such as direct server-to-server requests.
+
+            // Allow requests with no Origin header
+            // such as server-to-server requests.
             if (!origin) {
                 return callback(null, true);
             }
@@ -59,10 +61,16 @@ app.use(
                 return callback(null, true);
             }
 
+            console.log(
+                "CORS blocked origin:",
+                origin
+            );
+
             return callback(
                 new Error("Origin not allowed by CORS")
             );
         },
+
         methods: [
             "GET",
             "POST",
@@ -71,12 +79,18 @@ app.use(
             "DELETE",
             "OPTIONS"
         ],
+
         allowedHeaders: [
             "Content-Type",
             "Authorization"
-        ]
+        ],
+
+        credentials: false
     })
 );
+
+// Explicitly handle browser preflight requests
+app.options("*", cors());
 
 // ======================================================
 // BODY PARSING
