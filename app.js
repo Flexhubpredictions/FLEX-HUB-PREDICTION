@@ -3,7 +3,8 @@
 /* ============================================================
    FLEX HUB PREDICTIONS
    FRONTEND APPLICATION
-   MATCHED TO CURRENT EXPRESS BACKEND
+   COMPLETE REWRITE
+   PART 1/4
    ============================================================ */
 
 const API_BASE_URL =
@@ -23,6 +24,7 @@ let currentUser = null;
 
 let allPredictions = [];
 let allResults = [];
+let allBookingCodes = [];
 
 let currentSearchTerm = "";
 let currentLeagueFilter = "all";
@@ -38,57 +40,77 @@ window.vipPredictionCount = 0;
    DOM READY
    ============================================================ */
 
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("FLEX HUB PREDICTIONS app starting...");
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    setupAccountForms();
-    setupNavigation();
-    setupSearch();
-    setupFilters();
-    setupMobileMenu();
-    setupSignOut();
-    setupFooter();
-    setupWhatsApp();
-    setupPaymentButtons();
-    setupPWAInstall();
-    setupForgotPassword();
-    setupNotificationCenter();
+        console.log(
+            "FLEX HUB PREDICTIONS app starting..."
+        );
 
-    const currentPath =
-        window.location.pathname.toLowerCase();
+        setupAccountForms();
+        setupNavigation();
+        setupSearch();
+        setupFilters();
+        setupMobileMenu();
+        setupSignOut();
+        setupFooter();
+        setupWhatsApp();
+        setupPaymentButtons();
+        setupPWAInstall();
+        setupForgotPassword();
+        setupNotificationCenter();
 
-    const isVipPage =
-        document.body?.dataset?.page === "vip" ||
-        currentPath.includes("vip.html");
+        const currentPath =
+            window.location.pathname.toLowerCase();
 
-    if (isVipPage) {
-        setupVipPage();
-    } else {
-        checkUserSession();
+        const isVipPage =
+            document.body?.dataset?.page === "vip" ||
+            currentPath.includes("vip.html");
+
+        if (isVipPage) {
+
+            setupVipPage();
+
+        } else {
+
+            checkUserSession();
+
+        }
+
+        updateCurrentYear();
+        setupTeamBadgeObserver();
+
     }
+);
 
-    updateCurrentYear();
-    setupTeamBadgeObserver();
-});
 
 /* ============================================================
    STORAGE HELPERS
    ============================================================ */
 
 function getUserToken() {
+
     return (
         localStorage.getItem(
             STORAGE_KEYS.USER_TOKEN
         ) || ""
     );
+
 }
+
 
 function getAuthToken() {
+
     return getUserToken();
+
 }
 
+
 function getStoredUser() {
+
     try {
+
         const raw =
             localStorage.getItem(
                 STORAGE_KEYS.USER
@@ -99,35 +121,51 @@ function getStoredUser() {
         }
 
         return JSON.parse(raw);
+
     } catch (error) {
+
         console.error(
             "Unable to read stored user:",
             error
         );
 
         return null;
+
     }
+
 }
 
-function saveUser(user, token) {
+
+function saveUser(
+    user,
+    token
+) {
+
     if (user) {
+
         currentUser = user;
 
         localStorage.setItem(
             STORAGE_KEYS.USER,
             JSON.stringify(user)
         );
+
     }
 
     if (token) {
+
         localStorage.setItem(
             STORAGE_KEYS.USER_TOKEN,
             token
         );
+
     }
+
 }
 
+
 function clearUserSession() {
+
     currentUser = null;
 
     localStorage.removeItem(
@@ -137,7 +175,20 @@ function clearUserSession() {
     localStorage.removeItem(
         STORAGE_KEYS.USER_TOKEN
     );
+
 }
+
+
+/* ============================================================
+   DOM HELPER
+   ============================================================ */
+
+function getElement(id) {
+
+    return document.getElementById(id);
+
+}
+
 
 /* ============================================================
    API REQUEST
@@ -147,6 +198,7 @@ async function apiRequest(
     endpoint,
     options = {}
 ) {
+
     const {
         skipAuth = false,
         headers = {},
@@ -157,37 +209,49 @@ async function apiRequest(
         ...headers
     };
 
+
     if (
         fetchOptions.body &&
         typeof fetchOptions.body !== "string"
     ) {
-        requestHeaders["Content-Type"] =
-            "application/json";
+
+        requestHeaders[
+            "Content-Type"
+        ] = "application/json";
 
         fetchOptions.body =
             JSON.stringify(
                 fetchOptions.body
             );
+
     }
 
+
     if (!skipAuth) {
+
         const token =
             getUserToken();
 
         if (token) {
+
             requestHeaders.Authorization =
                 `Bearer ${token}`;
+
         }
+
     }
+
 
     const url =
         endpoint.startsWith("http")
             ? endpoint
             : `${API_BASE_URL}${endpoint}`;
 
+
     let response;
 
     try {
+
         response =
             await fetch(
                 url,
@@ -197,7 +261,9 @@ async function apiRequest(
                         requestHeaders
                 }
             );
+
     } catch (networkError) {
+
         console.error(
             "Network request failed:",
             networkError
@@ -212,18 +278,26 @@ async function apiRequest(
             networkError;
 
         throw error;
+
     }
+
 
     let data = null;
 
     try {
+
         data =
             await response.json();
+
     } catch (_) {
+
         data = null;
+
     }
 
+
     if (!response.ok) {
+
         const message =
             data?.message ||
             (
@@ -236,133 +310,195 @@ async function apiRequest(
                     : `Request failed with status ${response.status}.`
             );
 
+
         const error =
             new Error(message);
 
         error.status =
             response.status;
 
-        error.data = data;
+        error.data =
+            data;
 
         throw error;
+
     }
 
+
     return data;
+
 }
+
 
 /* ============================================================
    ACCOUNT GATE
    ============================================================ */
 
-function getElement(id) {
-    return document.getElementById(id);
-}
-
 function showAccountGate() {
+
     const gate =
-        getElement("accountGate");
+        getElement(
+            "accountGate"
+        );
 
     const website =
-        getElement("mainWebsite");
+        getElement(
+            "mainWebsite"
+        );
+
 
     if (gate) {
+
         gate.style.display = "";
+
         gate.classList.remove(
             "hidden",
             "is-hidden"
         );
+
     }
 
+
     if (website) {
+
         website.style.display =
             "none";
 
         website.classList.add(
             "hidden"
         );
+
     }
+
 }
 
+
 function hideAccountGate() {
+
     const gate =
-        getElement("accountGate");
+        getElement(
+            "accountGate"
+        );
 
     const website =
-        getElement("mainWebsite");
+        getElement(
+            "mainWebsite"
+        );
+
 
     if (gate) {
+
         gate.style.display =
             "none";
 
         gate.classList.add(
             "hidden"
         );
+
     }
 
+
     if (website) {
+
         website.style.display =
             "";
 
         website.classList.remove(
             "hidden"
         );
+
     }
+
 }
+
 
 /* ============================================================
    LOGIN / REGISTER PANELS
    ============================================================ */
 
 function showLoginPanel() {
+
     const loginPanel =
-        getElement("loginPanel");
+        getElement(
+            "loginPanel"
+        );
 
     const registerPanel =
-        getElement("registerPanel");
+        getElement(
+            "registerPanel"
+        );
+
 
     if (loginPanel) {
+
         loginPanel.style.display =
             "";
+
     }
 
+
     if (registerPanel) {
+
         registerPanel.style.display =
             "none";
+
     }
+
 
     clearMessage(
         "registerMessage"
     );
+
 }
 
+
 function showRegisterPanel() {
+
     const loginPanel =
-        getElement("loginPanel");
+        getElement(
+            "loginPanel"
+        );
 
     const registerPanel =
-        getElement("registerPanel");
+        getElement(
+            "registerPanel"
+        );
+
 
     if (loginPanel) {
+
         loginPanel.style.display =
             "none";
+
     }
 
+
     if (registerPanel) {
+
         registerPanel.style.display =
             "";
+
     }
+
 
     clearMessage(
         "loginMessage"
     );
+
 }
 
+
 function setupAccountForms() {
+
     const loginForm =
-        getElement("loginForm");
+        getElement(
+            "loginForm"
+        );
 
     const registerForm =
-        getElement("registerForm");
+        getElement(
+            "registerForm"
+        );
 
     const showRegisterButton =
         getElement(
@@ -374,49 +510,75 @@ function setupAccountForms() {
             "showLoginButton"
         );
 
+
     if (loginForm) {
+
         loginForm.addEventListener(
             "submit",
             handleLogin
         );
+
     }
 
+
     if (registerForm) {
+
         registerForm.addEventListener(
             "submit",
             handleRegister
         );
+
     }
 
+
     if (showRegisterButton) {
+
         showRegisterButton.addEventListener(
             "click",
             (event) => {
+
                 event.preventDefault();
+
                 showRegisterPanel();
+
             }
         );
+
     }
 
+
     if (showLoginButton) {
+
         showLoginButton.addEventListener(
             "click",
             (event) => {
+
                 event.preventDefault();
+
                 showLoginPanel();
+
             }
         );
+
     }
+
 }
+
 
 /* ============================================================
    LOGIN
    ============================================================ */
 
-async function handleLogin(event) {
+async function handleLogin(
+    event
+) {
+
     if (event) {
+
         event.preventDefault();
+
     }
+
 
     const identifierInput =
         getElement(
@@ -438,11 +600,13 @@ async function handleLogin(event) {
             "loginMessage"
         );
 
+
     const identifier =
         String(
             identifierInput?.value ||
             ""
         ).trim();
+
 
     const password =
         String(
@@ -450,7 +614,9 @@ async function handleLogin(event) {
             ""
         );
 
+
     if (!identifier) {
+
         showMessage(
             messageElement,
             "Please enter your username or email.",
@@ -460,9 +626,12 @@ async function handleLogin(event) {
         identifierInput?.focus();
 
         return;
+
     }
 
+
     if (!password) {
+
         showMessage(
             messageElement,
             "Please enter your password.",
@@ -472,7 +641,9 @@ async function handleLogin(event) {
         passwordInput?.focus();
 
         return;
+
     }
+
 
     setFormLoading(
         event?.currentTarget,
@@ -480,18 +651,15 @@ async function handleLogin(event) {
         "Signing in..."
     );
 
+
     showMessage(
         messageElement,
         "Signing in...",
         "info"
     );
 
+
     try {
-        /*
-         * IMPORTANT:
-         * Backend route is:
-         * POST /api/auth/login
-         */
 
         const data =
             await apiRequest(
@@ -506,20 +674,25 @@ async function handleLogin(event) {
                 }
             );
 
+
         if (
             !data ||
             !data.token ||
             !data.user
         ) {
+
             throw new Error(
                 "The server returned an incomplete login response."
             );
+
         }
+
 
         saveUser(
             data.user,
             data.token
         );
+
 
         localStorage.setItem(
             STORAGE_KEYS.REMEMBER_ME,
@@ -528,22 +701,28 @@ async function handleLogin(event) {
                 : "false"
         );
 
-        /*
-         * Verify the token, but do not
-         * destroy a successful login if
-         * the profile check temporarily fails.
-         */
 
         const verified =
             await verifyCurrentUserSession(
                 true
             );
 
+
         if (!verified) {
+
             console.warn(
-                "Login succeeded, but /user/me verification did not complete."
+                "Login succeeded, but session verification did not complete."
             );
+
         }
+
+
+        currentUser =
+            data.user;
+
+
+        updateUserInterface();
+
 
         showMessage(
             messageElement,
@@ -551,26 +730,27 @@ async function handleLogin(event) {
             "success"
         );
 
-        currentUser =
-            data.user;
 
-        updateUserInterface();
+        setTimeout(
+            () => {
 
-        setTimeout(() => {
-            openMainWebsite();
-        }, 500);
+                openMainWebsite();
+
+            },
+            500
+        );
+
 
     } catch (error) {
+
         console.error(
             "Login error:",
             error
         );
 
-        /*
-         * Only clear the session when
-         * the actual login request failed.
-         */
+
         clearUserSession();
+
 
         showMessage(
             messageElement,
@@ -578,22 +758,34 @@ async function handleLogin(event) {
                 "Unable to sign in. Please try again.",
             "error"
         );
+
+
     } finally {
+
         setFormLoading(
             event?.currentTarget,
             false
         );
+
     }
+
 }
+
 
 /* ============================================================
    REGISTER
    ============================================================ */
 
-async function handleRegister(event) {
+async function handleRegister(
+    event
+) {
+
     if (event) {
+
         event.preventDefault();
+
     }
+
 
     const nameInput =
         getElement(
@@ -630,11 +822,13 @@ async function handleRegister(event) {
             "registerMessage"
         );
 
+
     const name =
         String(
             nameInput?.value ||
             ""
         ).trim();
+
 
     const username =
         String(
@@ -642,12 +836,15 @@ async function handleRegister(event) {
             ""
         ).trim();
 
+
     const email =
         String(
             emailInput?.value ||
             ""
-        ).trim()
-        .toLowerCase();
+        )
+            .trim()
+            .toLowerCase();
+
 
     const password =
         String(
@@ -655,13 +852,16 @@ async function handleRegister(event) {
             ""
         );
 
+
     const confirmPassword =
         String(
             confirmPasswordInput?.value ||
             ""
         );
 
+
     if (!name) {
+
         showMessage(
             messageElement,
             "Please enter your full name.",
@@ -671,9 +871,12 @@ async function handleRegister(event) {
         nameInput?.focus();
 
         return;
+
     }
 
+
     if (!username) {
+
         showMessage(
             messageElement,
             "Please choose a username.",
@@ -683,9 +886,12 @@ async function handleRegister(event) {
         usernameInput?.focus();
 
         return;
+
     }
 
+
     if (!email) {
+
         showMessage(
             messageElement,
             "Please enter your email address.",
@@ -695,9 +901,12 @@ async function handleRegister(event) {
         emailInput?.focus();
 
         return;
+
     }
 
+
     if (!password) {
+
         showMessage(
             messageElement,
             "Please create a password.",
@@ -707,9 +916,12 @@ async function handleRegister(event) {
         passwordInput?.focus();
 
         return;
+
     }
 
+
     if (password.length < 6) {
+
         showMessage(
             messageElement,
             "Password must be at least 6 characters.",
@@ -719,12 +931,15 @@ async function handleRegister(event) {
         passwordInput?.focus();
 
         return;
+
     }
+
 
     if (
         password !==
         confirmPassword
     ) {
+
         showMessage(
             messageElement,
             "Passwords do not match.",
@@ -734,12 +949,15 @@ async function handleRegister(event) {
         confirmPasswordInput?.focus();
 
         return;
+
     }
+
 
     if (
         termsInput &&
         !termsInput.checked
     ) {
+
         showMessage(
             messageElement,
             "Please accept the terms before creating your account.",
@@ -747,7 +965,9 @@ async function handleRegister(event) {
         );
 
         return;
+
     }
+
 
     setFormLoading(
         event?.currentTarget,
@@ -755,18 +975,15 @@ async function handleRegister(event) {
         "Creating account..."
     );
 
+
     showMessage(
         messageElement,
         "Creating your account...",
         "info"
     );
 
+
     try {
-        /*
-         * IMPORTANT:
-         * Backend route is:
-         * POST /api/auth/register
-         */
 
         const data =
             await apiRequest(
@@ -783,36 +1000,43 @@ async function handleRegister(event) {
                 }
             );
 
+
         if (
             !data ||
             !data.token ||
             !data.user
         ) {
+
             throw new Error(
                 "The server returned an incomplete registration response."
             );
+
         }
+
 
         saveUser(
             data.user,
             data.token
         );
 
+
         localStorage.setItem(
             STORAGE_KEYS.REMEMBER_ME,
             "true"
         );
 
-        const verified =
-            await verifyCurrentUserSession(
-                true
-            );
 
-        if (!verified) {
-            console.warn(
-                "Registration succeeded, but /user/me verification did not complete."
-            );
-        }
+        await verifyCurrentUserSession(
+            true
+        );
+
+
+        currentUser =
+            data.user;
+
+
+        updateUserInterface();
+
 
         showMessage(
             messageElement,
@@ -820,22 +1044,27 @@ async function handleRegister(event) {
             "success"
         );
 
-        currentUser =
-            data.user;
 
-        updateUserInterface();
+        setTimeout(
+            () => {
 
-        setTimeout(() => {
-            openMainWebsite();
-        }, 500);
+                openMainWebsite();
+
+            },
+            500
+        );
+
 
     } catch (error) {
+
         console.error(
             "Registration error:",
             error
         );
 
+
         clearUserSession();
+
 
         showMessage(
             messageElement,
@@ -843,13 +1072,19 @@ async function handleRegister(event) {
                 "Unable to create your account.",
             "error"
         );
+
+
     } finally {
+
         setFormLoading(
             event?.currentTarget,
             false
         );
+
     }
+
 }
+
 
 /* ============================================================
    VERIFY CURRENT USER
@@ -858,14 +1093,20 @@ async function handleRegister(event) {
 async function verifyCurrentUserSession(
     preserveOnFailure = false
 ) {
+
     const token =
         getUserToken();
 
+
     if (!token) {
+
         return false;
+
     }
 
+
     try {
+
         const data =
             await apiRequest(
                 "/user/me",
@@ -874,12 +1115,15 @@ async function verifyCurrentUserSession(
                 }
             );
 
+
         if (
             data &&
             data.user
         ) {
+
             currentUser =
                 data.user;
+
 
             localStorage.setItem(
                 STORAGE_KEYS.USER,
@@ -888,21 +1132,21 @@ async function verifyCurrentUserSession(
                 )
             );
 
+
             return true;
+
         }
+
 
         return false;
 
     } catch (error) {
+
         console.warn(
             "User session verification failed:",
             error.message
         );
 
-        /*
-         * Do not immediately destroy
-         * a session during login/register.
-         */
 
         if (
             !preserveOnFailure &&
@@ -911,55 +1155,59 @@ async function verifyCurrentUserSession(
                 error.status === 403
             )
         ) {
+
             clearUserSession();
+
         }
 
+
         return false;
+
     }
+
 }
 
+
 /* ============================================================
-   CHECK SESSION ON PAGE LOAD
+   CHECK SESSION
    ============================================================ */
 
 async function checkUserSession() {
+
     const token =
         getUserToken();
 
     const storedUser =
         getStoredUser();
 
+
     if (!token) {
+
         showAccountGate();
+
         return;
+
     }
+
 
     currentUser =
         storedUser;
 
-    /*
-     * Verify the token with the backend.
-     */
 
     const verified =
         await verifyCurrentUserSession(
             false
         );
 
+
     if (verified) {
+
         openMainWebsite();
+
         return;
+
     }
 
-    /*
-     * If there is a stored user and
-     * verification failed because of
-     * a temporary/network problem,
-     * allow the user into the site.
-     *
-     * A true 401/403 clears the session
-     * inside verifyCurrentUserSession().
-     */
 
     const remainingUser =
         getStoredUser();
@@ -967,295 +1215,247 @@ async function checkUserSession() {
     const remainingToken =
         getUserToken();
 
+
     if (
         remainingUser &&
         remainingToken
     ) {
+
         currentUser =
             remainingUser;
 
         openMainWebsite();
+
         return;
+
     }
 
+
     showAccountGate();
+
 }
+
 
 /* ============================================================
    OPEN MAIN WEBSITE
    ============================================================ */
 
 function openMainWebsite() {
+
     hideAccountGate();
 
     updateUserInterface();
 
     closeMobileMenu();
 
-    /*
-     * Load each section independently.
-     * One failed request must not prevent
-     * the rest of the website from opening.
-     */
 
     loadPredictions()
-        .catch((error) => {
-            console.error(
-                "Prediction loading error:",
-                error
-            );
-        });
+        .catch(
+            (error) => {
 
-    loadResults()
-        .catch((error) => {
-            console.error(
-                "Results loading error:",
-                error
-            );
-        });
-
-    loadRegularBettingCodes()
-        .catch((error) => {
-            console.error(
-                "Betting code loading error:",
-                error
-            );
-        });
-
-    refreshRegularAccessStatus()
-        .catch((error) => {
-            console.error(
-                "Regular access error:",
-                error
-            );
-        });
-
-    loadNotifications()
-        .catch((error) => {
-            console.error(
-                "Notification loading error:",
-                error
-            );
-        });
-}
-// ============================================================
-// BOOKING CODES
-// ============================================================
-
-async function loadBookingCodes() {
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/betting-codes`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.message ||
-                "Unable to load booking codes."
-            );
-        }
-
-        const bookingCodes =
-            Array.isArray(data)
-                ? data
-                : (
-                    data.codes ||
-                    data.bettingCodes ||
-                    []
+                console.error(
+                    "Prediction loading error:",
+                    error
                 );
 
-        renderBookingCodes(bookingCodes);
-
-        return bookingCodes;
-
-    } catch (error) {
-
-        console.error(
-            "Booking codes error:",
-            error
+            }
         );
 
-        renderBookingCodes([]);
 
-        return [];
-    }
-}
-function renderBookingCodes(codes) {
+    loadResults()
+        .catch(
+            (error) => {
 
-    const container =
-        document.getElementById(
-            "bookingCodesContainer"
+                console.error(
+                    "Results loading error:",
+                    error
+                );
+
+            }
         );
 
-    if (!container) {
-        return;
-    }
 
-    if (!codes || !codes.length) {
+    /*
+     * NEW:
+     * Load booking codes from the
+     * public backend endpoint.
+     */
+    loadRegularBettingCodes()
+        .catch(
+            (error) => {
 
-        container.innerHTML = `
-            <div class="empty-state">
-                No booking codes available at the moment.
-            </div>
-        `;
+                console.error(
+                    "Booking code loading error:",
+                    error
+                );
 
-        return;
-    }
+            }
+        );
 
-    container.innerHTML = codes.map(code => {
 
-        return `
-            <div class="booking-code-card">
+    refreshRegularAccessStatus()
+        .catch(
+            (error) => {
 
-                <div class="booking-code-top">
+                console.error(
+                    "Regular access error:",
+                    error
+                );
 
-                    <span class="booking-code-bookmaker">
-                        ${escapeHTML(
-                            code.bookmaker || ""
-                        )}
-                    </span>
+            }
+        );
 
-                    <span class="booking-code-category">
-                        ${escapeHTML(
-                            String(
-                                code.category || "regular"
-                            ).toUpperCase()
-                        )}
-                    </span>
 
-                </div>
+    loadNotifications()
+        .catch(
+            (error) => {
 
-                <div class="booking-code-value">
-                    ${escapeHTML(
-                        code.code || ""
-                    )}
-                </div>
+                console.error(
+                    "Notification loading error:",
+                    error
+                );
 
-                ${
-                    code.description
-                        ? `
-                            <p class="booking-code-description">
-                                ${escapeHTML(
-                                    code.description
-                                )}
-                            </p>
-                          `
-                        : ""
-                }
+            }
+        );
 
-            </div>
-        `;
-
-    }).join("");
 }
+
+
 /* ============================================================
    USER INTERFACE
    ============================================================ */
 
 function updateUserInterface() {
+
     const user =
         currentUser ||
         getStoredUser();
 
+
     if (!user) {
+
         return;
+
     }
+
 
     const displayName =
         user.name ||
         user.username ||
         "Member";
 
-    const elements = [
+
+    [
         getElement("userName"),
         getElement("headerUserName"),
         getElement("accountUserName")
-    ];
+    ]
+        .filter(Boolean)
+        .forEach(
+            (element) => {
 
-    elements.forEach(
-        (element) => {
-            if (element) {
                 element.textContent =
                     displayName;
-            }
-        }
-    );
 
-    const usernameElements = [
+            }
+        );
+
+
+    [
         getElement("usernameDisplay"),
         getElement("profileUsername")
-    ];
+    ]
+        .filter(Boolean)
+        .forEach(
+            (element) => {
 
-    usernameElements.forEach(
-        (element) => {
-            if (element) {
                 element.textContent =
                     user.username ||
                     "";
-            }
-        }
-    );
 
-    const emailElements = [
+            }
+        );
+
+
+    [
         getElement("emailDisplay"),
         getElement("profileEmail")
-    ];
+    ]
+        .filter(Boolean)
+        .forEach(
+            (element) => {
 
-    emailElements.forEach(
-        (element) => {
-            if (element) {
                 element.textContent =
                     user.email ||
                     "";
+
             }
-        }
-    );
+        );
+
 }
+
 
 /* ============================================================
    SIGN OUT
    ============================================================ */
 
 function setupSignOut() {
+
     const signOutButton =
         getElement(
             "signOutButton"
         );
 
+
     if (signOutButton) {
+
         signOutButton.addEventListener(
             "click",
             handleSignOut
         );
+
     }
+
 }
 
-async function handleSignOut(event) {
+
+async function handleSignOut(
+    event
+) {
+
     if (event) {
+
         event.preventDefault();
+
     }
+
 
     const token =
         getUserToken();
 
+
     try {
+
         if (token) {
+
             await apiRequest(
                 "/auth/logout",
                 {
                     method: "POST"
                 }
             );
+
         }
+
     } catch (error) {
+
         console.warn(
             "Logout request failed:",
             error.message
         );
+
     } finally {
+
         clearUserSession();
 
         window.vipAccessActive =
@@ -1264,259 +1464,37 @@ async function handleSignOut(event) {
         window.vipPredictionCount =
             0;
 
+
         showAccountGate();
+
         showLoginPanel();
+
 
         const loginForm =
             getElement(
                 "loginForm"
             );
 
+
         if (loginForm) {
+
             loginForm.reset();
+
         }
 
+
         closeMobileMenu();
+
 
         window.scrollTo({
             top: 0,
             behavior: "smooth"
         });
-    }
-}
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-
-function setupNavigation() {
-    const navLinks =
-        document.querySelectorAll(
-            'a[href^="#"]'
-        );
-
-    navLinks.forEach(
-        (link) => {
-            link.addEventListener(
-                "click",
-                (event) => {
-                    const href =
-                        link.getAttribute(
-                            "href"
-                        );
-
-                    if (
-                        !href ||
-                        href === "#"
-                    ) {
-                        return;
-                    }
-
-                    const target =
-                        document.querySelector(
-                            href
-                        );
-
-                    if (!target) {
-                        return;
-                    }
-
-                    event.preventDefault();
-
-                    target.scrollIntoView({
-                        behavior:
-                            "smooth",
-                        block:
-                            "start"
-                    });
-
-                    closeMobileMenu();
-                }
-            );
-        }
-    );
-}
-
-/* ============================================================
-   MOBILE MENU
-   ============================================================ */
-
-function setupMobileMenu() {
-    const menuButton =
-        getElement(
-            "menuButton"
-        );
-
-    const mainNav =
-        getElement(
-            "mainNav"
-        );
-
-    if (
-        !menuButton ||
-        !mainNav
-    ) {
-        return;
     }
 
-    menuButton.addEventListener(
-        "click",
-        () => {
-            const isOpen =
-                mainNav.classList.toggle(
-                    "open"
-                );
-
-            mainNav.classList.toggle(
-                "active",
-                isOpen
-            );
-
-            menuButton.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
-        }
-    );
 }
 
-function closeMobileMenu() {
-    const mainNav =
-        getElement(
-            "mainNav"
-        );
-
-    const menuButton =
-        getElement(
-            "menuButton"
-        );
-
-    if (mainNav) {
-        mainNav.classList.remove(
-            "open",
-            "active"
-        );
-    }
-
-    if (menuButton) {
-        menuButton.setAttribute(
-            "aria-expanded",
-            "false"
-        );
-    }
-}
-
-/* ============================================================
-   SEARCH
-   ============================================================ */
-
-function setupSearch() {
-    const searchInputs =
-        document.querySelectorAll(
-            "#predictionSearch, #searchInput, [data-prediction-search]"
-        );
-
-    searchInputs.forEach(
-        (input) => {
-            input.addEventListener(
-                "input",
-                () => {
-                    currentSearchTerm =
-                        String(
-                            input.value ||
-                            ""
-                        )
-                            .trim()
-                            .toLowerCase();
-
-                    renderPredictions();
-                }
-            );
-        }
-    );
-}
-
-/* ============================================================
-   FILTERS
-   ============================================================ */
-
-function setupFilters() {
-    const leagueButtons =
-        document.querySelectorAll(
-            "[data-league]"
-        );
-
-    leagueButtons.forEach(
-        (button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    currentLeagueFilter =
-                        String(
-                            button.dataset
-                                .league ||
-                            "all"
-                        )
-                            .trim()
-                            .toLowerCase();
-
-                    document
-                        .querySelectorAll(
-                            "[data-league]"
-                        )
-                        .forEach(
-                            (item) =>
-                                item.classList.remove(
-                                    "active"
-                                )
-                        );
-
-                    button.classList.add(
-                        "active"
-                    );
-
-                    renderPredictions();
-                }
-            );
-        }
-    );
-
-    const resultButtons =
-        document.querySelectorAll(
-            "[data-result-filter]"
-        );
-
-    resultButtons.forEach(
-        (button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    currentResultFilter =
-                        String(
-                            button.dataset
-                                .resultFilter ||
-                            "all"
-                        )
-                            .trim()
-                            .toLowerCase();
-
-                    resultButtons.forEach(
-                        (item) =>
-                            item.classList.remove(
-                                "active"
-                            )
-                    );
-
-                    button.classList.add(
-                        "active"
-                    );
-
-                    renderResults();
-                }
-            );
-        }
-    );
-}
 
 /* ============================================================
    MESSAGE HELPERS
@@ -1527,20 +1505,26 @@ function showMessage(
     message,
     type = "info"
 ) {
+
     const element =
         typeof elementOrId ===
         "string"
             ? getElement(
-                  elementOrId
-              )
+                elementOrId
+            )
             : elementOrId;
 
+
     if (!element) {
+
         return;
+
     }
+
 
     element.textContent =
         message || "";
+
 
     element.classList.remove(
         "success",
@@ -1548,24 +1532,37 @@ function showMessage(
         "info",
         "warning"
     );
+
 
     element.classList.add(
         type
     );
 
+
     element.style.display =
-        message ? "" : "none";
+        message
+            ? ""
+            : "none";
+
 }
 
+
 function clearMessage(id) {
+
     const element =
         getElement(id);
 
+
     if (!element) {
+
         return;
+
     }
 
-    element.textContent = "";
+
+    element.textContent =
+        "";
+
 
     element.classList.remove(
         "success",
@@ -1574,434 +1571,123 @@ function clearMessage(id) {
         "warning"
     );
 
+
     element.style.display =
         "none";
+
 }
+
+
+/* ============================================================
+   FORM LOADING
+   ============================================================ */
 
 function setFormLoading(
     form,
     loading,
     text
 ) {
+
     if (!form) {
+
         return;
+
     }
+
 
     const submitButton =
         form.querySelector(
             'button[type="submit"], input[type="submit"]'
         );
 
+
     if (!submitButton) {
+
         return;
+
     }
 
+
     if (loading) {
+
         submitButton.dataset
             .originalText =
             submitButton.textContent;
 
+
         submitButton.disabled =
             true;
+
 
         if (
             submitButton.tagName ===
             "INPUT"
         ) {
+
             submitButton.value =
                 text ||
                 "Please wait...";
+
         } else {
+
             submitButton.textContent =
                 text ||
                 "Please wait...";
+
         }
+
     } else {
+
         submitButton.disabled =
             false;
+
 
         const original =
             submitButton.dataset
                 .originalText;
 
+
         if (
             submitButton.tagName ===
             "INPUT"
         ) {
+
             if (original) {
+
                 submitButton.value =
                     original;
+
             }
+
         } else if (original) {
+
             submitButton.textContent =
                 original;
-        }
-    }
-}
 
-/* ============================================================
-   FOOTER
-   ============================================================ */
-
-function setupFooter() {
-    updateCurrentYear();
-}
-
-function updateCurrentYear() {
-    const year =
-        getElement(
-            "currentYear"
-        );
-
-    if (year) {
-        year.textContent =
-            new Date().getFullYear();
-    }
-}
-
-/* ============================================================
-   WHATSAPP
-   ============================================================ */
-
-function setupWhatsApp() {
-    const buttons =
-        document.querySelectorAll(
-            "[data-whatsapp], #whatsappButton, .whatsapp-button"
-        );
-
-    buttons.forEach(
-        (button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    const number =
-                        button.dataset
-                            .whatsapp ||
-                        "";
-
-                    if (!number) {
-                        return;
-                    }
-
-                    const cleanNumber =
-                        number.replace(
-                            /[^0-9]/g,
-                            ""
-                        );
-
-                    window.open(
-                        `https://wa.me/${cleanNumber}`,
-                        "_blank",
-                        "noopener,noreferrer"
-                    );
-                }
-            );
-        }
-    );
-}
-
-/* ============================================================
-   PAYMENT BUTTONS
-   ============================================================ */
-
-function setupPaymentButtons() {
-    const paymentButtons =
-        document.querySelectorAll(
-            "[data-payment-plan], #paymentButton, .payment-button"
-        );
-
-    paymentButtons.forEach(
-        (button) => {
-            button.addEventListener(
-                "click",
-                handlePaymentInitialization
-            );
-        }
-    );
-}
-
-async function handlePaymentInitialization(
-    event
-) {
-    event.preventDefault();
-
-    const button =
-        event.currentTarget;
-
-    const plan =
-        button.dataset
-            .paymentPlan ||
-        button.dataset.plan ||
-        "regular";
-
-    try {
-        button.disabled = true;
-
-        const data =
-            await apiRequest(
-                "/payments/initialize",
-                {
-                    method: "POST",
-                    body: {
-                        plan
-                    }
-                }
-            );
-
-        if (
-            data?.authorization_url
-        ) {
-            window.location.href =
-                data.authorization_url;
-
-            return;
         }
 
-        if (
-            data?.authorizationUrl
-        ) {
-            window.location.href =
-                data.authorizationUrl;
-
-            return;
-        }
-
-        showTemporaryNotice(
-            data?.message ||
-                "Payment service is not currently available."
-        );
-
-    } catch (error) {
-        console.warn(
-            "Payment initialization:",
-            error.message
-        );
-
-        showTemporaryNotice(
-            "Payment service is not currently available. Please contact FLEX HUB support."
-        );
-    } finally {
-        button.disabled = false;
     }
+
 }
 
-/* ============================================================
-   TEMPORARY NOTICE
-   ============================================================ */
-
-function showTemporaryNotice(
-    message
-) {
-    const existing =
-        getElement(
-            "flexTemporaryNotice"
-        );
-
-    if (existing) {
-        existing.remove();
-    }
-
-    const notice =
-        document.createElement(
-            "div"
-        );
-
-    notice.id =
-        "flexTemporaryNotice";
-
-    notice.textContent =
-        message;
-
-    notice.style.position =
-        "fixed";
-
-    notice.style.left =
-        "50%";
-
-    notice.style.bottom =
-        "24px";
-
-    notice.style.transform =
-        "translateX(-50%)";
-
-    notice.style.zIndex =
-        "99999";
-
-    notice.style.padding =
-        "14px 20px";
-
-    notice.style.borderRadius =
-        "12px";
-
-    notice.style.maxWidth =
-        "90%";
-
-    notice.style.textAlign =
-        "center";
-
-    notice.style.background =
-        "#05070b";
-
-    notice.style.color =
-        "#ffffff";
-
-    notice.style.border =
-        "1px solid #f5b942";
-
-    document.body.appendChild(
-        notice
-    );
-
-    setTimeout(() => {
-        notice.remove();
-    }, 4000);
-}
-
-/* ============================================================
-   FORGOT PASSWORD
-   ============================================================ */
-
-function setupForgotPassword() {
-    const button =
-        getElement(
-            "forgotPasswordButton"
-        );
-
-    if (!button) {
-        return;
-    }
-
-    button.addEventListener(
-        "click",
-        async (event) => {
-            event.preventDefault();
-
-            const email =
-                window.prompt(
-                    "Enter the email address connected to your FLEX HUB account:"
-                );
-
-            if (!email) {
-                return;
-            }
-
-            try {
-                const data =
-                    await apiRequest(
-                        "/auth/forgot-password",
-                        {
-                            method:
-                                "POST",
-                            skipAuth:
-                                true,
-                            body: {
-                                email:
-                                    email
-                                        .trim()
-                                        .toLowerCase()
-                            }
-                        }
-                    );
-
-                if (
-                    data?.resetToken
-                ) {
-                    window.prompt(
-                        "Your password reset token is:",
-                        data.resetToken
-                    );
-                } else {
-                    showTemporaryNotice(
-                        data?.message ||
-                            "If an account exists, reset instructions have been generated."
-                    );
-                }
-            } catch (error) {
-                showTemporaryNotice(
-                    error.message ||
-                        "Unable to start password reset."
-                );
-            }
-        }
-    );
-}
-
-/* ============================================================
-   REGULAR ACCESS
-   ============================================================ */
-
-async function refreshRegularAccessStatus() {
-    const token =
-        getUserToken();
-
-    if (!token) {
-        return null;
-    }
-
-    try {
-        const data =
-            await apiRequest(
-                "/user/access",
-                {
-                    method: "GET"
-                }
-            );
-
-        const active =
-            Boolean(
-                data?.regularAccessActive
-            );
-
-        document
-            .querySelectorAll(
-                "[data-regular-access-status]"
-            )
-            .forEach(
-                (element) => {
-                    element.textContent =
-                        active
-                            ? "Active"
-                            : "Expired";
-                }
-            );
-
-        return data;
-    } catch (error) {
-        console.warn(
-            "Unable to check regular access:",
-            error.message
-        );
-
-        return null;
-    }
-}
 
 /* ============================================================
    END OF PART 1
    ============================================================ */
 /* ============================================================
    FLEX HUB PREDICTIONS
-   PART 2/3
-   PREDICTIONS • RESULTS • VIP
+   APP.JS — PART 2/4
+   PREDICTIONS + RESULTS + BOOKING CODES
    ============================================================ */
 
+
 /* ============================================================
-   LOAD PREDICTIONS
+   PREDICTIONS
    ============================================================ */
 
 async function loadPredictions() {
-    const container =
-        getElement("predictionsGrid");
-
-    if (!container) {
-        return;
-    }
 
     try {
-        container.innerHTML =
-            createLoadingState(
-                "Loading predictions..."
-            );
 
         const data =
             await apiRequest(
@@ -2011,431 +1697,512 @@ async function loadPredictions() {
                 }
             );
 
+
         allPredictions =
-            Array.isArray(
-                data?.predictions
-            )
-                ? data.predictions
-                : Array.isArray(data)
+            Array.isArray(data)
                 ? data
-                : [];
+                : (
+                    data?.predictions ||
+                    data?.data ||
+                    []
+                );
+
 
         renderPredictions();
+
+
         updatePredictionStats();
 
-        /*
-         * Team badges are loaded after
-         * the prediction cards are rendered.
-         */
-        loadPredictionTeamBadges();
 
         return allPredictions;
 
     } catch (error) {
+
         console.error(
-            "loadPredictions error:",
+            "Load predictions error:",
             error
         );
 
+
         allPredictions = [];
 
-        container.innerHTML =
-            createEmptyState(
-                "Unable to load predictions right now."
-            );
 
-        throw error;
+        renderPredictionsError();
+
+
+        return [];
+
     }
+
 }
+
 
 /* ============================================================
    RENDER PREDICTIONS
    ============================================================ */
 
 function renderPredictions() {
-    const container =
-        getElement("predictionsGrid");
 
-    if (!container) {
+    const containers = [
+
+        getElement(
+            "predictionsGrid"
+        ),
+
+        getElement(
+            "predictionGrid"
+        ),
+
+        getElement(
+            "predictionsContainer"
+        ),
+
+        getElement(
+            "regularPredictionsGrid"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
         return;
+
     }
 
-    let predictions =
-        Array.isArray(allPredictions)
-            ? [...allPredictions]
-            : [];
 
-    /*
-     * Optional homepage feature:
-     * If the HTML element has:
-     *
-     * data-home-featured-only="true"
-     *
-     * only featured predictions are shown there.
-     */
-    if (
-        container.dataset
-            .homeFeaturedOnly ===
-        "true"
-    ) {
-        predictions =
-            predictions.filter(
-                (prediction) =>
-                    Boolean(
-                        prediction.featured
-                    )
+    let filtered =
+        [...allPredictions];
+
+
+    /* SEARCH */
+
+    if (currentSearchTerm) {
+
+        const search =
+            currentSearchTerm
+                .toLowerCase();
+
+
+        filtered =
+            filtered.filter(
+                (item) => {
+
+                    const text = [
+                        item.league,
+                        item.home_team,
+                        item.away_team,
+                        item.prediction,
+                        item.analysis,
+                        item.category
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+
+                    return text.includes(
+                        search
+                    );
+
+                }
             );
+
     }
 
-    /* League filter */
+
+    /* LEAGUE FILTER */
+
     if (
         currentLeagueFilter &&
         currentLeagueFilter !== "all"
     ) {
-        predictions =
-            predictions.filter(
-                (prediction) => {
-                    const league =
-                        normalizeText(
-                            prediction.league
-                        );
 
-                    return (
-                        league ===
-                            currentLeagueFilter ||
-                        league.includes(
-                            currentLeagueFilter
-                        )
-                    );
-                }
+        filtered =
+            filtered.filter(
+                (item) =>
+                    String(
+                        item.league ||
+                        ""
+                    ).toLowerCase() ===
+                    String(
+                        currentLeagueFilter
+                    ).toLowerCase()
             );
+
     }
 
-    /* Search */
-    if (currentSearchTerm) {
-        predictions =
-            predictions.filter(
-                (prediction) => {
-                    const searchable =
-                        [
-                            prediction.league,
-                            prediction.home_team,
-                            prediction.away_team,
-                            prediction.prediction,
-                            prediction.analysis,
-                            prediction.category
-                        ]
-                            .filter(Boolean)
-                            .join(" ")
-                            .toLowerCase();
 
-                    return searchable.includes(
-                        currentSearchTerm
+    /* REGULAR PREDICTIONS */
+
+    filtered =
+        filtered.filter(
+            (item) => {
+
+                const category =
+                    String(
+                        item.category ||
+                        "regular"
+                    ).toLowerCase();
+
+
+                return (
+                    category ===
+                    "regular"
+                );
+
+            }
+        );
+
+
+    if (!filtered.length) {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createEmptyState(
+                        "No predictions found."
                     );
-                }
-            );
-    }
 
-    if (!predictions.length) {
-        container.innerHTML =
-            createEmptyState(
-                currentSearchTerm ||
-                    currentLeagueFilter !==
-                        "all"
-                    ? "No predictions match your current filter."
-                    : "No predictions are available yet."
-            );
+            }
+        );
+
 
         return;
+
     }
 
-    /*
-     * Sort newest match dates first.
-     */
-    predictions.sort(
-        comparePredictionDates
-    );
 
-    container.innerHTML =
-        predictions
+    const html =
+        filtered
             .map(
                 createPredictionCard
             )
             .join("");
 
-    loadPredictionTeamBadges();
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                html;
+
+        }
+    );
+
+
+    setupTeamBadgeObserver();
+
 }
+
 
 /* ============================================================
    PREDICTION CARD
    ============================================================ */
 
 function createPredictionCard(
-    prediction
+    item
 ) {
+
+    const id =
+        Number(item.id || 0);
+
+
     const league =
         escapeHTML(
-            prediction.league ||
-                "Football"
+            item.league ||
+            "Football"
         );
+
 
     const homeTeam =
         escapeHTML(
-            prediction.home_team ||
-                "Home Team"
+            item.home_team ||
+            "Home Team"
         );
+
 
     const awayTeam =
         escapeHTML(
-            prediction.away_team ||
-                "Away Team"
+            item.away_team ||
+            "Away Team"
         );
+
 
     const matchDate =
-        prediction.match_date ||
-        "";
+        escapeHTML(
+            item.match_date ||
+            ""
+        );
+
 
     const matchTime =
-        prediction.match_time ||
-        "";
-
-    const predictionText =
         escapeHTML(
-            prediction.prediction ||
-                "Prediction pending"
+            item.match_time ||
+            ""
         );
+
+
+    const prediction =
+        escapeHTML(
+            item.prediction ||
+            "Prediction pending"
+        );
+
 
     const analysis =
         escapeHTML(
-            prediction.analysis ||
-                "No analysis available."
+            item.analysis ||
+            "No analysis available."
         );
+
 
     const category =
         escapeHTML(
-            formatCategory(
-                prediction.category
-            )
+            String(
+                item.category ||
+                "regular"
+            ).toUpperCase()
         );
 
-    const status =
-        normalizeText(
-            prediction.status ||
-                "pending"
-        );
-
-    const statusClass =
-        getStatusClass(status);
-
-    const statusLabel =
-        formatStatus(status);
-
-    const countdown =
-        getMatchCountdown(
-            matchDate,
-            matchTime
-        );
 
     const featured =
-        Boolean(
-            prediction.featured
-        );
+        item.featured
+            ? `
+                <span class="prediction-featured">
+                    FEATURED
+                </span>
+              `
+            : "";
+
 
     return `
         <article
             class="prediction-card"
-            data-prediction-id="${escapeHTML(
-                prediction.id ?? ""
-            )}"
-            data-home-team="${homeTeam}"
-            data-away-team="${awayTeam}"
+            data-prediction-id="${id}"
         >
 
-            <div class="prediction-card-top">
-                <span class="prediction-league">
-                    ${league}
+            <div class="prediction-card-header">
+
+                <div>
+
+                    <span class="prediction-league">
+                        ${league}
+                    </span>
+
+                    ${featured}
+
+                </div>
+
+                <span class="prediction-category">
+                    ${category}
                 </span>
 
-                ${
-                    featured
-                        ? `
-                            <span class="prediction-featured">
-                                ★ FEATURED
-                            </span>
-                        `
-                        : ""
-                }
             </div>
+
 
             <div class="prediction-match">
 
-                <div class="team-block">
+                <div class="prediction-team">
+
                     <div
                         class="team-badge"
-                        data-team-name="${homeTeam}"
-                    >
-                        <span>
-                            ${getTeamInitials(
-                                prediction.home_team
-                            )}
-                        </span>
-                    </div>
+                        data-team="${homeTeam}"
+                    ></div>
 
-                    <strong>
+                    <span>
                         ${homeTeam}
-                    </strong>
-                </div>
-
-                <div class="match-center">
-
-                    <span class="match-date">
-                        ${escapeHTML(
-                            formatMatchDate(
-                                matchDate
-                            )
-                        )}
-                    </span>
-
-                    <span class="match-time">
-                        ${escapeHTML(
-                            matchTime
-                        )}
-                    </span>
-
-                    <span
-                        class="match-countdown"
-                        data-countdown-date="${escapeHTML(
-                            matchDate
-                        )}"
-                        data-countdown-time="${escapeHTML(
-                            matchTime
-                        )}"
-                    >
-                        ${escapeHTML(
-                            countdown
-                        )}
                     </span>
 
                 </div>
 
-                <div class="team-block">
+
+                <div class="prediction-vs">
+
+                    <span>VS</span>
+
+                    <small>
+                        ${matchDate}
+                        ${matchTime}
+                    </small>
+
+                </div>
+
+
+                <div class="prediction-team">
+
                     <div
                         class="team-badge"
-                        data-team-name="${awayTeam}"
-                    >
-                        <span>
-                            ${getTeamInitials(
-                                prediction.away_team
-                            )}
-                        </span>
-                    </div>
+                        data-team="${awayTeam}"
+                    ></div>
 
-                    <strong>
+                    <span>
                         ${awayTeam}
-                    </strong>
+                    </span>
+
                 </div>
 
             </div>
 
-            <div class="prediction-details">
 
-                <div class="prediction-row">
-                    <span>Prediction</span>
+            <div class="prediction-selection">
 
-                    <strong>
-                        ${predictionText}
-                    </strong>
-                </div>
+                <span>
+                    Prediction
+                </span>
 
-                <div class="prediction-row">
-                    <span>Category</span>
-
-                    <strong>
-                        ${category}
-                    </strong>
-                </div>
-
-                <div class="prediction-analysis">
-                    <span>Analysis</span>
-
-                    <p>
-                        ${analysis}
-                    </p>
-                </div>
+                <strong>
+                    ${prediction}
+                </strong>
 
             </div>
 
-            <div class="prediction-card-bottom">
 
-                <span class="prediction-status ${statusClass}">
-                    ${statusLabel}
+            <div class="prediction-analysis">
+
+                <span>
+                    Match Analysis
                 </span>
 
-                <span class="prediction-id">
-                    #${escapeHTML(
-                        String(
-                            prediction.id ??
-                                ""
-                        )
-                    )}
-                </span>
+                <p>
+                    ${analysis}
+                </p>
 
             </div>
 
         </article>
     `;
+
 }
+
+
+/* ============================================================
+   PREDICTION ERROR
+   ============================================================ */
+
+function renderPredictionsError() {
+
+    const containers = [
+
+        getElement(
+            "predictionsGrid"
+        ),
+
+        getElement(
+            "predictionGrid"
+        ),
+
+        getElement(
+            "predictionsContainer"
+        ),
+
+        getElement(
+            "regularPredictionsGrid"
+        )
+
+    ].filter(Boolean);
+
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                createEmptyState(
+                    "Unable to load predictions right now."
+                );
+
+        }
+    );
+
+}
+
 
 /* ============================================================
    PREDICTION STATS
    ============================================================ */
 
 function updatePredictionStats() {
-    const predictions =
-        Array.isArray(
-            allPredictions
+
+    const predictionCount =
+        allPredictions.length;
+
+
+    const elements = [
+
+        getElement(
+            "predictionCount"
+        ),
+
+        getElement(
+            "totalPredictions"
+        ),
+
+        getElement(
+            "predictionsStat"
         )
-            ? allPredictions
-            : [];
 
-    const count =
-        predictions.length;
+    ].filter(Boolean);
 
-    const predictionCountElements =
-        document.querySelectorAll(
-            "[data-prediction-count], #predictionCount"
-        );
 
-    predictionCountElements.forEach(
+    elements.forEach(
         (element) => {
+
             element.textContent =
-                count;
+                predictionCount;
+
         }
     );
 
-    /*
-     * Update common stat cards if
-     * they exist in index.html.
-     */
-    const stats =
-        document.querySelectorAll(
-            ".stat-number[data-stat='predictions'], [data-stat-predictions]"
+
+    const leagues =
+        new Set(
+            allPredictions
+                .map(
+                    (item) =>
+                        item.league
+                )
+                .filter(Boolean)
         );
 
-    stats.forEach(
+
+    const leagueElements = [
+
+        getElement(
+            "leagueCount"
+        ),
+
+        getElement(
+            "totalLeagues"
+        ),
+
+        getElement(
+            "leaguesStat"
+        )
+
+    ].filter(Boolean);
+
+
+    leagueElements.forEach(
         (element) => {
+
             element.textContent =
-                count;
+                leagues.size;
+
         }
     );
+
 }
+
 
 /* ============================================================
    RESULTS
    ============================================================ */
 
 async function loadResults() {
+
     try {
+
         const data =
             await apiRequest(
                 "/results",
@@ -2444,196 +2211,284 @@ async function loadResults() {
                 }
             );
 
+
         allResults =
-            Array.isArray(
-                data?.results
-            )
-                ? data.results
-                : Array.isArray(data)
+            Array.isArray(data)
                 ? data
-                : [];
+                : (
+                    data?.results ||
+                    data?.data ||
+                    []
+                );
+
 
         renderResults();
+
+
+        updateResultStats();
+
 
         return allResults;
 
     } catch (error) {
+
         console.error(
-            "loadResults error:",
+            "Load results error:",
             error
         );
 
+
         allResults = [];
+
 
         renderResultsError();
 
-        throw error;
+
+        return [];
+
     }
+
 }
+
 
 /* ============================================================
    RENDER RESULTS
    ============================================================ */
 
 function renderResults() {
+
     const containers = [
-        getElement("resultsGrid"),
-        getElement("recentResultsGrid"),
-        getElement("resultsContainer")
+
+        getElement(
+            "resultsGrid"
+        ),
+
+        getElement(
+            "resultGrid"
+        ),
+
+        getElement(
+            "resultsContainer"
+        )
+
     ].filter(Boolean);
 
+
     if (!containers.length) {
+
         return;
+
     }
 
-    let results =
-        Array.isArray(allResults)
-            ? [...allResults]
-            : [];
+
+    let filtered =
+        [...allResults];
+
+
+    /* SEARCH */
+
+    if (currentSearchTerm) {
+
+        const search =
+            currentSearchTerm
+                .toLowerCase();
+
+
+        filtered =
+            filtered.filter(
+                (item) => {
+
+                    const text = [
+
+                        item.league,
+                        item.home_team,
+                        item.away_team,
+                        item.prediction,
+                        item.status
+
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+
+                    return text.includes(
+                        search
+                    );
+
+                }
+            );
+
+    }
+
+
+    /* RESULT FILTER */
 
     if (
         currentResultFilter &&
         currentResultFilter !== "all"
     ) {
-        results =
-            results.filter(
-                (result) => {
+
+        filtered =
+            filtered.filter(
+                (item) => {
+
                     const status =
-                        normalizeText(
-                            result.status
-                        );
+                        String(
+                            item.status ||
+                            ""
+                        )
+                            .toLowerCase();
+
 
                     return (
                         status ===
-                        currentResultFilter
+                        String(
+                            currentResultFilter
+                        ).toLowerCase()
                     );
+
                 }
             );
+
     }
 
-    results.sort(
-        comparePredictionDates
-    );
 
-    if (!results.length) {
-        const html =
-            createEmptyState(
-                "No results available yet."
-            );
+    if (!filtered.length) {
 
         containers.forEach(
             (container) => {
+
                 container.innerHTML =
-                    html;
+                    createEmptyState(
+                        "No results found."
+                    );
+
             }
         );
 
+
         return;
+
     }
 
-    /*
-     * recentResultsGrid may be intended
-     * to show only a small number.
-     */
+
+    const html =
+        filtered
+            .map(
+                createResultCard
+            )
+            .join("");
+
+
     containers.forEach(
         (container) => {
-            let output =
-                results;
-
-            if (
-                container.id ===
-                "recentResultsGrid"
-            ) {
-                output =
-                    results.slice(0, 6);
-            }
 
             container.innerHTML =
-                output
-                    .map(
-                        createResultCard
-                    )
-                    .join("");
+                html;
+
         }
     );
 
-    updateResultStats();
+
+    setupTeamBadgeObserver();
+
 }
+
 
 /* ============================================================
    RESULT CARD
    ============================================================ */
 
 function createResultCard(
-    result
+    item
 ) {
+
     const league =
         escapeHTML(
-            result.league ||
-                "Football"
+            item.league ||
+            "Football"
         );
+
 
     const homeTeam =
         escapeHTML(
-            result.home_team ||
-                "Home Team"
+            item.home_team ||
+            "Home Team"
         );
+
 
     const awayTeam =
         escapeHTML(
-            result.away_team ||
-                "Away Team"
+            item.away_team ||
+            "Away Team"
         );
+
 
     const prediction =
         escapeHTML(
-            result.prediction ||
-                "Prediction"
+            item.prediction ||
+            "—"
         );
 
-    const analysis =
-        escapeHTML(
-            result.analysis ||
-                ""
-        );
 
     const status =
-        normalizeText(
-            result.status ||
-                "pending"
-        );
+        String(
+            item.status ||
+            "pending"
+        )
+            .toLowerCase();
 
-    const statusClass =
-        getStatusClass(status);
 
-    const statusLabel =
-        formatStatus(status);
+    let statusLabel =
+        status.toUpperCase();
 
-    const date =
-        escapeHTML(
-            formatMatchDate(
-                result.match_date
-            )
-        );
 
-    const time =
-        escapeHTML(
-            result.match_time ||
-                ""
-        );
+    let statusClass =
+        "status-pending";
+
+
+    if (
+        status === "win" ||
+        status === "won"
+    ) {
+
+        statusLabel =
+            "WIN";
+
+        statusClass =
+            "status-success";
+
+    } else if (
+        status === "loss" ||
+        status === "lost"
+    ) {
+
+        statusLabel =
+            "LOSS";
+
+        statusClass =
+            "status-danger";
+
+    } else if (
+        status === "void"
+    ) {
+
+        statusLabel =
+            "VOID";
+
+        statusClass =
+            "status-warning";
+
+    }
+
 
     return `
-        <article
-            class="result-card"
-            data-result-id="${escapeHTML(
-                result.id ??
-                    result.prediction_id ??
-                    ""
-            )}"
-        >
+        <article class="result-card">
 
-            <div class="result-card-top">
-                <span>
+            <div class="result-card-header">
+
+                <span class="result-league">
                     ${league}
                 </span>
 
@@ -2642,2046 +2497,938 @@ function createResultCard(
                 >
                     ${statusLabel}
                 </span>
+
             </div>
+
 
             <div class="result-match">
 
-                <strong>
-                    ${homeTeam}
-                </strong>
+                <div class="result-team">
+
+                    <div
+                        class="team-badge"
+                        data-team="${homeTeam}"
+                    ></div>
+
+                    <span>
+                        ${homeTeam}
+                    </span>
+
+                </div>
+
 
                 <span class="result-vs">
                     VS
                 </span>
 
-                <strong>
-                    ${awayTeam}
-                </strong>
+
+                <div class="result-team">
+
+                    <div
+                        class="team-badge"
+                        data-team="${awayTeam}"
+                    ></div>
+
+                    <span>
+                        ${awayTeam}
+                    </span>
+
+                </div>
 
             </div>
 
-            <div class="result-meta">
-                <span>
-                    ${date}
-                </span>
-
-                <span>
-                    ${time}
-                </span>
-            </div>
 
             <div class="result-prediction">
-                <span>Prediction</span>
+
+                <span>
+                    Prediction
+                </span>
 
                 <strong>
                     ${prediction}
                 </strong>
-            </div>
 
-            ${
-                analysis
-                    ? `
-                        <p class="result-analysis">
-                            ${analysis}
-                        </p>
-                    `
-                    : ""
-            }
+            </div>
 
         </article>
     `;
+
 }
 
-/* ============================================================
-   RESULT STATS
-   ============================================================ */
-
-function updateResultStats() {
-    const results =
-        Array.isArray(allResults)
-            ? allResults
-            : [];
-
-    const count =
-        results.length;
-
-    document
-        .querySelectorAll(
-            "[data-result-count], #resultCount"
-        )
-        .forEach(
-            (element) => {
-                element.textContent =
-                    count;
-            }
-        );
-
-    const wins =
-        results.filter(
-            (result) =>
-                normalizeText(
-                    result.status
-                ) === "win"
-        ).length;
-
-    const losses =
-        results.filter(
-            (result) =>
-                normalizeText(
-                    result.status
-                ) === "loss"
-        ).length;
-
-    document
-        .querySelectorAll(
-            "[data-win-count], #winCount"
-        )
-        .forEach(
-            (element) => {
-                element.textContent =
-                    wins;
-            }
-        );
-
-    document
-        .querySelectorAll(
-            "[data-loss-count], #lossCount"
-        )
-        .forEach(
-            (element) => {
-                element.textContent =
-                    losses;
-            }
-        );
-}
 
 /* ============================================================
    RESULT ERROR
    ============================================================ */
 
 function renderResultsError() {
+
     const containers = [
-        getElement("resultsGrid"),
-        getElement("recentResultsGrid"),
-        getElement("resultsContainer")
+
+        getElement(
+            "resultsGrid"
+        ),
+
+        getElement(
+            "resultGrid"
+        ),
+
+        getElement(
+            "resultsContainer"
+        )
+
     ].filter(Boolean);
+
 
     containers.forEach(
         (container) => {
+
             container.innerHTML =
                 createEmptyState(
                     "Unable to load results right now."
                 );
-        }
-    );
-}
 
-/* ============================================================
-   VIP PAGE
-   ============================================================ */
-
-function setupVipPage() {
-    console.log(
-        "FLEX HUB VIP page detected."
-    );
-
-    setupVipAccessForm();
-
-    verifyUserForVipPage()
-        .then(() =>
-            checkVipStatus()
-        )
-        .catch((error) => {
-            console.error(
-                "VIP initialization error:",
-                error
-            );
-        });
-}
-
-/* ============================================================
-   VERIFY USER BEFORE VIP
-   ============================================================ */
-
-async function verifyUserForVipPage() {
-    const token =
-        getUserToken();
-
-    if (!token) {
-        showVipLockedState(
-            "Please log in to access FLEX HUB VIP."
-        );
-
-        return false;
-    }
-
-    const verified =
-        await verifyCurrentUserSession(
-            false
-        );
-
-    if (!verified) {
-        showVipLockedState(
-            "Your session has expired. Please log in again."
-        );
-
-        return false;
-    }
-
-    return true;
-}
-
-/* ============================================================
-   VIP ACCESS FORM
-   ============================================================ */
-
-function setupVipAccessForm() {
-    const form =
-        getElement(
-            "vipAccessForm"
-        );
-
-    if (!form) {
-        return;
-    }
-
-    /*
-     * Prevent duplicate listeners.
-     */
-    if (
-        form.dataset
-            .vipListenerAttached ===
-        "true"
-    ) {
-        return;
-    }
-
-    form.dataset
-        .vipListenerAttached =
-        "true";
-
-    form.addEventListener(
-        "submit",
-        handleVipAccess
-    );
-}
-
-/* ============================================================
-   REDEEM VIP CODE
-   ============================================================ */
-
-async function handleVipAccess(
-    event
-) {
-    if (event) {
-        event.preventDefault();
-    }
-
-    const input =
-        getElement(
-            "vipAccessCode"
-        ) ||
-        getElement(
-            "accessCode"
-        );
-
-    const message =
-        getElement(
-            "vipAccessMessage"
-        ) ||
-        getElement(
-            "vipMessage"
-        );
-
-    const form =
-        event?.currentTarget ||
-        getElement(
-            "vipAccessForm"
-        );
-
-    const code =
-        String(
-            input?.value ||
-                ""
-        ).trim();
-
-    if (!code) {
-        showMessage(
-            message,
-            "Please enter your VIP access code.",
-            "error"
-        );
-
-        input?.focus();
-
-        return;
-    }
-
-    if (!getUserToken()) {
-        showMessage(
-            message,
-            "Please log in before redeeming a VIP code.",
-            "error"
-        );
-
-        return;
-    }
-
-    setFormLoading(
-        form,
-        true,
-        "Verifying code..."
-    );
-
-    showMessage(
-        message,
-        "Verifying your VIP access code...",
-        "info"
-    );
-
-    try {
-        /*
-         * IMPORTANT:
-         *
-         * Current backend route:
-         *
-         * POST /api/vip/redeem
-         *
-         * It uses the NORMAL USER JWT.
-         *
-         * There is no /vip/access route
-         * and no separate VIP JWT.
-         */
-
-        const data =
-            await apiRequest(
-                "/vip/redeem",
-                {
-                    method: "POST",
-                    body: {
-                        code
-                    }
-                }
-            );
-
-        if (
-            data?.subscription
-        ) {
-            window.vipAccessActive =
-                true;
-
-            showMessage(
-                message,
-                data.message ||
-                    "VIP access activated successfully.",
-                "success"
-            );
-
-            if (input) {
-                input.value = "";
-            }
-
-            updateVipStatusUI(
-                data.subscription
-            );
-
-            await checkVipStatus();
-
-            return;
-        }
-
-        /*
-         * Some backend responses may
-         * return a direct message.
-         */
-
-        if (data?.message) {
-            showMessage(
-                message,
-                data.message,
-                "success"
-            );
-
-            await checkVipStatus();
-
-            return;
-        }
-
-        throw new Error(
-            "The server did not confirm VIP activation."
-        );
-
-    } catch (error) {
-        console.error(
-            "VIP redemption error:",
-            error
-        );
-
-        showMessage(
-            message,
-            error.message ||
-                "Unable to activate VIP access.",
-            "error"
-        );
-    } finally {
-        setFormLoading(
-            form,
-            false
-        );
-    }
-}
-
-/* ============================================================
-   VIP STATUS
-   ============================================================ */
-
-async function checkVipStatus() {
-    if (!getUserToken()) {
-        showVipLockedState(
-            "Please log in to access VIP."
-        );
-
-        return null;
-    }
-
-    try {
-        /*
-         * Current backend:
-         * GET /api/vip/status
-         *
-         * Uses normal user JWT.
-         */
-
-        const data =
-            await apiRequest(
-                "/vip/status",
-                {
-                    method: "GET"
-                }
-            );
-
-        const subscription =
-            data?.subscription ||
-            data?.vip ||
-            null;
-
-        const active =
-            Boolean(
-                data?.active ??
-                data?.vipActive ??
-                subscription
-                    ?.status === "active"
-            );
-
-        window.vipAccessActive =
-            active;
-
-        updateVipStatusUI(
-            subscription,
-            data
-        );
-
-        if (active) {
-            await loadVipPredictions();
-
-            return data;
-        }
-
-        showVipLockedState(
-            data?.message ||
-                "Enter a valid VIP access code to unlock VIP predictions."
-        );
-
-        return data;
-
-    } catch (error) {
-        console.error(
-            "VIP status error:",
-            error
-        );
-
-        /*
-         * A VIP status failure should
-         * never log the user out.
-         */
-
-        showVipLockedState(
-            error.status === 401 ||
-                error.status === 403
-                ? "Please log in again to access VIP."
-                : "VIP status is temporarily unavailable."
-        );
-
-        return null;
-    }
-}
-
-/* ============================================================
-   VIP STATUS UI
-   ============================================================ */
-
-function updateVipStatusUI(
-    subscription,
-    statusData = null
-) {
-    const active =
-        Boolean(
-            window.vipAccessActive
-        );
-
-    const locked =
-        getElement(
-            "vipLocked"
-        );
-
-    const content =
-        getElement(
-            "vipContent"
-        );
-
-    const statusElements =
-        document.querySelectorAll(
-            "[data-vip-status]"
-        );
-
-    statusElements.forEach(
-        (element) => {
-            element.textContent =
-                active
-                    ? "VIP ACTIVE"
-                    : "VIP LOCKED";
-
-            element.classList.toggle(
-                "active",
-                active
-            );
-
-            element.classList.toggle(
-                "locked",
-                !active
-            );
         }
     );
 
-    const expiry =
-        subscription?.expires_at ||
-        statusData?.expiresAt ||
-        statusData?.expires_at;
-
-    document
-        .querySelectorAll(
-            "[data-vip-expiry]"
-        )
-        .forEach(
-            (element) => {
-                if (expiry) {
-                    element.textContent =
-                        formatDateTime(
-                            expiry
-                        );
-                } else {
-                    element.textContent =
-                        active
-                            ? "Active"
-                            : "Not active";
-                }
-            }
-        );
-
-    if (active) {
-        if (locked) {
-            locked.style.display =
-                "none";
-        }
-
-        if (content) {
-            content.style.display =
-                "";
-        }
-    }
 }
 
+
 /* ============================================================
-   VIP LOCKED STATE
+   RESULT STATS
    ============================================================ */
 
-function showVipLockedState(
-    message
-) {
-    const locked =
-        getElement(
-            "vipLocked"
-        );
+function updateResultStats() {
 
-    const content =
-        getElement(
-            "vipContent"
-        );
+    const resultCount =
+        allResults.length;
 
-    const messageElements = [
+
+    const elements = [
+
         getElement(
-            "vipAccessMessage"
+            "resultCount"
         ),
+
         getElement(
-            "vipMessage"
+            "totalResults"
+        ),
+
+        getElement(
+            "resultsStat"
         )
+
     ].filter(Boolean);
 
-    if (locked) {
-        locked.style.display =
-            "";
-    }
 
-    if (content) {
-        content.style.display =
-            "none";
-    }
-
-    messageElements.forEach(
+    elements.forEach(
         (element) => {
-            showMessage(
-                element,
-                message,
-                "info"
-            );
+
+            element.textContent =
+                resultCount;
+
         }
     );
 
-    window.vipAccessActive =
-        false;
+
+    const wins =
+        allResults.filter(
+            (item) => {
+
+                const status =
+                    String(
+                        item.status ||
+                        ""
+                    ).toLowerCase();
+
+                return (
+                    status === "win" ||
+                    status === "won"
+                );
+
+            }
+        ).length;
+
+
+    const winElements = [
+
+        getElement(
+            "winCount"
+        ),
+
+        getElement(
+            "totalWins"
+        ),
+
+        getElement(
+            "winsStat"
+        )
+
+    ].filter(Boolean);
+
+
+    winElements.forEach(
+        (element) => {
+
+            element.textContent =
+                wins;
+
+        }
+    );
+
 }
 
+
 /* ============================================================
-   LOAD VIP PREDICTIONS
+   SEARCH
    ============================================================ */
 
-async function loadVipPredictions() {
-    const container =
+function setupSearch() {
+
+    const searchInputs = [
+
         getElement(
-            "vipPredictionsGrid"
-        );
+            "predictionSearch"
+        ),
 
-    if (!container) {
-        return [];
-    }
+        getElement(
+            "searchInput"
+        ),
 
-    if (
-        !window.vipAccessActive
-    ) {
-        showVipLockedState(
-            "VIP access is required to view these predictions."
-        );
+        getElement(
+            "teamSearch"
+        ),
 
-        return [];
-    }
+        getElement(
+            "mainSearch"
+        )
 
-    try {
-        container.innerHTML =
-            createLoadingState(
-                "Loading VIP predictions..."
-            );
+    ].filter(Boolean);
 
-        const data =
-            await apiRequest(
-                "/vip/predictions",
-                {
-                    method: "GET"
+
+    searchInputs.forEach(
+        (input) => {
+
+            input.addEventListener(
+                "input",
+                () => {
+
+                    currentSearchTerm =
+                        input.value
+                            .trim();
+
+
+                    renderPredictions();
+
+                    renderResults();
+
                 }
             );
 
-        const predictions =
+        }
+    );
+
+}
+
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+
+function setupFilters() {
+
+    const leagueFilters =
+        document.querySelectorAll(
+            "[data-league-filter]"
+        );
+
+
+    leagueFilters.forEach(
+        (button) => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    currentLeagueFilter =
+                        button.dataset
+                            .leagueFilter ||
+                        "all";
+
+
+                    leagueFilters.forEach(
+                        (item) => {
+
+                            item.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    renderPredictions();
+
+                }
+            );
+
+        }
+    );
+
+
+    const resultFilters =
+        document.querySelectorAll(
+            "[data-result-filter]"
+        );
+
+
+    resultFilters.forEach(
+        (button) => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    currentResultFilter =
+                        button.dataset
+                            .resultFilter ||
+                        "all";
+
+
+                    resultFilters.forEach(
+                        (item) => {
+
+                            item.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    renderResults();
+
+                }
+            );
+
+        }
+    );
+
+
+    const selectLeague =
+        getElement(
+            "leagueFilter"
+        );
+
+
+    if (selectLeague) {
+
+        selectLeague.addEventListener(
+            "change",
+            () => {
+
+                currentLeagueFilter =
+                    selectLeague.value ||
+                    "all";
+
+
+                renderPredictions();
+
+            }
+        );
+
+    }
+
+
+    const selectResult =
+        getElement(
+            "resultFilter"
+        );
+
+
+    if (selectResult) {
+
+        selectResult.addEventListener(
+            "change",
+            () => {
+
+                currentResultFilter =
+                    selectResult.value ||
+                    "all";
+
+
+                renderResults();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   BOOKING CODES
+   ============================================================ */
+
+async function loadBookingCodes(
+    category = "regular"
+) {
+
+    const normalizedCategory =
+        String(
+            category ||
+            "regular"
+        )
+            .trim()
+            .toLowerCase();
+
+
+    const containers = [
+
+        getElement(
+            "bettingCodesGrid"
+        ),
+
+        getElement(
+            "bookingCodesContainer"
+        ),
+
+        getElement(
+            "bookingCodesGrid"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createLoadingState(
+                        "Loading booking codes..."
+                    );
+
+            }
+        );
+
+
+        const data =
+            await apiRequest(
+                `/betting-codes?category=${encodeURIComponent(
+                    normalizedCategory
+                )}`,
+                {
+                    method: "GET",
+                    skipAuth: true
+                }
+            );
+
+
+        const codes =
             Array.isArray(
-                data?.predictions
+                data?.codes
             )
-                ? data.predictions
+                ? data.codes
                 : Array.isArray(data)
                 ? data
                 : [];
 
-        window.vipPredictionCount =
-            predictions.length;
 
-        if (!predictions.length) {
-            container.innerHTML =
-                createEmptyState(
-                    "No VIP predictions are available yet."
-                );
+        allBookingCodes =
+            codes;
 
-            return predictions;
-        }
 
-        container.innerHTML =
-            predictions
-                .sort(
-                    comparePredictionDates
-                )
-                .map(
-                    createPredictionCard
-                )
-                .join("");
+        renderBookingCodes(
+            codes,
+            normalizedCategory
+        );
 
-        loadPredictionTeamBadges();
 
-        return predictions;
+        return codes;
 
     } catch (error) {
+
         console.error(
-            "VIP predictions error:",
+            "Booking codes error:",
             error
         );
 
-        if (
-            error.status === 401 ||
-            error.status === 403
-        ) {
-            showVipLockedState(
-                "Your VIP access is no longer active."
-            );
-        } else {
-            container.innerHTML =
-                createEmptyState(
-                    "Unable to load VIP predictions."
-                );
-        }
 
-        return [];
-    }
-}
+        containers.forEach(
+            (container) => {
 
-/* ============================================================
-   VIP BETTING CODES
-   ============================================================ */
+                container.innerHTML =
+                    createEmptyState(
+                        "Unable to load booking codes right now."
+                    );
 
-async function loadVipBettingCodes() {
-    /*
-     * The current server.js does NOT expose
-     * /api/vip/betting-codes.
-     *
-     * Do not make a request to a nonexistent
-     * endpoint.
-     *
-     * This function is intentionally safe so
-     * existing HTML/inline calls do not crash.
-     */
-
-    const container =
-        getElement(
-            "vipBettingCodesGrid"
+            }
         );
 
-    if (container) {
-        container.innerHTML =
-            createEmptyState(
-                "VIP betting codes are not currently available."
-            );
+
+        return [];
+
     }
 
-    return [];
 }
 
+
 /* ============================================================
-   REGULAR BETTING CODES
+   RENDER BOOKING CODES
+   ============================================================ */
+
+function renderBookingCodes(
+    codes,
+    category = "regular"
+) {
+
+    const containers = [
+
+        getElement(
+            "bettingCodesGrid"
+        ),
+
+        getElement(
+            "bookingCodesContainer"
+        ),
+
+        getElement(
+            "bookingCodesGrid"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
+        return;
+
+    }
+
+
+    const list =
+        Array.isArray(codes)
+            ? codes
+            : [];
+
+
+    const activeCodes =
+        list.filter(
+            (code) => {
+
+                return (
+                    String(
+                        code.status ||
+                        "active"
+                    )
+                        .toLowerCase() ===
+                    "active"
+                );
+
+            }
+        );
+
+
+    if (!activeCodes.length) {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createEmptyState(
+                        category === "vip"
+                            ? "No VIP booking codes are available yet."
+                            : "No booking codes are available yet."
+                    );
+
+            }
+        );
+
+
+        return;
+
+    }
+
+
+    const html =
+        activeCodes
+            .map(
+                (code) => {
+
+                    const bookmaker =
+                        escapeHTML(
+                            code.bookmaker ||
+                            "Bookmaker"
+                        );
+
+
+                    const bookingCode =
+                        escapeHTML(
+                            code.code ||
+                            ""
+                        );
+
+
+                    const description =
+                        escapeHTML(
+                            code.description ||
+                            ""
+                        );
+
+
+                    const codeCategory =
+                        escapeHTML(
+                            String(
+                                code.category ||
+                                category ||
+                                "regular"
+                            )
+                                .toUpperCase()
+                        );
+
+
+                    const rawCode =
+                        String(
+                            code.code ||
+                            ""
+                        );
+
+
+                    return `
+                        <article
+                            class="booking-code-card"
+                        >
+
+                            <div
+                                class="booking-code-top"
+                            >
+
+                                <div>
+
+                                    <span
+                                        class="booking-code-bookmaker"
+                                    >
+                                        ${bookmaker}
+                                    </span>
+
+                                    <span
+                                        class="booking-code-category"
+                                    >
+                                        ${codeCategory}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="booking-code-value"
+                            >
+                                ${bookingCode}
+                            </div>
+
+
+                            ${
+                                description
+                                    ? `
+                                        <p
+                                            class="booking-code-description"
+                                        >
+                                            ${description}
+                                        </p>
+                                      `
+                                    : ""
+                            }
+
+
+                            <button
+                                type="button"
+                                class="booking-code-copy-button"
+                                data-booking-code="${escapeAttribute(
+                                    rawCode
+                                )}"
+                            >
+                                Copy Code
+                            </button>
+
+                        </article>
+                    `;
+
+                }
+            )
+            .join("");
+
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                html;
+
+
+            container
+                .querySelectorAll(
+                    ".booking-code-copy-button"
+                )
+                .forEach(
+                    (button) => {
+
+                        button.addEventListener(
+                            "click",
+                            () => {
+
+                                copyBettingCode(
+                                    button.dataset
+                                        .bookingCode,
+                                    button
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   REGULAR BOOKING CODES
    ============================================================ */
 
 async function loadRegularBettingCodes() {
-    /*
-     * The current server.js does NOT have:
-     *
-     * GET /api/betting-codes
-     *
-     * The database table exists, but there is
-     * currently no public API route.
-     *
-     * Therefore we intentionally do not
-     * generate a 404 request here.
-     */
 
-    const container =
-        getElement(
-            "bettingCodesGrid"
-        );
+    return loadBookingCodes(
+        "regular"
+    );
 
-    if (!container) {
-        return [];
-    }
-
-    container.innerHTML =
-        createEmptyState(
-            "Betting codes are not currently available."
-        );
-
-    return [];
 }
 
+
 /* ============================================================
-   COPY BETTING CODE
+   VIP BOOKING CODES
+   ============================================================ */
+
+async function loadVipBettingCodes() {
+
+    return loadBookingCodes(
+        "vip"
+    );
+
+}
+
+
+/* ============================================================
+   COPY BOOKING CODE
    ============================================================ */
 
 async function copyBettingCode(
     code,
-    button = null
+    button
 ) {
+
     const value =
         String(
-            code || ""
+            code ||
+            ""
         ).trim();
 
+
     if (!value) {
+
         return;
+
     }
 
+
     try {
+
         await navigator.clipboard.writeText(
             value
         );
 
+
+        const originalText =
+            button?.textContent ||
+            "Copy Code";
+
+
         if (button) {
-            const original =
-                button.textContent;
 
             button.textContent =
-                "Copied ✓";
+                "Copied!";
 
-            setTimeout(() => {
-                button.textContent =
-                    original;
-            }, 1800);
+            button.disabled =
+                true;
+
+
+            setTimeout(
+                () => {
+
+                    button.textContent =
+                        originalText;
+
+                    button.disabled =
+                        false;
+
+                },
+                1500
+            );
+
         }
 
-        showTemporaryNotice(
-            "Code copied successfully."
-        );
-
     } catch (error) {
-        console.warn(
-            "Clipboard error:",
+
+        console.error(
+            "Copy booking code error:",
             error
         );
 
-        /*
-         * Fallback for browsers where
-         * Clipboard API is unavailable.
-         */
 
-        const textarea =
-            document.createElement(
-                "textarea"
-            );
-
-        textarea.value =
-            value;
-
-        textarea.style.position =
-            "fixed";
-
-        textarea.style.opacity =
-            "0";
-
-        document.body.appendChild(
-            textarea
-        );
-
-        textarea.select();
+        /* Fallback for older browsers */
 
         try {
+
+            const textarea =
+                document.createElement(
+                    "textarea"
+                );
+
+
+            textarea.value =
+                value;
+
+
+            textarea.style.position =
+                "fixed";
+
+            textarea.style.opacity =
+                "0";
+
+
+            document.body.appendChild(
+                textarea
+            );
+
+
+            textarea.select();
+
+
             document.execCommand(
                 "copy"
             );
 
-            showTemporaryNotice(
-                "Code copied successfully."
-            );
-        } catch (_) {
-            showTemporaryNotice(
-                "Unable to copy the code automatically."
-            );
-        }
 
-        textarea.remove();
-    }
-}
+            textarea.remove();
 
-/* ============================================================
-   END OF PART 2
-   ============================================================ */
-/* ============================================================
-   FLEX HUB PREDICTIONS
-   PART 3/3
-   NOTIFICATIONS • TEAM BADGES • PWA • HELPERS
-   ============================================================ */
 
-/* ============================================================
-   NOTIFICATIONS
-   ============================================================ */
+            if (button) {
 
-function setupNotificationCenter() {
-    const notificationButtons =
-        document.querySelectorAll(
-            "#notificationButton, [data-notifications-button]"
-        );
+                const originalText =
+                    button.textContent;
 
-    notificationButtons.forEach(
-        (button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    toggleNotificationPanel();
-                }
-            );
-        }
-    );
 
-    if (getUserToken()) {
-        loadNotifications().catch(
-            (error) => {
-                console.warn(
-                    "Initial notifications could not be loaded:",
-                    error.message
+                button.textContent =
+                    "Copied!";
+
+
+                setTimeout(
+                    () => {
+
+                        button.textContent =
+                            originalText;
+
+                    },
+                    1500
                 );
+
             }
-        );
 
-        /*
-         * Poll every 60 seconds.
-         */
-        notificationTimer =
-            setInterval(() => {
-                if (getUserToken()) {
-                    loadNotifications().catch(
-                        () => {}
-                    );
-                }
-            }, 60000);
-    }
-}
+        } catch (fallbackError) {
 
-/* ============================================================
-   LOAD NOTIFICATIONS
-   ============================================================ */
-
-async function loadNotifications() {
-    const token =
-        getUserToken();
-
-    if (!token) {
-        return [];
-    }
-
-    try {
-        /*
-         * Current backend:
-         * GET /api/notifications
-         */
-
-        const data =
-            await apiRequest(
-                "/notifications",
-                {
-                    method: "GET"
-                }
+            console.error(
+                "Copy fallback failed:",
+                fallbackError
             );
 
-        const notifications =
-            Array.isArray(
-                data?.notifications
-            )
-                ? data.notifications
-                : Array.isArray(data)
-                ? data
-                : [];
-
-        renderNotifications(
-            notifications
-        );
-
-        updateNotificationBadge(
-            notifications
-        );
-
-        return notifications;
-
-    } catch (error) {
-        console.warn(
-            "Notification request failed:",
-            error.message
-        );
-
-        return [];
-    }
-}
-
-/* ============================================================
-   RENDER NOTIFICATIONS
-   ============================================================ */
-
-function renderNotifications(
-    notifications
-) {
-    const containers =
-        document.querySelectorAll(
-            "#notificationList, [data-notification-list]"
-        );
-
-    if (!containers.length) {
-        return;
-    }
-
-    const list =
-        Array.isArray(
-            notifications
-        )
-            ? notifications
-            : [];
-
-    containers.forEach(
-        (container) => {
-            if (!list.length) {
-                container.innerHTML = `
-                    <div class="notification-empty">
-                        <strong>No notifications</strong>
-                        <span>You're all caught up.</span>
-                    </div>
-                `;
-
-                return;
-            }
-
-            container.innerHTML =
-                list
-                    .map(
-                        createNotificationItem
-                    )
-                    .join("");
         }
-    );
+
+    }
+
 }
 
+
 /* ============================================================
-   NOTIFICATION ITEM
+   CREATE EMPTY STATE
    ============================================================ */
 
-function createNotificationItem(
-    notification
+function createEmptyState(
+    message
 ) {
-    const id =
-        notification.id ??
-        "";
-
-    const title =
-        escapeHTML(
-            notification.title ||
-                "Notification"
-        );
-
-    const message =
-        escapeHTML(
-            notification.message ||
-                ""
-        );
-
-    const createdAt =
-        formatDateTime(
-            notification.created_at ||
-                notification.createdAt
-        );
-
-    const read =
-        Boolean(
-            notification.read ||
-            notification.is_read ||
-            notification.read_at
-        );
 
     return `
-        <article
-            class="notification-item ${
-                read
-                    ? "is-read"
-                    : "is-unread"
-            }"
-            data-notification-id="${escapeHTML(
-                String(id)
-            )}"
-        >
-
-            <div class="notification-content">
-
-                <strong>
-                    ${title}
-                </strong>
-
-                <p>
-                    ${message}
-                </p>
-
-                <small>
-                    ${escapeHTML(
-                        createdAt
-                    )}
-                </small>
-
-            </div>
-
-            ${
-                !read
-                    ? `
-                        <button
-                            type="button"
-                            class="notification-read-button"
-                            onclick="markNotificationRead('${escapeHTML(
-                                String(id)
-                            )}')"
-                        >
-                            Mark read
-                        </button>
-                    `
-                    : ""
-            }
-
-        </article>
+        <div class="empty-state">
+            ${escapeHTML(
+                message ||
+                "Nothing available."
+            )}
+        </div>
     `;
+
 }
 
+
 /* ============================================================
-   MARK ONE NOTIFICATION AS READ
+   CREATE LOADING STATE
    ============================================================ */
 
-async function markNotificationRead(
-    notificationId
+function createLoadingState(
+    message
 ) {
-    if (!notificationId) {
-        return;
-    }
 
-    try {
-        /*
-         * Current backend:
-         * POST /api/notifications/:id/read
-         */
+    return `
+        <div class="loading-state">
+            ${escapeHTML(
+                message ||
+                "Loading..."
+            )}
+        </div>
+    `;
 
-        await apiRequest(
-            `/notifications/${encodeURIComponent(
-                notificationId
-            )}/read`,
-            {
-                method: "POST"
-            }
-        );
-
-        await loadNotifications();
-
-    } catch (error) {
-        console.error(
-            "Unable to mark notification as read:",
-            error
-        );
-    }
 }
+
 
 /* ============================================================
-   MARK ALL NOTIFICATIONS AS READ
-   ============================================================ */
-
-async function markAllNotificationsRead() {
-    /*
-     * The current server.js does NOT have:
-     *
-     * POST /api/notifications/read-all
-     *
-     * Therefore we intentionally do not
-     * call that nonexistent route.
-     *
-     * Instead, load the current notifications
-     * and mark each unread notification
-     * individually using the existing route.
-     */
-
-    try {
-        const data =
-            await apiRequest(
-                "/notifications",
-                {
-                    method: "GET"
-                }
-            );
-
-        const notifications =
-            Array.isArray(
-                data?.notifications
-            )
-                ? data.notifications
-                : Array.isArray(data)
-                ? data
-                : [];
-
-        const unread =
-            notifications.filter(
-                (notification) =>
-                    !notification.read &&
-                    !notification.is_read &&
-                    !notification.read_at
-            );
-
-        for (
-            const notification of unread
-        ) {
-            if (!notification.id) {
-                continue;
-            }
-
-            try {
-                await apiRequest(
-                    `/notifications/${encodeURIComponent(
-                        notification.id
-                    )}/read`,
-                    {
-                        method: "POST"
-                    }
-                );
-            } catch (error) {
-                console.warn(
-                    `Could not mark notification ${notification.id} as read.`,
-                    error.message
-                );
-            }
-        }
-
-        await loadNotifications();
-
-    } catch (error) {
-        console.error(
-            "Unable to mark notifications as read:",
-            error
-        );
-    }
-}
-
-/* ============================================================
-   NOTIFICATION BADGE
-   ============================================================ */
-
-function updateNotificationBadge(
-    notifications
-) {
-    const list =
-        Array.isArray(
-            notifications
-        )
-            ? notifications
-            : [];
-
-    const unreadCount =
-        list.filter(
-            (notification) =>
-                !notification.read &&
-                !notification.is_read &&
-                !notification.read_at
-        ).length;
-
-    document
-        .querySelectorAll(
-            "#notificationBadge, [data-notification-badge]"
-        )
-        .forEach(
-            (badge) => {
-                badge.textContent =
-                    unreadCount > 99
-                        ? "99+"
-                        : unreadCount;
-
-                badge.style.display =
-                    unreadCount > 0
-                        ? ""
-                        : "none";
-            }
-        );
-}
-
-/* ============================================================
-   NOTIFICATION PANEL
-   ============================================================ */
-
-function toggleNotificationPanel() {
-    const panel =
-        getElement(
-            "notificationPanel"
-        ) ||
-        document.querySelector(
-            "[data-notification-panel]"
-        );
-
-    if (!panel) {
-        return;
-    }
-
-    panel.classList.toggle(
-        "open"
-    );
-
-    panel.classList.toggle(
-        "active"
-    );
-
-    const isOpen =
-        panel.classList.contains(
-            "open"
-        ) ||
-        panel.classList.contains(
-            "active"
-        );
-
-    panel.setAttribute(
-        "aria-hidden",
-        String(!isOpen)
-    );
-}
-
-/* ============================================================
-   TEAM BADGES
-   ============================================================ */
-
-function setupTeamBadgeObserver() {
-    /*
-     * Observe dynamically created
-     * prediction cards.
-     */
-
-    if (
-        typeof MutationObserver ===
-        "undefined"
-    ) {
-        return;
-    }
-
-    const observer =
-        new MutationObserver(
-            () => {
-                loadPredictionTeamBadges();
-                updateCountdowns();
-            }
-        );
-
-    observer.observe(
-        document.body,
-        {
-            childList: true,
-            subtree: true
-        }
-    );
-
-    /*
-     * Prevent unnecessary constant
-     * observer-triggered loops.
-     */
-    window.flexTeamBadgeObserver =
-        observer;
-}
-
-async function loadPredictionTeamBadges() {
-    const badges =
-        document.querySelectorAll(
-            ".team-badge[data-team-name]"
-        );
-
-    if (!badges.length) {
-        return;
-    }
-
-    /*
-     * Limit requests to unique team names.
-     */
-    const names =
-        [
-            ...new Set(
-                Array.from(
-                    badges
-                )
-                    .map(
-                        (badge) =>
-                            badge.dataset
-                                .teamName
-                    )
-                    .filter(Boolean)
-            )
-        ];
-
-    for (
-        const teamName of names
-    ) {
-        const matchingBadges =
-            Array.from(
-                badges
-            ).filter(
-                (badge) =>
-                    badge.dataset
-                        .teamName ===
-                    teamName
-            );
-
-        /*
-         * Don't repeatedly search the
-         * same team during DOM updates.
-         */
-        if (
-            matchingBadges.some(
-                (badge) =>
-                    badge.dataset
-                        .badgeLoaded ===
-                    "true"
-            )
-        ) {
-            continue;
-        }
-
-        try {
-            const logo =
-                await findTeamLogo(
-                    teamName
-                );
-
-            matchingBadges.forEach(
-                (badge) => {
-                    if (logo) {
-                        badge.innerHTML = `
-                            <img
-                                src="${escapeAttribute(
-                                    logo
-                                )}"
-                                alt="${escapeAttribute(
-                                    teamName
-                                )}"
-                                loading="lazy"
-                            >
-                        `;
-                    }
-
-                    badge.dataset
-                        .badgeLoaded =
-                        "true";
-                }
-            );
-
-        } catch (error) {
-            matchingBadges.forEach(
-                (badge) => {
-                    badge.dataset
-                        .badgeLoaded =
-                        "true";
-                }
-            );
-        }
-    }
-}
-
-/* ============================================================
-   TEAM LOGO SEARCH
-   ============================================================ */
-
-async function findTeamLogo(
-    teamName
-) {
-    if (!teamName) {
-        return "";
-    }
-
-    const url =
-        `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(
-            teamName
-        )}`;
-
-    try {
-        const response =
-            await fetch(url);
-
-        if (!response.ok) {
-            return "";
-        }
-
-        const data =
-            await response.json();
-
-        const teams =
-            Array.isArray(
-                data?.teams
-            )
-                ? data.teams
-                : [];
-
-        const team =
-            teams[0];
-
-        return (
-            team?.strBadge ||
-            team?.strLogo ||
-            ""
-        );
-
-    } catch (error) {
-        console.warn(
-            `Could not find badge for ${teamName}:`,
-            error.message
-        );
-
-        return "";
-    }
-}
-
-/* ============================================================
-   PWA INSTALL
-   ============================================================ */
-
-function setupPWAInstall() {
-    window.addEventListener(
-        "beforeinstallprompt",
-        (event) => {
-            event.preventDefault();
-
-            deferredInstallPrompt =
-                event;
-
-            showInstallButton();
-        }
-    );
-
-    window.addEventListener(
-        "appinstalled",
-        () => {
-            deferredInstallPrompt =
-                null;
-
-            hideInstallButton();
-        }
-    );
-
-    const installButton =
-        getElement(
-            "installAppBtn"
-        );
-
-    if (installButton) {
-        installButton.addEventListener(
-            "click",
-            installPWA
-        );
-    }
-}
-
-/* ============================================================
-   INSTALL PWA
-   ============================================================ */
-
-async function installPWA(
-    event
-) {
-    if (event) {
-        event.preventDefault();
-    }
-
-    if (!deferredInstallPrompt) {
-        showTemporaryNotice(
-            "Install is not available on this device or browser yet."
-        );
-
-        return;
-    }
-
-    try {
-        deferredInstallPrompt.prompt();
-
-        const choice =
-            await deferredInstallPrompt
-                .userChoice;
-
-        console.log(
-            "PWA install result:",
-            choice?.outcome
-        );
-
-    } catch (error) {
-        console.warn(
-            "PWA installation error:",
-            error
-        );
-    } finally {
-        deferredInstallPrompt =
-            null;
-
-        hideInstallButton();
-    }
-}
-
-/* ============================================================
-   INSTALL BUTTON UI
-   ============================================================ */
-
-function showInstallButton() {
-    document
-        .querySelectorAll(
-            "#installAppBtn, [data-install-app]"
-        )
-        .forEach(
-            (button) => {
-                button.style.display =
-                    "";
-            }
-        );
-}
-
-function hideInstallButton() {
-    document
-        .querySelectorAll(
-            "#installAppBtn, [data-install-app]"
-        )
-        .forEach(
-            (button) => {
-                button.style.display =
-                    "none";
-            }
-        );
-}
-
-/* ============================================================
-   COUNTDOWN
-   ============================================================ */
-
-function getMatchCountdown(
-    matchDate,
-    matchTime
-) {
-    if (!matchDate) {
-        return "Date unavailable";
-    }
-
-    const target =
-        parseMatchDate(
-            matchDate,
-            matchTime
-        );
-
-    if (!target) {
-        return "Time unavailable";
-    }
-
-    const difference =
-        target.getTime() -
-        Date.now();
-
-    if (
-        difference <= 0
-    ) {
-        return "Match started";
-    }
-
-    const totalSeconds =
-        Math.floor(
-            difference / 1000
-        );
-
-    const days =
-        Math.floor(
-            totalSeconds /
-                86400
-        );
-
-    const hours =
-        Math.floor(
-            (
-                totalSeconds %
-                86400
-            ) / 3600
-        );
-
-    const minutes =
-        Math.floor(
-            (
-                totalSeconds %
-                3600
-            ) / 60
-        );
-
-    if (days > 0) {
-        return `${days}d ${hours}h`;
-    }
-
-    if (hours > 0) {
-        return `${hours}h ${minutes}m`;
-    }
-
-    return `${minutes}m`;
-}
-
-/* ============================================================
-   LIVE COUNTDOWN UPDATES
-   ============================================================ */
-
-function updateCountdowns() {
-    document
-        .querySelectorAll(
-            "[data-countdown-date]"
-        )
-        .forEach(
-            (element) => {
-                const date =
-                    element.dataset
-                        .countdownDate ||
-                    "";
-
-                const time =
-                    element.dataset
-                        .countdownTime ||
-                    "";
-
-                element.textContent =
-                    getMatchCountdown(
-                        date,
-                        time
-                    );
-            }
-        );
-}
-
-setInterval(
-    updateCountdowns,
-    30000
-);
-
-/* ============================================================
-   DATE HELPERS
-   ============================================================ */
-
-function parseMatchDate(
-    matchDate,
-    matchTime
-) {
-    if (!matchDate) {
-        return null;
-    }
-
-    const dateString =
-        String(
-            matchDate
-        ).trim();
-
-    const timeString =
-        String(
-            matchTime ||
-                "00:00"
-        ).trim();
-
-    /*
-     * Handles:
-     * YYYY-MM-DD
-     * DD-MM-YYYY
-     * YYYY/MM/DD
-     */
-    let normalizedDate =
-        dateString;
-
-    if (
-        /^\d{2}-\d{2}-\d{4}$/.test(
-            dateString
-        )
-    ) {
-        const parts =
-            dateString.split(
-                "-"
-            );
-
-        normalizedDate =
-            `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-
-    const date =
-        new Date(
-            `${normalizedDate}T${timeString}`
-        );
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return null;
-    }
-
-    return date;
-}
-
-function formatMatchDate(
-    value
-) {
-    if (!value) {
-        return "Date TBA";
-    }
-
-    const date =
-        new Date(
-            String(value).includes(
-                "T"
-            )
-                ? value
-                : `${value}T00:00`
-        );
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return String(value);
-    }
-
-    return date.toLocaleDateString(
-        undefined,
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
-}
-
-function formatDateTime(
-    value
-) {
-    if (!value) {
-        return "Unknown";
-    }
-
-    const date =
-        new Date(value);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return String(value);
-    }
-
-    return date.toLocaleString(
-        undefined,
-        {
-            dateStyle: "medium",
-            timeStyle: "short"
-        }
-    );
-}
-
-/* ============================================================
-   SORTING
-   ============================================================ */
-
-function comparePredictionDates(
-    a,
-    b
-) {
-    const aDate =
-        parseMatchDate(
-            a?.match_date,
-            a?.match_time
-        );
-
-    const bDate =
-        parseMatchDate(
-            b?.match_date,
-            b?.match_time
-        );
-
-    const aTime =
-        aDate
-            ? aDate.getTime()
-            : 0;
-
-    const bTime =
-        bDate
-            ? bDate.getTime()
-            : 0;
-
-    /*
-     * Upcoming matches first.
-     */
-    return aTime - bTime;
-}
-
-/* ============================================================
-   STATUS HELPERS
-   ============================================================ */
-
-function getStatusClass(
-    status
-) {
-    const normalized =
-        normalizeText(
-            status
-        );
-
-    if (
-        normalized === "win" ||
-        normalized === "won" ||
-        normalized === "success"
-    ) {
-        return "status-win";
-    }
-
-    if (
-        normalized === "loss" ||
-        normalized === "lost" ||
-        normalized === "failed"
-    ) {
-        return "status-loss";
-    }
-
-    if (
-        normalized === "void" ||
-        normalized === "cancelled" ||
-        normalized === "canceled"
-    ) {
-        return "status-void";
-    }
-
-    return "status-pending";
-}
-
-function formatStatus(
-    status
-) {
-    const normalized =
-        normalizeText(
-            status
-        );
-
-    switch (normalized) {
-        case "win":
-        case "won":
-            return "WIN";
-
-        case "loss":
-        case "lost":
-            return "LOSS";
-
-        case "void":
-            return "VOID";
-
-        case "cancelled":
-        case "canceled":
-            return "CANCELLED";
-
-        case "pending":
-            return "PENDING";
-
-        default:
-            return String(
-                status ||
-                    "PENDING"
-            ).toUpperCase();
-    }
-}
-
-function formatCategory(
-    category
-) {
-    const normalized =
-        normalizeText(
-            category
-        );
-
-    if (!normalized) {
-        return "Regular";
-    }
-
-    if (
-        normalized ===
-        "home"
-    ) {
-        return "Home Advantage";
-    }
-
-    if (
-        normalized ===
-        "away"
-    ) {
-        return "Away Advantage";
-    }
-
-    if (
-        normalized ===
-        "competitive"
-    ) {
-        return "Competitive Match";
-    }
-
-    if (
-        normalized ===
-        "regular"
-    ) {
-        return "Regular";
-    }
-
-    return String(
-        category
-    );
-}
-
-/* ============================================================
-   TEAM INITIALS
-   ============================================================ */
-
-function getTeamInitials(
-    teamName
-) {
-    const name =
-        String(
-            teamName ||
-                "Team"
-        ).trim();
-
-    if (!name) {
-        return "FC";
-    }
-
-    const words =
-        name.split(
-            /\s+/
-        );
-
-    if (
-        words.length === 1
-    ) {
-        return words[0]
-            .slice(0, 2)
-            .toUpperCase();
-    }
-
-    return (
-        words[0][0] +
-        words[
-            words.length - 1
-        ][0]
-    ).toUpperCase();
-}
-
-/* ============================================================
-   NORMALIZE TEXT
-   ============================================================ */
-
-function normalizeText(
-    value
-) {
-    return String(
-        value || ""
-    )
-        .trim()
-        .toLowerCase();
-}
-
-/* ============================================================
-   ESCAPING
+   HTML ESCAPE
    ============================================================ */
 
 function escapeHTML(
     value
 ) {
+
     return String(
         value ?? ""
     )
@@ -4705,73 +3452,2221 @@ function escapeHTML(
             /'/g,
             "&#039;"
         );
+
 }
+
+
+/* ============================================================
+   ATTRIBUTE ESCAPE
+   ============================================================ */
 
 function escapeAttribute(
     value
 ) {
+
     return escapeHTML(
         value
-    );
+    )
+        .replace(
+            /`/g,
+            "&#096;"
+        );
+
 }
+
 
 /* ============================================================
-   LOADING / EMPTY STATES
+   END OF PART 2
+   ============================================================ */
+/* ============================================================
+   FLEX HUB PREDICTIONS
+   APP.JS — PART 3/4
+   VIP SYSTEM + ACCESS + PAYMENTS
    ============================================================ */
 
-function createLoadingState(
-    message
-) {
-    return `
-        <div class="loading-state">
-            <div class="loading-spinner"></div>
 
-            <p>
-                ${escapeHTML(
-                    message ||
-                        "Loading..."
-                )}
-            </p>
-        </div>
-    `;
+/* ============================================================
+   VIP PAGE SETUP
+   ============================================================ */
+
+function setupVipPage() {
+
+    console.log(
+        "VIP page initialized."
+    );
+
+
+    loadVipStatus()
+        .catch(
+            (error) => {
+
+                console.error(
+                    "VIP status error:",
+                    error
+                );
+
+            }
+        );
+
+
+    loadVipPredictions()
+        .catch(
+            (error) => {
+
+                console.error(
+                    "VIP prediction loading error:",
+                    error
+                );
+
+            }
+        );
+
+
+    loadVipBettingCodes()
+        .catch(
+            (error) => {
+
+                console.error(
+                    "VIP booking code loading error:",
+                    error
+                );
+
+            }
+        );
+
+
+    setupVipRedeemForm();
+
 }
 
-function createEmptyState(
-    message
+
+/* ============================================================
+   VIP STATUS
+   ============================================================ */
+
+async function loadVipStatus() {
+
+    const token =
+        getUserToken();
+
+
+    if (!token) {
+
+        window.vipAccessActive =
+            false;
+
+        updateVipInterface();
+
+        return null;
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/vip/status",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        const active =
+            Boolean(
+                data?.active ??
+                data?.success === true &&
+                data?.subscription?.status === "active"
+            );
+
+
+        window.vipAccessActive =
+            active;
+
+
+        window.vipPredictionCount =
+            Number(
+                data?.predictionCount ||
+                data?.vipPredictionCount ||
+                0
+            );
+
+
+        updateVipInterface(
+            data
+        );
+
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "VIP status request failed:",
+            error
+        );
+
+
+        window.vipAccessActive =
+            false;
+
+
+        updateVipInterface();
+
+
+        return null;
+
+    }
+
+}
+
+
+/* ============================================================
+   VIP INTERFACE
+   ============================================================ */
+
+function updateVipInterface(
+    data = null
 ) {
+
+    const active =
+        Boolean(
+            window.vipAccessActive
+        );
+
+
+    const lockedElements =
+        document.querySelectorAll(
+            "[data-vip-locked]"
+        );
+
+
+    lockedElements.forEach(
+        (element) => {
+
+            element.style.display =
+                active
+                    ? ""
+                    : "none";
+
+        }
+    );
+
+
+    const accessElements =
+        document.querySelectorAll(
+            "[data-vip-access]"
+        );
+
+
+    accessElements.forEach(
+        (element) => {
+
+            element.style.display =
+                active
+                    ? ""
+                    : "none";
+
+        }
+    );
+
+
+    const lockMessage =
+        getElement(
+            "vipLockedMessage"
+        );
+
+
+    if (lockMessage) {
+
+        lockMessage.style.display =
+            active
+                ? "none"
+                : "";
+
+    }
+
+
+    const statusElements = [
+
+        getElement(
+            "vipStatus"
+        ),
+
+        getElement(
+            "vipAccessStatus"
+        ),
+
+        getElement(
+            "vipMembershipStatus"
+        )
+
+    ].filter(Boolean);
+
+
+    statusElements.forEach(
+        (element) => {
+
+            element.textContent =
+                active
+                    ? "VIP ACCESS ACTIVE"
+                    : "VIP ACCESS LOCKED";
+
+
+            element.classList.toggle(
+                "active",
+                active
+            );
+
+            element.classList.toggle(
+                "locked",
+                !active
+            );
+
+        }
+    );
+
+
+    const expiry =
+        data?.expiresAt ||
+        data?.expires_at ||
+        data?.subscription?.expires_at ||
+        "";
+
+
+    const expiryElements = [
+
+        getElement(
+            "vipExpiry"
+        ),
+
+        getElement(
+            "vipExpiresAt"
+        )
+
+    ].filter(Boolean);
+
+
+    expiryElements.forEach(
+        (element) => {
+
+            element.textContent =
+                expiry
+                    ? formatDate(
+                        expiry
+                    )
+                    : active
+                    ? "Active"
+                    : "—";
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   VIP REDEEM FORM
+   ============================================================ */
+
+function setupVipRedeemForm() {
+
+    const form =
+        getElement(
+            "vipRedeemForm"
+        );
+
+
+    if (!form) {
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        redeemVipCode
+    );
+
+}
+
+
+/* ============================================================
+   REDEEM VIP CODE
+   ============================================================ */
+
+async function redeemVipCode(
+    event
+) {
+
+    if (event) {
+
+        event.preventDefault();
+
+    }
+
+
+    const input =
+        getElement(
+            "vipCode"
+        ) ||
+        getElement(
+            "vipAccessCode"
+        ) ||
+        getElement(
+            "redeemVipCode"
+        );
+
+
+    const message =
+        getElement(
+            "vipRedeemMessage"
+        ) ||
+        getElement(
+            "vipMessage"
+        );
+
+
+    const code =
+        String(
+            input?.value ||
+            ""
+        ).trim();
+
+
+    if (!code) {
+
+        showMessage(
+            message,
+            "Please enter your VIP access code.",
+            "error"
+        );
+
+        input?.focus();
+
+        return;
+
+    }
+
+
+    const form =
+        event?.currentTarget;
+
+
+    setFormLoading(
+        form,
+        true,
+        "Activating..."
+    );
+
+
+    showMessage(
+        message,
+        "Activating your VIP access...",
+        "info"
+    );
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/vip/redeem",
+                {
+                    method: "POST",
+                    body: {
+                        code
+                    }
+                }
+            );
+
+
+        window.vipAccessActive =
+            true;
+
+
+        window.vipPredictionCount =
+            Number(
+                data?.predictionCount ||
+                0
+            );
+
+
+        showMessage(
+            message,
+            data?.message ||
+                "VIP access activated successfully.",
+            "success"
+        );
+
+
+        if (input) {
+
+            input.value =
+                "";
+
+        }
+
+
+        await loadVipStatus();
+
+        await loadVipPredictions();
+
+        await loadVipBettingCodes();
+
+
+    } catch (error) {
+
+        console.error(
+            "VIP redeem error:",
+            error
+        );
+
+
+        showMessage(
+            message,
+            error.message ||
+                "Unable to activate VIP access.",
+            "error"
+        );
+
+
+    } finally {
+
+        setFormLoading(
+            form,
+            false
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   VIP PREDICTIONS
+   ============================================================ */
+
+async function loadVipPredictions() {
+
+    const containers = [
+
+        getElement(
+            "vipPredictionsGrid"
+        ),
+
+        getElement(
+            "vipPredictionGrid"
+        ),
+
+        getElement(
+            "vipPredictionsContainer"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
+        return [];
+
+    }
+
+
+    if (!window.vipAccessActive) {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createEmptyState(
+                        "VIP access is required to view VIP predictions."
+                    );
+
+            }
+        );
+
+
+        return [];
+
+    }
+
+
+    try {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createLoadingState(
+                        "Loading VIP predictions..."
+                    );
+
+            }
+        );
+
+
+        const data =
+            await apiRequest(
+                "/vip/predictions",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        const predictions =
+            Array.isArray(data)
+                ? data
+                : (
+                    data?.predictions ||
+                    data?.data ||
+                    []
+                );
+
+
+        renderVipPredictions(
+            predictions
+        );
+
+
+        return predictions;
+
+    } catch (error) {
+
+        console.error(
+            "VIP predictions error:",
+            error
+        );
+
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createEmptyState(
+                        error.status === 401 ||
+                        error.status === 403
+                            ? "Your VIP access is not active."
+                            : "Unable to load VIP predictions right now."
+                    );
+
+            }
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* ============================================================
+   RENDER VIP PREDICTIONS
+   ============================================================ */
+
+function renderVipPredictions(
+    predictions
+) {
+
+    const containers = [
+
+        getElement(
+            "vipPredictionsGrid"
+        ),
+
+        getElement(
+            "vipPredictionGrid"
+        ),
+
+        getElement(
+            "vipPredictionsContainer"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
+        return;
+
+    }
+
+
+    const list =
+        Array.isArray(predictions)
+            ? predictions
+            : [];
+
+
+    if (!list.length) {
+
+        containers.forEach(
+            (container) => {
+
+                container.innerHTML =
+                    createEmptyState(
+                        "No VIP predictions are available yet."
+                    );
+
+            }
+        );
+
+
+        return;
+
+    }
+
+
+    const html =
+        list
+            .map(
+                createVipPredictionCard
+            )
+            .join("");
+
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                html;
+
+        }
+    );
+
+
+    setupTeamBadgeObserver();
+
+}
+
+
+/* ============================================================
+   VIP PREDICTION CARD
+   ============================================================ */
+
+function createVipPredictionCard(
+    item
+) {
+
+    const league =
+        escapeHTML(
+            item.league ||
+            "VIP Football"
+        );
+
+
+    const homeTeam =
+        escapeHTML(
+            item.home_team ||
+            "Home Team"
+        );
+
+
+    const awayTeam =
+        escapeHTML(
+            item.away_team ||
+            "Away Team"
+        );
+
+
+    const matchDate =
+        escapeHTML(
+            item.match_date ||
+            ""
+        );
+
+
+    const matchTime =
+        escapeHTML(
+            item.match_time ||
+            ""
+        );
+
+
+    const prediction =
+        escapeHTML(
+            item.prediction ||
+            "Prediction pending"
+        );
+
+
+    const analysis =
+        escapeHTML(
+            item.analysis ||
+            "Premium analysis available."
+        );
+
+
+    const featured =
+        item.featured
+            ? `
+                <span class="prediction-featured">
+                    VIP FEATURED
+                </span>
+              `
+            : "";
+
+
     return `
-        <div class="empty-state">
-            <div class="empty-state-icon">
-                ⚽
+        <article
+            class="prediction-card vip-prediction-card"
+        >
+
+            <div
+                class="prediction-card-header"
+            >
+
+                <div>
+
+                    <span
+                        class="prediction-league"
+                    >
+                        ${league}
+                    </span>
+
+                    ${featured}
+
+                </div>
+
+
+                <span
+                    class="prediction-category vip"
+                >
+                    VIP
+                </span>
+
             </div>
 
-            <strong>
-                ${escapeHTML(
-                    message ||
-                        "Nothing available."
-                )}
-            </strong>
-        </div>
+
+            <div
+                class="prediction-match"
+            >
+
+                <div
+                    class="prediction-team"
+                >
+
+                    <div
+                        class="team-badge"
+                        data-team="${homeTeam}"
+                    ></div>
+
+                    <span>
+                        ${homeTeam}
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="prediction-vs"
+                >
+
+                    <span>
+                        VS
+                    </span>
+
+                    <small>
+                        ${matchDate}
+                        ${matchTime}
+                    </small>
+
+                </div>
+
+
+                <div
+                    class="prediction-team"
+                >
+
+                    <div
+                        class="team-badge"
+                        data-team="${awayTeam}"
+                    ></div>
+
+                    <span>
+                        ${awayTeam}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="prediction-selection"
+            >
+
+                <span>
+                    VIP Prediction
+                </span>
+
+                <strong>
+                    ${prediction}
+                </strong>
+
+            </div>
+
+
+            <div
+                class="prediction-analysis"
+            >
+
+                <span>
+                    Premium Analysis
+                </span>
+
+                <p>
+                    ${analysis}
+                </p>
+
+            </div>
+
+        </article>
     `;
+
 }
 
+
 /* ============================================================
-   GLOBAL FUNCTIONS
-   These are required by inline HTML
-   onclick handlers and other scripts.
+   REGULAR ACCESS
    ============================================================ */
 
-window.copyBettingCode =
-    copyBettingCode;
+async function refreshRegularAccessStatus() {
 
-window.markNotificationRead =
-    markNotificationRead;
+    const token =
+        getUserToken();
 
-window.markAllNotificationsRead =
-    markAllNotificationsRead;
 
-window.handleSignOut =
-    handleSignOut;
+    if (!token) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/user/access",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        updateRegularAccessInterface(
+            data
+        );
+
+
+        return data;
+
+    } catch (error) {
+
+        console.warn(
+            "Regular access status error:",
+            error.message
+        );
+
+
+        return null;
+
+    }
+
+}
+
+
+/* ============================================================
+   REGULAR ACCESS UI
+   ============================================================ */
+
+function updateRegularAccessInterface(
+    data
+) {
+
+    if (!data) {
+
+        return;
+
+    }
+
+
+    const active =
+        Boolean(
+            data.active ??
+            data.hasAccess ??
+            data.success
+        );
+
+
+    const expiry =
+        data.expiresAt ||
+        data.expires_at ||
+        "";
+
+
+    const statusElements = [
+
+        getElement(
+            "regularAccessStatus"
+        ),
+
+        getElement(
+            "accountAccessStatus"
+        )
+
+    ].filter(Boolean);
+
+
+    statusElements.forEach(
+        (element) => {
+
+            element.textContent =
+                active
+                    ? "ACTIVE"
+                    : "STANDARD ACCESS";
+
+            element.classList.toggle(
+                "active",
+                active
+            );
+
+        }
+    );
+
+
+    const expiryElements = [
+
+        getElement(
+            "regularAccessExpiry"
+        ),
+
+        getElement(
+            "accountAccessExpiry"
+        )
+
+    ].filter(Boolean);
+
+
+    expiryElements.forEach(
+        (element) => {
+
+            element.textContent =
+                expiry
+                    ? formatDate(
+                        expiry
+                    )
+                    : "No expiry";
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   PAYMENT BUTTONS
+   ============================================================ */
+
+function setupPaymentButtons() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-payment]"
+        );
+
+
+    buttons.forEach(
+        (button) => {
+
+            button.addEventListener(
+                "click",
+                handlePaymentButton
+            );
+
+        }
+    );
+
+
+    const explicitButtons = [
+
+        getElement(
+            "vipPaymentButton"
+        ),
+
+        getElement(
+            "payVipButton"
+        ),
+
+        getElement(
+            "upgradeVipButton"
+        )
+
+    ].filter(Boolean);
+
+
+    explicitButtons.forEach(
+        (button) => {
+
+            if (
+                button.dataset.paymentBound
+            ) {
+
+                return;
+
+            }
+
+
+            button.dataset.paymentBound =
+                "true";
+
+
+            button.addEventListener(
+                "click",
+                handlePaymentButton
+            );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   PAYMENT HANDLER
+   ============================================================ */
+
+function handlePaymentButton(
+    event
+) {
+
+    if (event) {
+
+        event.preventDefault();
+
+    }
+
+
+    const button =
+        event?.currentTarget;
+
+
+    const paymentUrl =
+        button?.dataset?.paymentUrl ||
+        button?.dataset?.url ||
+        "";
+
+
+    if (paymentUrl) {
+
+        window.location.href =
+            paymentUrl;
+
+        return;
+
+    }
+
+
+    const message =
+        getElement(
+            "paymentMessage"
+        ) ||
+        getElement(
+            "vipMessage"
+        );
+
+
+    if (message) {
+
+        showMessage(
+            message,
+            "Payment access is not configured yet. Please contact FLEX HUB support.",
+            "info"
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "Payment button clicked."
+    );
+
+}
+
+
+/* ============================================================
+   VIP NAVIGATION
+   ============================================================ */
+
+function openVipPage() {
+
+    window.location.href =
+        "vip.html";
+
+}
+
+
+/* ============================================================
+   END OF PART 3
+   ============================================================ */
+/* ============================================================
+   FLEX HUB PREDICTIONS
+   APP.JS — PART 4/4
+   NAVIGATION + NOTIFICATIONS + PWA + HELPERS
+   ============================================================ */
+
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+
+function setupNavigation() {
+
+    const menuButton =
+        getElement(
+            "menuButton"
+        );
+
+    const mainNav =
+        getElement(
+            "mainNav"
+        );
+
+
+    if (
+        menuButton &&
+        mainNav
+    ) {
+
+        menuButton.addEventListener(
+            "click",
+            () => {
+
+                const isOpen =
+                    mainNav.classList.toggle(
+                        "active"
+                    );
+
+
+                menuButton.classList.toggle(
+                    "active",
+                    isOpen
+                );
+
+
+                menuButton.setAttribute(
+                    "aria-expanded",
+                    String(isOpen)
+                );
+
+            }
+        );
+
+    }
+
+
+    const navLinks =
+        document.querySelectorAll(
+            "#mainNav a, .main-nav a, nav a"
+        );
+
+
+    navLinks.forEach(
+        (link) => {
+
+            link.addEventListener(
+                "click",
+                () => {
+
+                    closeMobileMenu();
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   MOBILE MENU
+   ============================================================ */
+
+function setupMobileMenu() {
+
+    const menuButton =
+        getElement(
+            "menuButton"
+        );
+
+
+    if (!menuButton) {
+
+        return;
+
+    }
+
+
+    menuButton.addEventListener(
+        "keydown",
+        (event) => {
+
+            if (
+                event.key ===
+                "Enter" ||
+                event.key ===
+                " "
+            ) {
+
+                event.preventDefault();
+
+                menuButton.click();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   CLOSE MOBILE MENU
+   ============================================================ */
+
+function closeMobileMenu() {
+
+    const mainNav =
+        getElement(
+            "mainNav"
+        );
+
+    const menuButton =
+        getElement(
+            "menuButton"
+        );
+
+
+    if (mainNav) {
+
+        mainNav.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (menuButton) {
+
+        menuButton.classList.remove(
+            "active"
+        );
+
+
+        menuButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+function setupFooter() {
+
+    updateCurrentYear();
+
+}
+
+
+/* ============================================================
+   CURRENT YEAR
+   ============================================================ */
+
+function updateCurrentYear() {
+
+    const year =
+        new Date()
+            .getFullYear();
+
+
+    const elements =
+        document.querySelectorAll(
+            "#currentYear, .current-year, [data-current-year]"
+        );
+
+
+    elements.forEach(
+        (element) => {
+
+            element.textContent =
+                year;
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   WHATSAPP
+   ============================================================ */
+
+function setupWhatsApp() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-whatsapp]"
+        );
+
+
+    buttons.forEach(
+        (button) => {
+
+            button.addEventListener(
+                "click",
+                (event) => {
+
+                    event.preventDefault();
+
+
+                    const number =
+                        button.dataset
+                            .whatsappNumber ||
+                        "";
+
+
+                    const message =
+                        button.dataset
+                            .whatsappMessage ||
+                        "Hello FLEX HUB PREDICTIONS.";
+
+
+                    const cleanNumber =
+                        number.replace(
+                            /[^0-9]/g,
+                            ""
+                        );
+
+
+                    if (!cleanNumber) {
+
+                        console.warn(
+                            "WhatsApp number is not configured."
+                        );
+
+                        return;
+
+                    }
+
+
+                    const url =
+                        `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+                            message
+                        )}`;
+
+
+                    window.open(
+                        url,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    const explicitButtons = [
+
+        getElement(
+            "whatsappButton"
+        ),
+
+        getElement(
+            "contactWhatsApp"
+        ),
+
+        getElement(
+            "whatsappContactButton"
+        )
+
+    ].filter(Boolean);
+
+
+    explicitButtons.forEach(
+        (button) => {
+
+            if (
+                button.dataset
+                    .whatsappBound
+            ) {
+
+                return;
+
+            }
+
+
+            button.dataset
+                .whatsappBound =
+                "true";
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const number =
+                        button.dataset
+                            .whatsappNumber ||
+                        button.getAttribute(
+                            "data-number"
+                        ) ||
+                        "";
+
+
+                    const message =
+                        button.dataset
+                            .whatsappMessage ||
+                        "Hello FLEX HUB PREDICTIONS.";
+
+
+                    if (!number) {
+
+                        return;
+
+                    }
+
+
+                    const cleanNumber =
+                        number.replace(
+                            /[^0-9]/g,
+                            ""
+                        );
+
+
+                    window.open(
+                        `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+                            message
+                        )}`,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   FORGOT PASSWORD
+   ============================================================ */
+
+function setupForgotPassword() {
+
+    const button =
+        getElement(
+            "forgotPasswordButton"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.addEventListener(
+        "click",
+        async (event) => {
+
+            event.preventDefault();
+
+
+            const identifier =
+                window.prompt(
+                    "Enter your email address:"
+                );
+
+
+            if (!identifier) {
+
+                return;
+
+            }
+
+
+            try {
+
+                const data =
+                    await apiRequest(
+                        "/auth/forgot-password",
+                        {
+                            method: "POST",
+                            skipAuth: true,
+                            body: {
+                                email:
+                                    identifier
+                                        .trim()
+                                        .toLowerCase()
+                            }
+                        }
+                    );
+
+
+                alert(
+                    data?.message ||
+                    "If the account exists, password reset instructions have been sent."
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Forgot password error:",
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Unable to process the password reset request."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+
+function setupNotificationCenter() {
+
+    const button =
+        getElement(
+            "notificationButton"
+        );
+
+
+    const panel =
+        getElement(
+            "notificationPanel"
+        );
+
+
+    if (
+        button &&
+        panel
+    ) {
+
+        button.addEventListener(
+            "click",
+            (event) => {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                panel.classList.toggle(
+                    "active"
+                );
+
+            }
+        );
+
+
+        document.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    !panel.contains(
+                        event.target
+                    ) &&
+                    !button.contains(
+                        event.target
+                    )
+                ) {
+
+                    panel.classList.remove(
+                        "active"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   LOAD NOTIFICATIONS
+   ============================================================ */
+
+async function loadNotifications() {
+
+    const container =
+        getElement(
+            "notificationsContainer"
+        ) ||
+        getElement(
+            "notificationList"
+        );
+
+
+    if (!container) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/notifications",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        const notifications =
+            Array.isArray(data)
+                ? data
+                : (
+                    data?.notifications ||
+                    data?.data ||
+                    []
+                );
+
+
+        renderNotifications(
+            notifications
+        );
+
+
+        return notifications;
+
+    } catch (error) {
+
+        console.error(
+            "Notification loading error:",
+            error
+        );
+
+
+        container.innerHTML =
+            createEmptyState(
+                "No notifications available."
+            );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* ============================================================
+   RENDER NOTIFICATIONS
+   ============================================================ */
+
+function renderNotifications(
+    notifications
+) {
+
+    const container =
+        getElement(
+            "notificationsContainer"
+        ) ||
+        getElement(
+            "notificationList"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    const list =
+        Array.isArray(
+            notifications
+        )
+            ? notifications
+            : [];
+
+
+    if (!list.length) {
+
+        container.innerHTML =
+            createEmptyState(
+                "No notifications available."
+            );
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        list
+            .map(
+                (item) => {
+
+                    const title =
+                        escapeHTML(
+                            item.title ||
+                            "Notification"
+                        );
+
+
+                    const message =
+                        escapeHTML(
+                            item.message ||
+                            ""
+                        );
+
+
+                    const date =
+                        item.created_at ||
+                        item.createdAt ||
+                        "";
+
+
+                    return `
+                        <article
+                            class="notification-item"
+                        >
+
+                            <div
+                                class="notification-title"
+                            >
+                                ${title}
+                            </div>
+
+                            <p
+                                class="notification-message"
+                            >
+                                ${message}
+                            </p>
+
+                            ${
+                                date
+                                    ? `
+                                        <small>
+                                            ${formatDate(
+                                                date
+                                            )}
+                                        </small>
+                                      `
+                                    : ""
+                            }
+
+                        </article>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+/* ============================================================
+   PWA INSTALL
+   ============================================================ */
+
+function setupPWAInstall() {
+
+    window.addEventListener(
+        "beforeinstallprompt",
+        (event) => {
+
+            event.preventDefault();
+
+
+            deferredInstallPrompt =
+                event;
+
+
+            const installButtons =
+                document.querySelectorAll(
+                    "#installAppButton, [data-install-app]"
+                );
+
+
+            installButtons.forEach(
+                (button) => {
+
+                    button.style.display =
+                        "";
+
+                    button.addEventListener(
+                        "click",
+                        installPWA,
+                        {
+                            once: true
+                        }
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    window.addEventListener(
+        "appinstalled",
+        () => {
+
+            deferredInstallPrompt =
+                null;
+
+
+            const installButtons =
+                document.querySelectorAll(
+                    "#installAppButton, [data-install-app]"
+                );
+
+
+            installButtons.forEach(
+                (button) => {
+
+                    button.style.display =
+                        "none";
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   INSTALL PWA
+   ============================================================ */
+
+async function installPWA() {
+
+    if (
+        !deferredInstallPrompt
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        deferredInstallPrompt.prompt();
+
+
+        await deferredInstallPrompt.userChoice;
+
+
+    } catch (error) {
+
+        console.error(
+            "PWA installation error:",
+            error
+        );
+
+    } finally {
+
+        deferredInstallPrompt =
+            null;
+
+    }
+
+}
+
+
+/* ============================================================
+   TEAM BADGES
+   ============================================================ */
+
+function setupTeamBadgeObserver() {
+
+    const badges =
+        document.querySelectorAll(
+            ".team-badge[data-team]"
+        );
+
+
+    if (!badges.length) {
+
+        return;
+
+    }
+
+
+    badges.forEach(
+        (badge) => {
+
+            const team =
+                badge.dataset.team;
+
+
+            if (!team) {
+
+                return;
+
+            }
+
+
+            /*
+             * The badge area remains clean if
+             * no external logo is available.
+             *
+             * A short team abbreviation is
+             * generated instead.
+             */
+
+            const abbreviation =
+                createTeamAbbreviation(
+                    team
+                );
+
+
+            badge.textContent =
+                abbreviation;
+
+
+            badge.setAttribute(
+                "aria-label",
+                team
+            );
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   TEAM ABBREVIATION
+   ============================================================ */
+
+function createTeamAbbreviation(
+    team
+) {
+
+    const value =
+        String(
+            team ||
+            ""
+        )
+            .trim();
+
+
+    if (!value) {
+
+        return "FC";
+
+    }
+
+
+    const words =
+        value
+            .split(/\s+/)
+            .filter(Boolean);
+
+
+    if (
+        words.length === 1
+    ) {
+
+        return words[0]
+            .slice(0, 3)
+            .toUpperCase();
+
+    }
+
+
+    return words
+        .slice(0, 3)
+        .map(
+            (word) =>
+                word.charAt(0)
+        )
+        .join("")
+        .toUpperCase();
+
+}
+
+
+/* ============================================================
+   DATE FORMAT
+   ============================================================ */
+
+function formatDate(
+    value
+) {
+
+    if (!value) {
+
+        return "—";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return String(
+            value
+        );
+
+    }
+
+
+    return date.toLocaleDateString(
+        undefined,
+        {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+        }
+    );
+
+}
+
+
+/* ============================================================
+   BUTTON LOADING
+   ============================================================ */
+
+function setButtonLoading(
+    button,
+    loading,
+    loadingText = "Loading..."
+) {
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    if (loading) {
+
+        if (
+            !button.dataset
+                .originalText
+        ) {
+
+            button.dataset
+                .originalText =
+                button.textContent;
+
+        }
+
+
+        button.disabled =
+            true;
+
+
+        button.textContent =
+            loadingText;
+
+    } else {
+
+        button.disabled =
+            false;
+
+
+        if (
+            button.dataset
+                .originalText
+        ) {
+
+            button.textContent =
+                button.dataset
+                    .originalText;
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   GLOBAL CLICK HELPERS
+   ============================================================ */
+
+document.addEventListener(
+    "click",
+    (event) => {
+
+        const vipLink =
+            event.target.closest(
+                "[data-open-vip]"
+            );
+
+
+        if (vipLink) {
+
+            event.preventDefault();
+
+            openVipPage();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   GLOBAL FUNCTION EXPORTS
+   ============================================================ */
 
 window.handleLogin =
     handleLogin;
@@ -4779,11 +5674,17 @@ window.handleLogin =
 window.handleRegister =
     handleRegister;
 
-window.handleVipAccess =
-    handleVipAccess;
+window.handleSignOut =
+    handleSignOut;
 
-window.installPWA =
-    installPWA;
+window.openMainWebsite =
+    openMainWebsite;
+
+window.showLoginPanel =
+    showLoginPanel;
+
+window.showRegisterPanel =
+    showRegisterPanel;
 
 window.loadPredictions =
     loadPredictions;
@@ -4791,54 +5692,42 @@ window.loadPredictions =
 window.loadResults =
     loadResults;
 
+window.loadBookingCodes =
+    loadBookingCodes;
+
+window.loadRegularBettingCodes =
+    loadRegularBettingCodes;
+
+window.loadVipBettingCodes =
+    loadVipBettingCodes;
+
 window.loadVipPredictions =
     loadVipPredictions;
 
-window.checkVipStatus =
-    checkVipStatus;
+window.loadVipStatus =
+    loadVipStatus;
+
+window.redeemVipCode =
+    redeemVipCode;
+
+window.copyBettingCode =
+    copyBettingCode;
+
+window.openVipPage =
+    openVipPage;
+
+window.installPWA =
+    installPWA;
+
 
 /* ============================================================
-   PUBLIC FLEX HUB APP OBJECT
-   ============================================================ */
-
-window.FLEX_HUB_APP = {
-    version: "5.0",
-
-    apiBaseUrl:
-        API_BASE_URL,
-
-    getUserToken,
-    getAuthToken,
-    getStoredUser,
-
-    checkUserSession,
-    verifyCurrentUserSession,
-
-    handleLogin,
-    handleRegister,
-    handleSignOut,
-
-    loadPredictions,
-    loadResults,
-
-    loadVipPredictions,
-    checkVipStatus,
-
-    loadNotifications
-};
-
-/* ============================================================
-   FINAL STARTUP MESSAGE
+   FINAL INITIALIZATION
    ============================================================ */
 
 console.log(
     "FLEX HUB PREDICTIONS app.js loaded successfully."
 );
 
-console.log(
-    "API:",
-    API_BASE_URL
-);
 
 /* ============================================================
    END OF APP.JS
