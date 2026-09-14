@@ -3832,6 +3832,421 @@ app.get(
     }
   }
 );
+// ============================================================
+// ADMIN - BOOKING CODES
+// ============================================================
+
+// LIST BOOKING CODES
+app.get(
+  "/api/admin/betting-codes",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result =
+        await db.query(
+          `
+          SELECT
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status,
+            created_at
+          FROM betting_codes
+          ORDER BY id DESC
+          `
+        );
+
+      return res.json({
+        success: true,
+        codes: result.rows,
+        bettingCodes: result.rows
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Admin booking codes error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to load booking codes."
+      });
+    }
+  }
+);
+
+
+// CREATE BOOKING CODE
+app.post(
+  "/api/admin/betting-codes",
+  requireAdmin,
+  async (req, res) => {
+    try {
+
+      const bookmaker =
+        cleanString(
+          req.body.bookmaker
+        );
+
+      const code =
+        cleanString(
+          req.body.code
+        );
+
+      const description =
+        cleanString(
+          req.body.description
+        );
+
+      const category =
+        cleanString(
+          req.body.category
+        ) || "regular";
+
+      const status =
+        cleanString(
+          req.body.status
+        ) || "active";
+
+
+      if (!bookmaker || !code) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Bookmaker and booking code are required."
+        });
+      }
+
+
+      if (
+        !["regular", "vip"].includes(
+          category
+        )
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Category must be regular or vip."
+        });
+      }
+
+
+      if (
+        !["active", "inactive"].includes(
+          status
+        )
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Status must be active or inactive."
+        });
+      }
+
+
+      const duplicate =
+        await db.query(
+          `
+          SELECT
+            id
+          FROM betting_codes
+          WHERE LOWER(bookmaker) = LOWER($1)
+            AND LOWER(code) = LOWER($2)
+          LIMIT 1
+          `,
+          [
+            bookmaker,
+            code
+          ]
+        );
+
+
+      if (
+        duplicate.rows.length > 0
+      ) {
+
+        return res.status(409).json({
+          success: false,
+          message:
+            "This booking code already exists for this bookmaker."
+        });
+      }
+
+
+      const result =
+        await db.query(
+          `
+          INSERT INTO betting_codes
+          (
+            bookmaker,
+            code,
+            description,
+            category,
+            status
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+          )
+          RETURNING
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status,
+            created_at
+          `,
+          [
+            bookmaker,
+            code,
+            description || null,
+            category,
+            status
+          ]
+        );
+
+
+      const bookingCode =
+        result.rows[0];
+
+
+      await logActivity(
+        {
+          username:
+            req.admin.username
+        },
+        "CREATE_BOOKING_CODE",
+        `Created ${category} booking code for ${bookmaker}`
+      );
+
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Booking code added successfully.",
+        code: bookingCode
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Create booking code error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to create booking code."
+      });
+    }
+  }
+);
+
+
+// UPDATE BOOKING CODE STATUS
+app.patch(
+  "/api/admin/betting-codes/:id/status",
+  requireAdmin,
+  async (req, res) => {
+    try {
+
+      const id =
+        Number(req.params.id);
+
+      const status =
+        cleanString(
+          req.body.status
+        );
+
+
+      if (!Number.isInteger(id)) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid booking code ID."
+        });
+      }
+
+
+      if (
+        !["active", "inactive"].includes(
+          status
+        )
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Status must be active or inactive."
+        });
+      }
+
+
+      const result =
+        await db.query(
+          `
+          UPDATE betting_codes
+          SET status = $1
+          WHERE id = $2
+          RETURNING
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status,
+            created_at
+          `,
+          [
+            status,
+            id
+          ]
+        );
+
+
+      if (
+        result.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking code not found."
+        });
+      }
+
+
+      await logActivity(
+        {
+          username:
+            req.admin.username
+        },
+        "UPDATE_BOOKING_CODE_STATUS",
+        `Booking code #${id} changed to ${status}`
+      );
+
+
+      return res.json({
+        success: true,
+        message:
+          "Booking code status updated successfully.",
+        code:
+          result.rows[0]
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Update booking code status error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to update booking code status."
+      });
+    }
+  }
+);
+
+
+// DELETE BOOKING CODE
+app.delete(
+  "/api/admin/betting-codes/:id",
+  requireAdmin,
+  async (req, res) => {
+    try {
+
+      const id =
+        Number(req.params.id);
+
+
+      if (!Number.isInteger(id)) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid booking code ID."
+        });
+      }
+
+
+      const result =
+        await db.query(
+          `
+          DELETE FROM betting_codes
+          WHERE id = $1
+          RETURNING
+            id,
+            bookmaker,
+            code,
+            description,
+            category,
+            status
+          `,
+          [id]
+        );
+
+
+      if (
+        result.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking code not found."
+        });
+      }
+
+
+      await logActivity(
+        {
+          username:
+            req.admin.username
+        },
+        "DELETE_BOOKING_CODE",
+        `Deleted booking code #${id}`
+      );
+
+
+      return res.json({
+        success: true,
+        message:
+          "Booking code deleted successfully."
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Delete booking code error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to delete booking code."
+      });
+    }
+  }
+);
 
 // ============================================================
 // CLEAN EXPIRED VIP SUBSCRIPTIONS
