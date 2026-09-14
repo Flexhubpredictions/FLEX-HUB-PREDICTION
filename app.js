@@ -5750,6 +5750,26 @@ window.installPWA =
 /* ============================================================
    FINAL INITIALIZATION
    ============================================================ */
+// ============================================================
+// MOBILE MENU CLOSE
+// ============================================================
+
+function closeMobileMenu() {
+    const menuButton = document.getElementById("menuButton");
+    const mainNav = document.getElementById("mainNav");
+
+    if (mainNav) {
+        mainNav.classList.remove("active");
+        mainNav.classList.remove("open");
+    }
+
+    if (menuButton) {
+        menuButton.classList.remove("active");
+        menuButton.setAttribute("aria-expanded", "false");
+    }
+
+    document.body.classList.remove("menu-open");
+}
 
 console.log(
     "FLEX HUB PREDICTIONS app.js loaded successfully."
