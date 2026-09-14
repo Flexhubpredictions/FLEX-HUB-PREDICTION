@@ -7064,58 +7064,110 @@ function setupVvipPredictionManager() {
 // ============================================================
 
 async function loadUsers(search = "") {
+    const tbody = document.getElementById("usersTableBody");
+
+    if (!tbody) {
+        console.error("usersTableBody not found.");
+        return;
+    }
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="empty-state">
+                Loading registered users...
+            </td>
+        </tr>
+    `;
+
     try {
-        const query =
-            search
-                ? `?search=${encodeURIComponent(search)}`
-                : "";
+        const query = String(search || "").trim();
 
-        const data =
-            await adminFetch(
-                `/admin/users${query}`
+        const endpoint = query
+            ? `/admin/users?search=${encodeURIComponent(query)}`
+            : "/admin/users";
+
+        console.log("Loading registered users:", endpoint);
+
+        const data = await adminFetch(endpoint);
+
+        console.log("Registered users response:", data);
+
+        if (!data || data.success !== true) {
+            throw new Error(
+                data?.message || "The server could not load registered users."
             );
+        }
 
-        adminState.users =
-            Array.isArray(data?.users)
-                ? data.users
-                : [];
+        adminState.users = Array.isArray(data.users)
+            ? data.users
+            : [];
 
         renderUsersTable();
 
         updateDashboardStatistics();
 
     } catch (error) {
-        console.error(
-            "Users load error:",
-            error
-        );
+        console.error("REGISTERED USERS ERROR:", error);
 
         adminState.users = [];
 
-        renderUsersTable();
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    <strong>
+                        Unable to load registered users
+                    </strong>
 
-        showToast(
-            "Unable to load members.",
-            "error"
-        );
+                    <br><br>
+
+                    <span>
+                        ${escapeHTML(
+                            error.message ||
+                            "Please try again."
+                        )}
+                    </span>
+
+                    <br><br>
+
+                    <button
+                        type="button"
+                        class="table-button"
+                        id="retryUsersButton"
+                    >
+                        Retry
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        const retryButton =
+            document.getElementById("retryUsersButton");
+
+        if (retryButton) {
+            retryButton.addEventListener(
+                "click",
+                () => loadUsers()
+            );
+        }
     }
 }
 
+
 function renderUsersTable() {
     const tbody =
-        document.getElementById(
-            "usersTableBody"
-        );
+        document.getElementById("usersTableBody");
 
     if (!tbody) return;
 
     const users =
-        adminState.users || [];
+        Array.isArray(adminState.users)
+            ? adminState.users
+            : [];
 
     if (!users.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-state">
+                <td colspan="6" class="empty-state">
                     No registered members found.
                 </td>
             </tr>
@@ -7124,93 +7176,94 @@ function renderUsersTable() {
         return;
     }
 
-    tbody.innerHTML =
-        users.map(user => {
+    tbody.innerHTML = users.map(user => {
 
-            const status =
-                String(user.status || "active")
-                    .toLowerCase();
+        const status =
+            String(user.status || "active")
+                .toLowerCase();
 
-            const statusClass =
-                status === "active"
-                    ? "status-won"
-                    : "status-lost";
+        const statusClass =
+            status === "active"
+                ? "status-won"
+                : "status-lost";
 
-            return `
-                <tr>
+        return `
+            <tr>
 
-                    <td>
-                        <strong>
-                            ${escapeHTML(
-                                user.name || "-"
-                            )}
-                        </strong>
-                    </td>
-
-                    <td>
-                        @${escapeHTML(
-                            user.username || "-"
-                        )}
-                    </td>
-
-                    <td>
+                <td>
+                    <strong>
                         ${escapeHTML(
-                            user.email || "-"
+                            user.name || "-"
                         )}
-                    </td>
+                    </strong>
+                </td>
 
-                    <td>
-                        <span class="status-badge ${statusClass}">
-                            ${capitalize(status)}
-                        </span>
-                    </td>
+                <td>
+                    @${escapeHTML(
+                        user.username || "-"
+                    )}
+                </td>
 
-                    <td>
-                        ${formatDateTime(
-                            user.created_at
-                        )}
-                    </td>
+                <td>
+                    ${escapeHTML(
+                        user.email || "-"
+                    )}
+                </td>
 
-                    <td>
-                        <div class="table-actions">
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        ${capitalize(status)}
+                    </span>
+                </td>
 
-                            <button
-                                type="button"
-                                class="table-button"
-                                data-user-action="history"
-                                data-id="${user.id}"
-                            >
-                                History
-                            </button>
+                <td>
+                    ${user.created_at
+                        ? formatDateTime(user.created_at)
+                        : "-"
+                    }
+                </td>
 
-                            <button
-                                type="button"
-                                class="table-button"
-                                data-user-action="toggle"
-                                data-id="${user.id}"
-                            >
-                                ${
-                                    status === "active"
-                                        ? "Disable"
-                                        : "Enable"
-                                }
-                            </button>
+                <td>
+                    <div class="table-actions">
 
-                            <button
-                                type="button"
-                                class="table-button danger-button"
-                                data-user-action="delete"
-                                data-id="${user.id}"
-                            >
-                                Delete
-                            </button>
+                        <button
+                            type="button"
+                            class="table-button"
+                            data-user-action="history"
+                            data-id="${user.id}"
+                        >
+                            History
+                        </button>
 
-                        </div>
-                    </td>
+                        <button
+                            type="button"
+                            class="table-button"
+                            data-user-action="toggle"
+                            data-id="${user.id}"
+                        >
+                            ${
+                                status === "active"
+                                    ? "Disable"
+                                    : "Enable"
+                            }
+                        </button>
 
-                </tr>
-            `;
-        }).join("");
+                        <button
+                            type="button"
+                            class="table-button danger-button"
+                            data-user-action="delete"
+                            data-id="${user.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+                </td>
+
+            </tr>
+        `;
+
+    }).join("");
 }
 
 
@@ -7224,13 +7277,13 @@ async function loadMemberHistory(user) {
     try {
         showLoading(
             "Loading member history...",
-            `Loading activity for ${user.name || user.username}.`
+            `Loading activity for ${
+                user.name || user.username
+            }.`
         );
 
         const data =
-            await adminFetch(
-                "/admin/activity-logs"
-            );
+            await adminFetch("/admin/activity-logs");
 
         const logs =
             Array.isArray(data?.logs)
@@ -7274,6 +7327,7 @@ async function loadMemberHistory(user) {
         );
 
         showToast(
+            error.message ||
             "Unable to load member history.",
             "error"
         );
@@ -7283,10 +7337,9 @@ async function loadMemberHistory(user) {
     }
 }
 
-function renderMemberHistoryModal(
-    user,
-    logs
-) {
+
+function renderMemberHistoryModal(user, logs) {
+
     const existing =
         document.getElementById(
             "memberHistoryModal"
@@ -7348,9 +7401,11 @@ function renderMemberHistoryModal(
 
                     </div>
                 `;
+
             }).join("")
             : `
                 <div class="member-history-empty">
+
                     <div class="empty-history-icon">
                         📭
                     </div>
@@ -7361,6 +7416,7 @@ function renderMemberHistoryModal(
                         There is no recorded activity
                         for this member yet.
                     </p>
+
                 </div>
             `;
 
@@ -7370,6 +7426,7 @@ function renderMemberHistoryModal(
             <div class="admin-modal-header">
 
                 <div>
+
                     <span class="admin-modal-kicker">
                         MEMBER HISTORY
                     </span>
@@ -7385,6 +7442,7 @@ function renderMemberHistoryModal(
                             user.username || "-"
                         )}
                     </p>
+
                 </div>
 
                 <button
@@ -7456,9 +7514,7 @@ function renderMemberHistoryModal(
     if (closeButton) {
         closeButton.addEventListener(
             "click",
-            () => {
-                overlay.remove();
-            }
+            () => overlay.remove()
         );
     }
 
@@ -7470,23 +7526,11 @@ function renderMemberHistoryModal(
             }
         }
     );
-
-    document.addEventListener(
-        "keydown",
-        function closeOnEscape(event) {
-            if (event.key === "Escape") {
-                overlay.remove();
-
-                document.removeEventListener(
-                    "keydown",
-                    closeOnEscape
-                );
-            }
-        }
-    );
 }
 
+
 function getActivityIcon(action) {
+
     const value =
         String(action || "")
             .toLowerCase();
@@ -7522,10 +7566,17 @@ function getActivityIcon(action) {
     return "📋";
 }
 
+
+// ============================================================
+// ENABLE / DISABLE MEMBER
+// ============================================================
+
 async function toggleUserStatus(id) {
+
     const user =
         adminState.users.find(
-            item => Number(item.id) === Number(id)
+            item =>
+                Number(item.id) === Number(id)
         );
 
     if (!user) return;
@@ -7540,6 +7591,7 @@ async function toggleUserStatus(id) {
             : "active";
 
     openConfirmDialog({
+
         title:
             newStatus === "active"
                 ? "Enable Member"
@@ -7548,7 +7600,9 @@ async function toggleUserStatus(id) {
         message:
             `${newStatus === "active"
                 ? "Enable"
-                : "Disable"} ${user.name || user.username}?`,
+                : "Disable"} ${
+                    user.name || user.username
+                }?`,
 
         confirmText:
             newStatus === "active"
@@ -7558,15 +7612,21 @@ async function toggleUserStatus(id) {
         onConfirm: async () => {
 
             try {
+
                 showLoading(
                     "Updating member...",
                     "Please wait."
                 );
 
+                /*
+                 * This endpoint also records the
+                 * enable/disable action in Activity Log.
+                 */
                 await adminFetch(
-                    `/admin/users/${id}/status`,
+                    `/admin/users/${id}`,
                     {
                         method: "PATCH",
+
                         body: JSON.stringify({
                             status: newStatus
                         })
@@ -7583,40 +7643,57 @@ async function toggleUserStatus(id) {
                 );
 
             } catch (error) {
-                console.error(error);
+
+                console.error(
+                    "Update member error:",
+                    error
+                );
 
                 showToast(
                     error.message ||
-                        "Unable to update member.",
+                    "Unable to update member.",
                     "error"
                 );
 
             } finally {
+
                 hideLoading();
+
             }
         }
     });
 }
 
+
+// ============================================================
+// DELETE MEMBER
+// ============================================================
+
 async function deleteUser(id) {
+
     const user =
         adminState.users.find(
-            item => Number(item.id) === Number(id)
+            item =>
+                Number(item.id) === Number(id)
         );
 
     if (!user) return;
 
     openConfirmDialog({
+
         title: "Delete Member",
 
         message:
-            `Delete ${user.name || user.username}? This cannot be undone.`,
+            `Delete ${
+                user.name || user.username
+            }? This cannot be undone.`,
 
         confirmText: "Delete",
 
         onConfirm: async () => {
 
             try {
+
                 showLoading(
                     "Deleting member...",
                     "Please wait."
@@ -7637,32 +7714,46 @@ async function deleteUser(id) {
                 );
 
             } catch (error) {
-                console.error(error);
+
+                console.error(
+                    "Delete member error:",
+                    error
+                );
 
                 showToast(
                     error.message ||
-                        "Unable to delete member.",
+                    "Unable to delete member.",
                     "error"
                 );
 
             } finally {
+
                 hideLoading();
+
             }
         }
     });
 }
 
+
+// ============================================================
+// SETUP MEMBERS / USERS
+// ============================================================
+
 function setupUsersManager() {
+
     const refreshButton =
         document.getElementById(
             "refreshUsersButton"
         );
 
     if (refreshButton) {
+
         refreshButton.addEventListener(
             "click",
             () => loadUsers()
         );
+
     }
 
     const tbody =
@@ -7671,6 +7762,7 @@ function setupUsersManager() {
         );
 
     if (tbody) {
+
         tbody.addEventListener(
             "click",
             event => {
@@ -7688,29 +7780,44 @@ function setupUsersManager() {
                 const action =
                     button.dataset.userAction;
 
-                const user =
-                    adminState.users.find(
-                        item =>
-                            Number(item.id) ===
-                            Number(id)
-                    );
-
-                if (!user) return;
-
                 if (action === "history") {
-                    loadMemberHistory(user);
+
+                    const user =
+                        adminState.users.find(
+                            item =>
+                                Number(item.id) ===
+                                Number(id)
+                        );
+
+                    if (user) {
+                        loadMemberHistory(user);
+                    }
+
+                    return;
                 }
 
                 if (action === "toggle") {
+
                     toggleUserStatus(id);
+
+                    return;
                 }
 
                 if (action === "delete") {
+
                     deleteUser(id);
+
+                    return;
                 }
+
             }
         );
+
     }
+
+    // Load registered users automatically
+    // when the admin panel starts.
+    loadUsers();
 }
 
 
