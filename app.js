@@ -1,42 +1,22 @@
 /* =========================================================
    FLEX HUB PREDICTIONS
-   COMPLETE APP.JS - PART 1/3
-   =========================================================
-
-   FEATURES
-   ---------------------------------------------------------
-   • Login
-   • Registration
-   • Session verification
-   • Logout
-   • Regular predictions
-   • Search
-   • League filters
-   • Results
-   • Regular betting codes
-   • VIP page
-   • VIP access codes
-   • VIP predictions
-   • VIP betting codes
-   • Forgot password
-   • Team badges
-   • WhatsApp links
-   • PWA installation
-   • Notifications
-   • Mobile navigation
-
-   VVIP IS NOT INCLUDED.
+   COMPLETE APP.JS
+   PART 1/3
    ========================================================= */
 
 "use strict";
 
-
 /* =========================================================
-   CONFIGURATION
+   API CONFIGURATION
    ========================================================= */
 
 const API_BASE_URL =
     "https://flex-hub-prediction.onrender.com/api";
+
+
+/* =========================================================
+   STORAGE KEYS
+   ========================================================= */
 
 const STORAGE_KEYS = {
     USER: "flexHubUser",
@@ -53,70 +33,80 @@ const STORAGE_KEYS = {
 let currentUser = null;
 
 let allPredictions = [];
+
 let allResults = [];
 
 let currentSearchTerm = "";
+
 let currentLeagueFilter = "all";
+
 let currentResultFilter = "all";
 
-let notificationPollingTimer = null;
+let notificationTimer = null;
 
 let deferredInstallPrompt = null;
 
 window.vipPredictionCount = 0;
+
 window.vipAccessActive = false;
 
 
 /* =========================================================
-   DOM READY
+   PAGE READY
    ========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
-    async () => {
-
-        console.log(
-            "FLEX HUB PREDICTIONS app.js loaded."
-        );
+    () => {
 
         try {
 
-            currentUser =
-                getStoredUser();
-
             setupAccountForms();
+
             setupNavigation();
+
             setupSearch();
+
             setupLeagueFilters();
+
             setupResultFilters();
+
             setupMobileMenu();
+
             setupSignOut();
+
             setupFooterYear();
+
             setupWhatsAppLinks();
+
             setupRegularPaymentGate();
+
             setupPWAInstall();
+
             setupForgotPassword();
+
             setupNotificationCenter();
 
+            loadTeamBadges();
+
             const isVipPage =
-                document.body.classList.contains(
-                    "vip-page"
-                ) ||
-                document.getElementById(
-                    "vipAccessForm"
-                ) ||
-                document.getElementById(
-                    "vipPredictionsGrid"
+                document.body &&
+                (
+                    document.body.dataset.page === "vip" ||
+                    window.location.pathname
+                        .toLowerCase()
+                        .includes("vip.html")
                 );
 
             if (isVipPage) {
 
-                await setupVipPage();
+                setupVipPage();
 
-                return;
+            } else {
+
+                checkUserSession();
+
             }
-
-            await checkUserSession();
 
         } catch (error) {
 
@@ -132,7 +122,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   STORAGE
+   STORAGE HELPERS
    ========================================================= */
 
 function getStoredUser() {
@@ -154,7 +144,7 @@ function getStoredUser() {
 
     } catch (error) {
 
-        console.error(
+        console.warn(
             "Unable to read stored user:",
             error
         );
@@ -177,6 +167,18 @@ function getUserToken() {
 }
 
 
+/*
+   IMPORTANT:
+   All authenticated functions use this same helper.
+*/
+
+function getAuthToken() {
+
+    return getUserToken();
+
+}
+
+
 function getVipToken() {
 
     return (
@@ -193,8 +195,7 @@ function saveUser(
     token
 ) {
 
-    currentUser =
-        user || null;
+    currentUser = user || null;
 
     if (user) {
 
@@ -233,11 +234,9 @@ function clearUserSession() {
         STORAGE_KEYS.VIP_TOKEN
     );
 
-    window.vipAccessActive =
-        false;
+    window.vipAccessActive = false;
 
-    window.vipPredictionCount =
-        0;
+    window.vipPredictionCount = 0;
 
 }
 
@@ -251,26 +250,34 @@ async function apiRequest(
     options = {}
 ) {
 
+    const requestOptions = {
+        ...options
+    };
+
     const headers = {
-        "Content-Type": "application/json",
         ...(options.headers || {})
     };
+
+
+    if (
+        requestOptions.body &&
+        !headers["Content-Type"]
+    ) {
+
+        headers["Content-Type"] =
+            "application/json";
+
+    }
+
 
     const token =
         getUserToken();
 
-    /*
-     * Normal authenticated requests use
-     * the logged-in user's token.
-     *
-     * VIP requests can provide their own
-     * Authorization header.
-     */
 
     if (
         token &&
-        !headers.Authorization &&
-        !options.skipAuth
+        !requestOptions.skipAuth &&
+        !headers.Authorization
     ) {
 
         headers.Authorization =
@@ -278,68 +285,63 @@ async function apiRequest(
 
     }
 
-    const requestOptions = {
 
-        method:
-            options.method || "GET",
+    requestOptions.headers =
+        headers;
 
-        headers
 
-    };
+    delete requestOptions.skipAuth;
 
-    if (
-        options.body !== undefined
-    ) {
-
-        requestOptions.body =
-            options.body;
-
-    }
-
-    const url =
-        `${API_BASE_URL}${endpoint}`;
-
-    console.log(
-        `[FLEX HUB API] ${requestOptions.method} ${url}`
-    );
 
     const response =
         await fetch(
-            url,
+            `${API_BASE_URL}${endpoint}`,
             requestOptions
         );
 
+
     let data = null;
+
 
     try {
 
         data =
             await response.json();
 
-    } catch {
+    } catch (error) {
 
         data = null;
 
     }
 
+
     if (!response.ok) {
 
         const error =
             new Error(
-                data?.message ||
-                data?.error ||
+                (
+                    data &&
+                    (
+                        data.message ||
+                        data.error
+                    )
+                ) ||
                 `Request failed with status ${response.status}`
             );
+
 
         error.status =
             response.status;
 
+
         error.data =
             data;
+
 
         throw error;
 
     }
+
 
     return data;
 
@@ -357,15 +359,18 @@ function setupAccountForms() {
             "loginForm"
         );
 
+
     const registerForm =
         document.getElementById(
             "registerForm"
         );
 
+
     const showRegisterButton =
         document.getElementById(
             "showRegisterButton"
         );
+
 
     const showLoginButton =
         document.getElementById(
@@ -373,66 +378,54 @@ function setupAccountForms() {
         );
 
 
-    if (
-        loginForm &&
-        !loginForm.dataset.initialized
-    ) {
+    if (loginForm) {
 
         loginForm.addEventListener(
             "submit",
             handleLogin
         );
 
-        loginForm.dataset.initialized =
-            "true";
-
     }
 
 
-    if (
-        registerForm &&
-        !registerForm.dataset.initialized
-    ) {
+    if (registerForm) {
 
         registerForm.addEventListener(
             "submit",
             handleRegister
         );
 
-        registerForm.dataset.initialized =
-            "true";
-
     }
 
 
-    if (
-        showRegisterButton &&
-        !showRegisterButton.dataset.initialized
-    ) {
+    if (showRegisterButton) {
 
         showRegisterButton.addEventListener(
             "click",
-            showRegisterPanel
-        );
+            (event) => {
 
-        showRegisterButton.dataset.initialized =
-            "true";
+                event.preventDefault();
+
+                showRegisterPanel();
+
+            }
+        );
 
     }
 
 
-    if (
-        showLoginButton &&
-        !showLoginButton.dataset.initialized
-    ) {
+    if (showLoginButton) {
 
         showLoginButton.addEventListener(
             "click",
-            showLoginPanel
-        );
+            (event) => {
 
-        showLoginButton.dataset.initialized =
-            "true";
+                event.preventDefault();
+
+                showLoginPanel();
+
+            }
+        );
 
     }
 
@@ -440,7 +433,7 @@ function setupAccountForms() {
 
 
 /* =========================================================
-   LOGIN / REGISTER PANEL
+   LOGIN / REGISTER PANEL SWITCHING
    ========================================================= */
 
 function showLoginPanel() {
@@ -449,6 +442,7 @@ function showLoginPanel() {
         document.getElementById(
             "loginPanel"
         );
+
 
     const registerPanel =
         document.getElementById(
@@ -459,7 +453,7 @@ function showLoginPanel() {
     if (loginPanel) {
 
         loginPanel.style.display =
-            "block";
+            "";
 
     }
 
@@ -481,6 +475,7 @@ function showRegisterPanel() {
             "loginPanel"
         );
 
+
     const registerPanel =
         document.getElementById(
             "registerPanel"
@@ -498,7 +493,7 @@ function showRegisterPanel() {
     if (registerPanel) {
 
         registerPanel.style.display =
-            "block";
+            "";
 
     }
 
@@ -506,59 +501,63 @@ function showRegisterPanel() {
 
 
 /* =========================================================
-   LOGIN
+   HANDLE LOGIN
    ========================================================= */
 
 async function handleLogin(
     event
 ) {
 
-    event.preventDefault();
+    if (event) {
 
-    const form =
-        event.currentTarget;
+        event.preventDefault();
+
+    }
+
 
     const identifier =
-        document
-            .getElementById(
-                "loginIdentifier"
-            )
-            ?.value
-            .trim() || "";
+        getFormValue(
+            "loginIdentifier"
+        );
+
 
     const password =
-        document
-            .getElementById(
-                "loginPassword"
-            )
-            ?.value || "";
+        getFormValue(
+            "loginPassword"
+        );
+
 
     const rememberMe =
-        document
-            .getElementById(
-                "rememberMe"
-            )
-            ?.checked || false;
+        document.getElementById(
+            "rememberMe"
+        );
 
-    const message =
+
+    const messageElement =
         document.getElementById(
             "loginMessage"
         );
 
-    const button =
-        form.querySelector(
-            'button[type="submit"]'
+
+    const form =
+        document.getElementById(
+            "loginForm"
         );
 
 
-    if (
-        !identifier ||
-        !password
-    ) {
+    const submitButton =
+        form
+            ? form.querySelector(
+                'button[type="submit"]'
+            )
+            : null;
+
+
+    if (!identifier) {
 
         showElementMessage(
-            message,
-            "Please enter your username/email and password.",
+            messageElement,
+            "Enter your username or email.",
             "error"
         );
 
@@ -567,21 +566,47 @@ async function handleLogin(
     }
 
 
-    setButtonLoading(
-        button,
-        true,
-        "Signing in..."
-    );
+    if (!password) {
+
+        showElementMessage(
+            messageElement,
+            "Enter your password.",
+            "error"
+        );
+
+        return;
+
+    }
 
 
     try {
+
+        setButtonLoading(
+            submitButton,
+            true,
+            "Signing in..."
+        );
+
+
+        showElementMessage(
+            messageElement,
+            "Signing in...",
+            "info"
+        );
+
+
+        /*
+           Login itself does NOT use an existing token.
+        */
 
         const data =
             await apiRequest(
                 "/login",
                 {
                     method: "POST",
+
                     skipAuth: true,
+
                     body: JSON.stringify({
                         identifier,
                         password
@@ -604,9 +629,8 @@ async function handleLogin(
 
 
         /*
-         * Save the session BEFORE verification
-         * so /user/me can use the returned token.
-         */
+           Save the session BEFORE doing anything else.
+        */
 
         saveUser(
             data.user,
@@ -614,7 +638,7 @@ async function handleLogin(
         );
 
 
-        if (rememberMe) {
+        if (rememberMe && rememberMe.checked) {
 
             localStorage.setItem(
                 STORAGE_KEYS.REMEMBER_ME,
@@ -630,21 +654,44 @@ async function handleLogin(
         }
 
 
-        const valid =
-            await verifyCurrentUserSession();
+        /*
+           Verify the new token.
 
+           IMPORTANT:
+           We do NOT immediately destroy the session
+           just because verification fails.
+        */
 
-        if (!valid) {
-
-            throw new Error(
-                "Login succeeded, but the session could not be verified."
+        const verified =
+            await verifyCurrentUserSession(
+                true
             );
+
+
+        if (!verified) {
+
+            /*
+               The login endpoint already returned a
+               valid user + token.
+
+               Keep the session so the user is not
+               unnecessarily thrown back to the gate.
+            */
+
+            currentUser =
+                data.user;
 
         }
 
 
+        updateUserUI(
+            currentUser ||
+            data.user
+        );
+
+
         showElementMessage(
-            message,
+            messageElement,
             "Login successful.",
             "success"
         );
@@ -655,42 +702,45 @@ async function handleLogin(
         );
 
 
-        /*
-         * Give the success animation a moment,
-         * then reveal the main website.
-         */
-
         setTimeout(
             () => {
 
                 openMainWebsite();
 
             },
-            1000
+            700
         );
 
 
     } catch (error) {
 
         console.error(
-            "Login failed:",
+            "Login error:",
             error
         );
 
+
+        /*
+           Only clear the session if the actual
+           /login request failed.
+
+           This prevents the old login-loop problem.
+        */
+
         clearUserSession();
 
+
         showElementMessage(
-            message,
+            messageElement,
             error.message ||
-            "Login failed. Please try again.",
+            "Unable to sign in. Please check your details.",
             "error"
         );
-
 
     } finally {
 
         setButtonLoading(
-            button,
+            submitButton,
             false
         );
 
@@ -700,76 +750,133 @@ async function handleLogin(
 
 
 /* =========================================================
-   REGISTER
+   HANDLE REGISTER
    ========================================================= */
 
 async function handleRegister(
     event
 ) {
 
-    event.preventDefault();
+    if (event) {
 
-    const form =
-        event.currentTarget;
+        event.preventDefault();
+
+    }
+
 
     const name =
         getFormValue(
             "registerName"
         );
 
+
     const username =
         getFormValue(
             "registerUsername"
         );
+
 
     const email =
         getFormValue(
             "registerEmail"
         );
 
+
     const password =
-        document
-            .getElementById(
-                "registerPassword"
-            )
-            ?.value || "";
+        getFormValue(
+            "registerPassword"
+        );
+
 
     const confirmPassword =
-        document
-            .getElementById(
-                "registerConfirmPassword"
-            )
-            ?.value || "";
+        getFormValue(
+            "registerConfirmPassword"
+        );
+
 
     const terms =
-        document
-            .getElementById(
-                "registerTerms"
-            )
-            ?.checked || false;
+        document.getElementById(
+            "registerTerms"
+        );
 
-    const message =
+
+    const messageElement =
         document.getElementById(
             "registerMessage"
         );
 
-    const button =
-        form.querySelector(
-            'button[type="submit"]'
+
+    const form =
+        document.getElementById(
+            "registerForm"
         );
 
 
-    if (
-        !name ||
-        !username ||
-        !email ||
-        !password ||
-        !confirmPassword
-    ) {
+    const submitButton =
+        form
+            ? form.querySelector(
+                'button[type="submit"]'
+            )
+            : null;
+
+
+    if (!name) {
 
         showElementMessage(
-            message,
-            "Please complete all required fields.",
+            messageElement,
+            "Enter your full name.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!username) {
+
+        showElementMessage(
+            messageElement,
+            "Choose a username.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!email) {
+
+        showElementMessage(
+            messageElement,
+            "Enter your email address.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!password) {
+
+        showElementMessage(
+            messageElement,
+            "Create a password.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (password.length < 6) {
+
+        showElementMessage(
+            messageElement,
+            "Password must be at least 6 characters.",
             "error"
         );
 
@@ -779,11 +886,12 @@ async function handleRegister(
 
 
     if (
-        password !== confirmPassword
+        password !==
+        confirmPassword
     ) {
 
         showElementMessage(
-            message,
+            messageElement,
             "Passwords do not match.",
             "error"
         );
@@ -794,24 +902,12 @@ async function handleRegister(
 
 
     if (
-        password.length < 6
+        terms &&
+        !terms.checked
     ) {
 
         showElementMessage(
-            message,
-            "Password must contain at least 6 characters.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!terms) {
-
-        showElementMessage(
-            message,
+            messageElement,
             "Please accept the terms before creating your account.",
             "error"
         );
@@ -821,21 +917,30 @@ async function handleRegister(
     }
 
 
-    setButtonLoading(
-        button,
-        true,
-        "Creating account..."
-    );
-
-
     try {
+
+        setButtonLoading(
+            submitButton,
+            true,
+            "Creating account..."
+        );
+
+
+        showElementMessage(
+            messageElement,
+            "Creating your account...",
+            "info"
+        );
+
 
         const data =
             await apiRequest(
                 "/register",
                 {
                     method: "POST",
+
                     skipAuth: true,
+
                     body: JSON.stringify({
                         name,
                         username,
@@ -853,7 +958,7 @@ async function handleRegister(
         ) {
 
             throw new Error(
-                "Account created, but no valid session was returned."
+                "Account was created, but the server did not return a valid session."
             );
 
         }
@@ -865,28 +970,41 @@ async function handleRegister(
         );
 
 
-        const valid =
-            await verifyCurrentUserSession();
+        localStorage.setItem(
+            STORAGE_KEYS.REMEMBER_ME,
+            "true"
+        );
 
 
-        if (!valid) {
-
-            throw new Error(
-                "Account created, but the session could not be verified."
+        const verified =
+            await verifyCurrentUserSession(
+                true
             );
+
+
+        if (!verified) {
+
+            currentUser =
+                data.user;
 
         }
 
 
+        updateUserUI(
+            currentUser ||
+            data.user
+        );
+
+
         showElementMessage(
-            message,
+            messageElement,
             "Account created successfully.",
             "success"
         );
 
 
         showFlexHubAnimation(
-            "Account created successfully"
+            "Welcome to FLEX HUB PREDICTIONS"
         );
 
 
@@ -896,29 +1014,29 @@ async function handleRegister(
                 openMainWebsite();
 
             },
-            1000
+            700
         );
 
 
     } catch (error) {
 
         console.error(
-            "Registration failed:",
+            "Registration error:",
             error
         );
 
+
         showElementMessage(
-            message,
+            messageElement,
             error.message ||
-            "Unable to create account.",
+            "Unable to create your account.",
             "error"
         );
-
 
     } finally {
 
         setButtonLoading(
-            button,
+            submitButton,
             false
         );
 
@@ -928,124 +1046,12 @@ async function handleRegister(
 
 
 /* =========================================================
-   SESSION CHECK
+   VERIFY CURRENT USER SESSION
    ========================================================= */
 
-async function checkUserSession() {
-
-    const accountGate =
-        document.getElementById(
-            "accountGate"
-        );
-
-    const mainWebsite =
-        document.getElementById(
-            "mainWebsite"
-        );
-
-    const token =
-        getUserToken();
-
-
-    /*
-     * No saved token:
-     * keep the login gate visible.
-     */
-
-    if (!token) {
-
-        if (accountGate) {
-
-            accountGate.style.display =
-                "";
-
-        }
-
-        if (mainWebsite) {
-
-            mainWebsite.style.display =
-                "none";
-
-        }
-
-        return false;
-
-    }
-
-
-    try {
-
-        const valid =
-            await verifyCurrentUserSession();
-
-
-        if (!valid) {
-
-            if (accountGate) {
-
-                accountGate.style.display =
-                    "";
-
-            }
-
-            if (mainWebsite) {
-
-                mainWebsite.style.display =
-                    "none";
-
-            }
-
-            showLoginPanel();
-
-            return false;
-
-        }
-
-
-        updateUserUI();
-
-        openMainWebsite();
-
-        return true;
-
-
-    } catch (error) {
-
-        console.error(
-            "Session check failed:",
-            error
-        );
-
-        clearUserSession();
-
-        if (accountGate) {
-
-            accountGate.style.display =
-                "";
-
-        }
-
-        if (mainWebsite) {
-
-            mainWebsite.style.display =
-                "none";
-
-        }
-
-        showLoginPanel();
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   VERIFY USER
-   ========================================================= */
-
-async function verifyCurrentUserSession() {
+async function verifyCurrentUserSession(
+    preserveOnFailure = false
+) {
 
     const token =
         getUserToken();
@@ -1062,43 +1068,59 @@ async function verifyCurrentUserSession() {
 
         const data =
             await apiRequest(
-                "/user/me",
-                {
-                    method: "GET"
-                }
+                "/user/me"
             );
 
 
         if (
-            !data ||
-            !data.user
+            data &&
+            data.user
         ) {
 
-            return false;
+            currentUser =
+                data.user;
+
+
+            /*
+               Keep the existing token.
+            */
+
+            localStorage.setItem(
+                STORAGE_KEYS.USER,
+                JSON.stringify(
+                    data.user
+                )
+            );
+
+
+            return true;
 
         }
 
 
-        saveUser(
-            data.user,
-            token
-        );
-
-
-        return true;
-
+        return false;
 
     } catch (error) {
 
-        console.error(
+        console.warn(
             "Session verification failed:",
             error
         );
 
 
+        /*
+           Only destroy the session when we know the
+           server rejected the token.
+
+           For network/server errors, preserve it.
+        */
+
         if (
-            error.status === 401 ||
-            error.status === 403
+            !preserveOnFailure &&
+            (
+                error.status === 401 ||
+                error.status === 403
+            )
         ) {
 
             clearUserSession();
@@ -1114,62 +1136,214 @@ async function verifyCurrentUserSession() {
 
 
 /* =========================================================
-   OPEN MAIN WEBSITE
+   CHECK USER SESSION
    ========================================================= */
 
-function openMainWebsite() {
+async function checkUserSession() {
 
-    const accountGate =
+    const token =
+        getUserToken();
+
+
+    if (!token) {
+
+        showAccountGate();
+
+        return false;
+
+    }
+
+
+    const storedUser =
+        getStoredUser();
+
+
+    if (storedUser) {
+
+        currentUser =
+            storedUser;
+
+    }
+
+
+    const valid =
+        await verifyCurrentUserSession(
+            false
+        );
+
+
+    if (valid) {
+
+        updateUserUI(
+            currentUser
+        );
+
+        openMainWebsite();
+
+        return true;
+
+    }
+
+
+    /*
+       If verification failed because of a temporary
+       network/server problem, keep the local session
+       and try to show the main site when possible.
+    */
+
+    if (
+        getUserToken() &&
+        currentUser &&
+        !(
+            storedUser === null
+        )
+    ) {
+
+        updateUserUI(
+            currentUser
+        );
+
+        openMainWebsite();
+
+        return true;
+
+    }
+
+
+    clearUserSession();
+
+    showAccountGate();
+
+    showLoginPanel();
+
+    return false;
+
+}
+
+
+/* =========================================================
+   ACCOUNT GATE
+   ========================================================= */
+
+function showAccountGate() {
+
+    const gate =
         document.getElementById(
             "accountGate"
         );
 
-    const mainWebsite =
+
+    const main =
         document.getElementById(
             "mainWebsite"
         );
 
 
-    /*
-     * This is the important part for the
-     * login -> main website transition.
-     */
+    if (gate) {
 
-    if (accountGate) {
+        gate.style.display =
+            "";
 
-        accountGate.style.display =
+    }
+
+
+    if (main) {
+
+        main.style.display =
+            "none";
+
+    }
+
+}
+
+
+/* =========================================================
+   OPEN MAIN WEBSITE
+   ========================================================= */
+
+function openMainWebsite() {
+
+    const gate =
+        document.getElementById(
+            "accountGate"
+        );
+
+
+    const main =
+        document.getElementById(
+            "mainWebsite"
+        );
+
+
+    if (gate) {
+
+        gate.style.display =
             "none";
 
     }
 
 
-    if (mainWebsite) {
+    if (main) {
 
-        mainWebsite.style.display =
-            "block";
+        main.style.display =
+            "";
 
     }
 
 
-    updateUserUI();
+    updateUserUI(
+        currentUser ||
+        getStoredUser()
+    );
+
 
     closeMobileMenu();
 
 
     /*
-     * Load the site's content after the
-     * authenticated area becomes visible.
-     */
+       These functions intentionally run independently.
+       One failed optional request must not prevent the
+       main website from opening.
+    */
 
-    loadPredictions();
+    loadPredictions().catch(
+        (error) => console.warn(
+            "Predictions loading failed:",
+            error
+        )
+    );
 
-    loadRegularBettingCodes();
 
-    loadResults();
+    loadRegularBettingCodes().catch(
+        (error) => console.warn(
+            "Betting codes loading failed:",
+            error
+        )
+    );
 
-    refreshRegularAccessStatus();
 
-    loadNotifications();
+    loadResults().catch(
+        (error) => console.warn(
+            "Results loading failed:",
+            error
+        )
+    );
+
+
+    refreshRegularAccessStatus().catch(
+        (error) => console.warn(
+            "Access status loading failed:",
+            error
+        )
+    );
+
+
+    loadNotifications().catch(
+        (error) => console.warn(
+            "Notifications loading failed:",
+            error
+        )
+    );
 
 }
 
@@ -1178,36 +1352,64 @@ function openMainWebsite() {
    UPDATE USER UI
    ========================================================= */
 
-function updateUserUI() {
+function updateUserUI(
+    user
+) {
 
-    const userName =
-        document.getElementById(
-            "userName"
+    if (!user) {
+
+        return;
+
+    }
+
+
+    const possibleNames = [
+        user.name,
+        user.username,
+        user.email
+    ];
+
+
+    const displayName =
+        possibleNames.find(
+            (value) =>
+                value &&
+                String(value).trim()
+        ) ||
+        "User";
+
+
+    const elements =
+        document.querySelectorAll(
+            "#userName, #headerUserName, [data-user-name]"
         );
 
 
-    if (!userName) {
+    elements.forEach(
+        (element) => {
 
-        return;
+            element.textContent =
+                displayName;
 
-    }
-
-
-    if (!currentUser) {
-
-        userName.textContent =
-            "User";
-
-        return;
-
-    }
+        }
+    );
 
 
-    userName.textContent =
-        currentUser.name ||
-        currentUser.username ||
-        currentUser.email ||
-        "User";
+    const emailElements =
+        document.querySelectorAll(
+            "[data-user-email]"
+        );
+
+
+    emailElements.forEach(
+        (element) => {
+
+            element.textContent =
+                user.email ||
+                "";
+
+        }
+    );
 
 }
 
@@ -1220,7 +1422,7 @@ function setupNavigation() {
 
     const links =
         document.querySelectorAll(
-            "#mainNav a[href]"
+            "a[href]"
         );
 
 
@@ -1228,8 +1430,21 @@ function setupNavigation() {
         (link) => {
 
             if (
-                link.dataset.initialized
+                link.dataset.navigationInitialized
             ) {
+
+                return;
+
+            }
+
+
+            const href =
+                link.getAttribute(
+                    "href"
+                );
+
+
+            if (!href) {
 
                 return;
 
@@ -1246,7 +1461,7 @@ function setupNavigation() {
             );
 
 
-            link.dataset.initialized =
+            link.dataset.navigationInitialized =
                 "true";
 
         }
@@ -1266,15 +1481,21 @@ function setupMobileMenu() {
             "menuButton"
         );
 
+
     const nav =
         document.getElementById(
             "mainNav"
         );
 
 
+    if (!button || !nav) {
+
+        return;
+
+    }
+
+
     if (
-        !button ||
-        !nav ||
         button.dataset.initialized
     ) {
 
@@ -1285,7 +1506,9 @@ function setupMobileMenu() {
 
     button.addEventListener(
         "click",
-        () => {
+        (event) => {
+
+            event.preventDefault();
 
             const open =
                 nav.classList.toggle(
@@ -1295,7 +1518,9 @@ function setupMobileMenu() {
 
             button.setAttribute(
                 "aria-expanded",
-                String(open)
+                open
+                    ? "true"
+                    : "false"
             );
 
         }
@@ -1314,6 +1539,7 @@ function closeMobileMenu() {
         document.getElementById(
             "mainNav"
         );
+
 
     const button =
         document.getElementById(
@@ -1354,8 +1580,14 @@ function setupSignOut() {
         );
 
 
+    if (!button) {
+
+        return;
+
+    }
+
+
     if (
-        !button ||
         button.dataset.initialized
     ) {
 
@@ -1376,7 +1608,7 @@ function setupSignOut() {
 }
 
 
-async function handleSignOut(
+function handleSignOut(
     event
 ) {
 
@@ -1387,66 +1619,42 @@ async function handleSignOut(
     }
 
 
-    try {
-
-        if (getUserToken()) {
-
-            await apiRequest(
-                "/logout",
-                {
-                    method: "POST"
-                }
-            );
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Server logout failed:",
-            error.message
-        );
-
-    }
-
-
     clearUserSession();
 
 
-    const mainWebsite =
+    const main =
         document.getElementById(
             "mainWebsite"
         );
 
-    const accountGate =
-        document.getElementById(
-            "accountGate"
-        );
 
+    if (main) {
 
-    if (mainWebsite) {
-
-        mainWebsite.style.display =
+        main.style.display =
             "none";
 
     }
 
 
-    if (accountGate) {
-
-        accountGate.style.display =
-            "";
-
-    }
-
+    showAccountGate();
 
     showLoginPanel();
 
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    const loginMessage =
+        document.getElementById(
+            "loginMessage"
+        );
+
+
+    showElementMessage(
+        loginMessage,
+        "You have been signed out.",
+        "info"
+    );
+
+
+    closeMobileMenu();
 
 }
 
@@ -1466,8 +1674,14 @@ function setupSearch() {
         );
 
 
+    if (!input) {
+
+        return;
+
+    }
+
+
     if (
-        !input ||
         input.dataset.initialized
     ) {
 
@@ -1481,9 +1695,11 @@ function setupSearch() {
         () => {
 
             currentSearchTerm =
-                input.value
-                    .trim()
-                    .toLowerCase();
+                String(
+                    input.value || ""
+                )
+                .trim()
+                .toLowerCase();
 
 
             renderPredictions();
@@ -1499,18 +1715,18 @@ function setupSearch() {
 
 
 /* =========================================================
-   LEAGUE FILTER
+   LEAGUE FILTERS
    ========================================================= */
 
 function setupLeagueFilters() {
 
-    const buttons =
+    const filters =
         document.querySelectorAll(
             "[data-league-filter]"
         );
 
 
-    buttons.forEach(
+    filters.forEach(
         (button) => {
 
             if (
@@ -1524,17 +1740,20 @@ function setupLeagueFilters() {
 
             button.addEventListener(
                 "click",
-                () => {
+                (event) => {
+
+                    event.preventDefault();
+
 
                     currentLeagueFilter =
-                        (
+                        String(
                             button.dataset.leagueFilter ||
                             "all"
                         )
                         .toLowerCase();
 
 
-                    buttons.forEach(
+                    filters.forEach(
                         (item) => {
 
                             item.classList.remove(
@@ -1566,18 +1785,18 @@ function setupLeagueFilters() {
 
 
 /* =========================================================
-   RESULT FILTER
+   RESULT FILTERS
    ========================================================= */
 
 function setupResultFilters() {
 
-    const buttons =
+    const filters =
         document.querySelectorAll(
             "[data-result-filter]"
         );
 
 
-    buttons.forEach(
+    filters.forEach(
         (button) => {
 
             if (
@@ -1591,17 +1810,20 @@ function setupResultFilters() {
 
             button.addEventListener(
                 "click",
-                () => {
+                (event) => {
+
+                    event.preventDefault();
+
 
                     currentResultFilter =
-                        (
+                        String(
                             button.dataset.resultFilter ||
                             "all"
                         )
                         .toLowerCase();
 
 
-                    buttons.forEach(
+                    filters.forEach(
                         (item) => {
 
                             item.classList.remove(
@@ -1630,2752 +1852,33 @@ function setupResultFilters() {
     );
 
 }
-// ======================================================
-// FLEX HUB PREDICTIONS - APP.JS
-// PART 2 / 3
-// PREDICTIONS, RESULTS, REGULAR ACCESS & VIP
-// ======================================================
 
 
-// ======================================================
-// LOAD REGULAR PREDICTIONS
-// ======================================================
+/* =========================================================
+   FOOTER YEAR
+   ========================================================= */
 
-async function loadPredictions() {
+function setupFooterYear() {
 
-    try {
-
-        const data = await apiRequest("/predictions");
-
-        let predictions = [];
-
-        if (Array.isArray(data)) {
-
-            predictions = data;
-
-        } else if (
-            data &&
-            Array.isArray(data.predictions)
-        ) {
-
-            predictions = data.predictions;
-
-        }
-
-        allPredictions = predictions;
-
-        renderPredictions();
-
-        updatePredictionStats();
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load predictions:",
-            error
-        );
-
-        allPredictions = [];
-
-        renderPredictions();
-
-        showTemporaryToast(
-            "Unable to load predictions right now.",
-            "error"
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// RENDER REGULAR PREDICTIONS
-// ======================================================
-
-function renderPredictions() {
-
-    const grid =
-        document.getElementById("predictionsGrid");
-
-    if (!grid) {
-
-        return;
-
-    }
-
-
-    const searchInput =
-        document.getElementById("predictionSearch") ||
-        document.getElementById("searchInput");
-
-
-    const searchTerm =
-        searchInput
-            ? searchInput.value
-                .trim()
-                .toLowerCase()
-            : "";
-
-
-    let filtered =
-        Array.isArray(allPredictions)
-            ? [...allPredictions]
-            : [];
-
-
-    // --------------------------------------------------
-    // SEARCH
-    // --------------------------------------------------
-
-    if (searchTerm) {
-
-        filtered =
-            filtered.filter(
-                (item) => {
-
-                    const searchableText = [
-
-                        item.homeTeam,
-                        item.home_team,
-
-                        item.awayTeam,
-                        item.away_team,
-
-                        item.league,
-                        item.leagueName,
-
-                        item.prediction,
-                        item.tip,
-                        item.pick,
-
-                        item.category,
-                        item.type
-
-                    ]
-                        .filter(Boolean)
-                        .join(" ")
-                        .toLowerCase();
-
-
-                    return searchableText.includes(
-                        searchTerm
-                    );
-
-                }
-            );
-
-    }
-
-
-    // --------------------------------------------------
-    // LEAGUE FILTER
-    // --------------------------------------------------
-
-    if (
-        currentLeagueFilter &&
-        currentLeagueFilter !== "all"
-    ) {
-
-        filtered =
-            filtered.filter(
-                (item) => {
-
-                    const league =
-                        (
-                            item.league ||
-                            item.leagueName ||
-                            ""
-                        )
-                        .trim()
-                        .toLowerCase();
-
-
-                    return league ===
-                        currentLeagueFilter;
-
-                }
-            );
-
-    }
-
-
-    // --------------------------------------------------
-    // FEATURED-ONLY GRID
-    // --------------------------------------------------
-
-    const featuredOnly =
-        grid.dataset.homeFeaturedOnly === "true";
-
-
-    if (featuredOnly) {
-
-        filtered =
-            filtered.filter(
-                (item) =>
-                    item.featured === true ||
-                    item.featured === 1 ||
-                    item.featured === "true"
-            );
-
-    }
-
-
-    // --------------------------------------------------
-    // EMPTY STATE
-    // --------------------------------------------------
-
-    if (!filtered.length) {
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚽</div>
-                <h3>No predictions found</h3>
-                <p>
-                    Try another team, league or prediction search.
-                </p>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------
-    // CREATE CARDS
-    // --------------------------------------------------
-
-    grid.innerHTML =
-        filtered
-            .map(createPredictionCard)
-            .join("");
-
-
-
-    // Load team badges after cards exist
-    loadTeamBadges();
-
-}
-
-
-// ======================================================
-// CREATE REGULAR PREDICTION CARD
-// ======================================================
-
-function createPredictionCard(
-    prediction
-) {
-
-    const homeTeam =
-        prediction.homeTeam ||
-        prediction.home_team ||
-        "Home Team";
-
-
-    const awayTeam =
-        prediction.awayTeam ||
-        prediction.away_team ||
-        "Away Team";
-
-
-    const league =
-        prediction.league ||
-        prediction.leagueName ||
-        "Football";
-
-
-    const tip =
-        prediction.prediction ||
-        prediction.tip ||
-        prediction.pick ||
-        "Prediction unavailable";
-
-
-    const analysis =
-        prediction.analysis ||
-        prediction.reason ||
-        "";
-
-
-    const odds =
-        prediction.odds ||
-        prediction.expectedOdds ||
-        "";
-
-
-    const category =
-        prediction.category ||
-        prediction.type ||
-        "regular";
-
-
-    const matchDate =
-        prediction.matchDate ||
-        prediction.match_date ||
-        prediction.date ||
-        "";
-
-
-    const matchTime =
-        prediction.matchTime ||
-        prediction.match_time ||
-        prediction.time ||
-        "";
-
-
-    const status =
-        prediction.status ||
-        "pending";
-
-
-    const predictionId =
-        prediction.id ||
-        "";
-
-
-    const statusClass =
-        String(status)
-            .toLowerCase()
-            .replace(/[^a-z0-9_-]/g, "");
-
-
-    return `
-        <article
-            class="prediction-card"
-            data-prediction-id="${escapeHtml(
-                predictionId
-            )}"
-        >
-
-            <div class="prediction-card-top">
-
-                <span class="prediction-league">
-                    ${escapeHtml(league)}
-                </span>
-
-                <span
-                    class="prediction-status status-${escapeHtml(
-                        statusClass
-                    )}"
-                >
-                    ${escapeHtml(
-                        formatStatus(status)
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="prediction-match">
-
-                <div class="team team-home">
-
-                    <div
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            homeTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            getTeamInitials(homeTeam)
-                        )}
-                    </div>
-
-                    <strong>
-                        ${escapeHtml(homeTeam)}
-                    </strong>
-
-                </div>
-
-
-                <div class="match-center">
-
-                    <span class="match-date">
-                        ${escapeHtml(
-                            formatMatchDate(
-                                matchDate
-                            )
-                        )}
-                    </span>
-
-                    <span class="match-time">
-                        ${escapeHtml(
-                            matchTime || "--:--"
-                        )}
-                    </span>
-
-                    <span class="match-vs">
-                        VS
-                    </span>
-
-                </div>
-
-
-                <div class="team team-away">
-
-                    <div
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            awayTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            getTeamInitials(awayTeam)
-                        )}
-                    </div>
-
-                    <strong>
-                        ${escapeHtml(awayTeam)}
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="prediction-content">
-
-                <div class="prediction-label">
-                    PREDICTION
-                </div>
-
-                <div class="prediction-pick">
-                    ${escapeHtml(tip)}
-                </div>
-
-
-                ${
-                    odds
-                        ? `
-                            <div class="prediction-odds">
-                                Expected Odds:
-                                <strong>
-                                    ${escapeHtml(odds)}
-                                </strong>
-                            </div>
-                        `
-                        : ""
-                }
-
-
-                ${
-                    analysis
-                        ? `
-                            <div class="prediction-analysis">
-                                ${escapeHtml(analysis)}
-                            </div>
-                        `
-                        : ""
-                }
-
-            </div>
-
-
-            <div class="prediction-card-bottom">
-
-                <span class="prediction-category">
-                    ${escapeHtml(
-                        capitalize(category)
-                    )}
-                </span>
-
-
-                <span
-                    class="match-countdown"
-                    data-match-date="${escapeHtml(
-                        matchDate
-                    )}"
-                    data-match-time="${escapeHtml(
-                        matchTime
-                    )}"
-                >
-                    ${escapeHtml(
-                        getMatchCountdown(
-                            matchDate,
-                            matchTime
-                        )
-                    )}
-                </span>
-
-            </div>
-
-        </article>
-    `;
-
-}
-
-
-// ======================================================
-// TEAM INITIALS
-// ======================================================
-
-function getTeamInitials(
-    teamName
-) {
-
-    if (!teamName) {
-
-        return "FC";
-
-    }
-
-
-    const words =
-        String(teamName)
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean);
-
-
-    if (words.length === 1) {
-
-        return words[0]
-            .substring(0, 2)
-            .toUpperCase();
-
-    }
-
-
-    return (
-        words[0][0] +
-        words[words.length - 1][0]
-    ).toUpperCase();
-
-}
-
-
-// ======================================================
-// MATCH COUNTDOWN
-// ======================================================
-
-function getMatchCountdown(
-    matchDate,
-    matchTime
-) {
-
-    if (!matchDate) {
-
-        return "Upcoming";
-
-    }
-
-
-    try {
-
-        let dateString =
-            String(matchDate).trim();
-
-
-        if (
-            matchTime &&
-            !dateString.includes("T")
-        ) {
-
-            dateString +=
-                `T${String(matchTime).trim()}`;
-
-        }
-
-
-        const matchTimestamp =
-            new Date(dateString).getTime();
-
-
-        if (Number.isNaN(matchTimestamp)) {
-
-            return "Upcoming";
-
-        }
-
-
-        const now =
-            Date.now();
-
-
-        const difference =
-            matchTimestamp - now;
-
-
-        if (difference <= 0) {
-
-            return "Started";
-
-        }
-
-
-        const totalMinutes =
-            Math.floor(
-                difference /
-                (1000 * 60)
-            );
-
-
-        const days =
-            Math.floor(
-                totalMinutes / 1440
-            );
-
-
-        const hours =
-            Math.floor(
-                (totalMinutes % 1440) / 60
-            );
-
-
-        const minutes =
-            totalMinutes % 60;
-
-
-        if (days > 0) {
-
-            return `${days}d ${hours}h`;
-
-        }
-
-
-        if (hours > 0) {
-
-            return `${hours}h ${minutes}m`;
-
-        }
-
-
-        return `${minutes}m`;
-
-    } catch (error) {
-
-        return "Upcoming";
-
-    }
-
-}
-
-
-// ======================================================
-// LOAD RESULTS
-// ======================================================
-
-async function loadResults() {
-
-    try {
-
-        const data =
-            await apiRequest("/results");
-
-
-        let results = [];
-
-
-        if (Array.isArray(data)) {
-
-            results = data;
-
-        } else if (
-            data &&
-            Array.isArray(data.results)
-        ) {
-
-            results = data.results;
-
-        }
-
-
-        allResults = results;
-
-        renderResults();
-
-        updatePredictionStats();
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load results:",
-            error
-        );
-
-        allResults = [];
-
-        renderResults();
-
-    }
-
-}
-
-
-// ======================================================
-// RENDER RESULTS
-// ======================================================
-
-function renderResults() {
-
-    const grid =
-        document.getElementById("resultsGrid") ||
-        document.getElementById("recentResultsGrid") ||
-        document.getElementById("resultsContainer");
-
-
-    if (!grid) {
-
-        return;
-
-    }
-
-
-    let filtered =
-        Array.isArray(allResults)
-            ? [...allResults]
-            : [];
-
-
-    if (
-        currentResultFilter &&
-        currentResultFilter !== "all"
-    ) {
-
-        filtered =
-            filtered.filter(
-                (item) => {
-
-                    const status =
-                        String(
-                            item.status ||
-                            ""
-                        )
-                        .toLowerCase()
-                        .trim();
-
-
-                    return status ===
-                        currentResultFilter;
-
-                }
-            );
-
-    }
-
-
-    if (!filtered.length) {
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    📊
-                </div>
-
-                <h3>No results available</h3>
-
-                <p>
-                    Completed prediction results
-                    will appear here.
-                </p>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    grid.innerHTML =
-        filtered
-            .map(createResultCard)
-            .join("");
-
-}
-
-
-// ======================================================
-// CREATE RESULT CARD
-// ======================================================
-
-function createResultCard(
-    result
-) {
-
-    const homeTeam =
-        result.homeTeam ||
-        result.home_team ||
-        "Home Team";
-
-
-    const awayTeam =
-        result.awayTeam ||
-        result.away_team ||
-        "Away Team";
-
-
-    const league =
-        result.league ||
-        result.leagueName ||
-        "Football";
-
-
-    const prediction =
-        result.prediction ||
-        result.tip ||
-        result.pick ||
-        "Prediction";
-
-
-    const homeScore =
-        result.homeScore ??
-        result.home_score ??
-        "-";
-
-
-    const awayScore =
-        result.awayScore ??
-        result.away_score ??
-        "-";
-
-
-    const status =
-        result.status ||
-        "pending";
-
-
-    const matchDate =
-        result.matchDate ||
-        result.match_date ||
-        result.date ||
-        "";
-
-
-    const matchTime =
-        result.matchTime ||
-        result.match_time ||
-        result.time ||
-        "";
-
-
-    const statusClass =
-        String(status)
-            .toLowerCase()
-            .replace(/[^a-z0-9_-]/g, "");
-
-
-    return `
-        <article class="result-card">
-
-            <div class="result-card-header">
-
-                <span class="result-league">
-                    ${escapeHtml(league)}
-                </span>
-
-                <span
-                    class="result-status status-${escapeHtml(
-                        statusClass
-                    )}"
-                >
-                    ${escapeHtml(
-                        formatStatus(status)
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="result-match">
-
-                <div class="result-team">
-                    <strong>
-                        ${escapeHtml(homeTeam)}
-                    </strong>
-
-                    <span class="result-score">
-                        ${escapeHtml(homeScore)}
-                    </span>
-                </div>
-
-
-                <div class="result-separator">
-                    -
-                </div>
-
-
-                <div class="result-team">
-                    <span class="result-score">
-                        ${escapeHtml(awayScore)}
-                    </span>
-
-                    <strong>
-                        ${escapeHtml(awayTeam)}
-                    </strong>
-                </div>
-
-            </div>
-
-
-            <div class="result-details">
-
-                <span>
-                    Prediction:
-                </span>
-
-                <strong>
-                    ${escapeHtml(prediction)}
-                </strong>
-
-            </div>
-
-
-            <div class="result-date">
-
-                ${escapeHtml(
-                    formatMatchDate(
-                        matchDate
-                    )
-                )}
-
-                ${
-                    matchTime
-                        ? ` • ${escapeHtml(matchTime)}`
-                        : ""
-                }
-
-            </div>
-
-        </article>
-    `;
-
-}
-
-
-// ======================================================
-// UPDATE PREDICTION STATISTICS
-// ======================================================
-
-function updatePredictionStats() {
-
-    const total =
-        Array.isArray(allPredictions)
-            ? allPredictions.length
-            : 0;
-
-
-    const resultsCount =
-        Array.isArray(allResults)
-            ? allResults.length
-            : 0;
-
-
-    const leagueSet =
-        new Set();
-
-
-    if (Array.isArray(allPredictions)) {
-
-        allPredictions.forEach(
-            (item) => {
-
-                const league =
-                    item.league ||
-                    item.leagueName;
-
-
-                if (league) {
-
-                    leagueSet.add(
-                        String(league)
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-
-    const stats = {
-
-        totalPredictions: total,
-
-        predictionsCount: total,
-
-        totalResults: resultsCount,
-
-        resultsCount: resultsCount,
-
-        totalLeagues: leagueSet.size,
-
-        leaguesCount: leagueSet.size
-
-    };
-
-
-    const elements = {
-
-        totalPredictions:
-            document.getElementById(
-                "totalPredictions"
-            ),
-
-        predictionsCount:
-            document.getElementById(
-                "predictionsCount"
-            ),
-
-        totalResults:
-            document.getElementById(
-                "totalResults"
-            ),
-
-        resultsCount:
-            document.getElementById(
-                "resultsCount"
-            ),
-
-        totalLeagues:
-            document.getElementById(
-                "totalLeagues"
-            ),
-
-        leaguesCount:
-            document.getElementById(
-                "leaguesCount"
-            )
-
-    };
-
-
-    Object.keys(elements)
-        .forEach(
-            (key) => {
-
-                if (elements[key]) {
-
-                    elements[key].textContent =
-                        stats[key];
-
-                }
-
-            }
-        );
-
-}
-
-
-// ======================================================
-// REGULAR ACCESS / PAYMENT GATE
-// ======================================================
-
-function setupRegularPaymentGate() {
-
-    const paymentButtons =
-        document.querySelectorAll(
-            "[data-payment-button], #paymentButton, #payNowButton"
-        );
-
-
-    paymentButtons.forEach(
-        (button) => {
-
-            if (
-                button.dataset.initialized
-            ) {
-
-                return;
-
-            }
-
-
-            button.addEventListener(
-                "click",
-                initializeRegularPayment
-            );
-
-
-            button.dataset.initialized =
-                "true";
-
-        }
-    );
-
-
-    refreshRegularAccessStatus();
-
-}
-
-
-// ======================================================
-// INITIALIZE REGULAR PAYMENT
-// ======================================================
-
-async function initializeRegularPayment(
-    event
-) {
-
-    if (event) {
-
-        event.preventDefault();
-
-    }
-
-
-    const button =
-        event &&
-        event.currentTarget
-            ? event.currentTarget
-            : null;
-
-
-    setButtonLoading(
-        button,
-        true,
-        "Processing..."
-    );
-
-
-    try {
-
-        const data =
-            await apiRequest(
-                "/payments/initialize",
-                {
-                    method: "POST",
-
-                    body: JSON.stringify({
-                        amount: 50
-                    })
-                }
-            );
-
-
-        if (
-            data &&
-            data.paymentUrl
-        ) {
-
-            window.location.href =
-                data.paymentUrl;
-
-            return;
-
-        }
-
-
-        if (
-            data &&
-            data.authorization_url
-        ) {
-
-            window.location.href =
-                data.authorization_url;
-
-            return;
-
-        }
-
-
-        showTemporaryToast(
-            "Payment service is not available yet.",
-            "error"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Payment initialization error:",
-            error
-        );
-
-
-        showTemporaryToast(
-            "Payment service is currently unavailable.",
-            "error"
-        );
-
-    } finally {
-
-        setButtonLoading(
-            button,
-            false
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// REFRESH REGULAR ACCESS
-// ======================================================
-
-async function refreshRegularAccessStatus() {
-
-    const token =
-        getAuthToken();
-
-
-    if (!token) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const data =
-            await apiRequest(
-                "/user/access"
-            );
-
-
-        updateRegularAccessUI(
-            data
-        );
-
-    } catch (error) {
-
-        console.warn(
-            "Regular access check failed:",
-            error
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// UPDATE REGULAR ACCESS UI
-// ======================================================
-
-function updateRegularAccessUI(
-    data
-) {
-
-    if (!data) {
-
-        return;
-
-    }
-
-
-    const active =
-        data.active === true ||
-        data.hasAccess === true ||
-        data.accessActive === true;
-
-
-    const expiresAt =
-        data.expiresAt ||
-        data.expires_at;
-
-
-    const accessElements =
-        document.querySelectorAll(
-            "[data-access-status]"
-        );
-
-
-    accessElements.forEach(
-        (element) => {
-
-            element.textContent =
-                active
-                    ? (
-                        expiresAt
-                            ? `Active until ${formatExpiry(expiresAt)}`
-                            : "Active"
-                    )
-                    : "Inactive";
-
-        }
-    );
-
-
-    const expiryElements =
-        document.querySelectorAll(
-            "[data-access-expiry]"
-        );
-
-
-    expiryElements.forEach(
-        (element) => {
-
-            element.textContent =
-                expiresAt
-                    ? formatExpiry(expiresAt)
-                    : "Not active";
-
-        }
-    );
-
-}
-
-
-// ======================================================
-// LOAD REGULAR BETTING CODES
-// ======================================================
-
-async function loadRegularBettingCodes() {
-
-    const grid =
+    const element =
         document.getElementById(
-            "bettingCodesGrid"
+            "currentYear"
         );
 
 
-    if (!grid) {
+    if (element) {
 
-        return;
-
-    }
-
-
-    try {
-
-        const data =
-            await apiRequest(
-                "/betting-codes"
-            );
-
-
-        let codes = [];
-
-
-        if (Array.isArray(data)) {
-
-            codes = data;
-
-        } else if (
-            data &&
-            Array.isArray(data.codes)
-        ) {
-
-            codes = data.codes;
-
-        }
-
-
-        if (!codes.length) {
-
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        🎯
-                    </div>
-
-                    <h3>No codes available</h3>
-
-                    <p>
-                        New prediction-related codes
-                        will appear here when published.
-                    </p>
-                </div>
-            `;
-
-            return;
-
-        }
-
-
-        grid.innerHTML =
-            codes
-                .map(createBettingCodeCard)
-                .join("");
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load betting codes:",
-            error
-        );
-
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>Codes unavailable</h3>
-
-                <p>
-                    Please try again later.
-                </p>
-            </div>
-        `;
+        element.textContent =
+            new Date().getFullYear();
 
     }
 
 }
 
 
-// ======================================================
-// CREATE REGULAR CODE CARD
-// ======================================================
-
-function createBettingCodeCard(
-    item
-) {
-
-    const bookmaker =
-        item.bookmaker ||
-        item.provider ||
-        "Code";
-
-
-    const code =
-        item.code ||
-        "";
-
-
-    const description =
-        item.description ||
-        "";
-
-
-    const category =
-        item.category ||
-        "regular";
-
-
-    return `
-        <article class="betting-code-card">
-
-            <div class="betting-code-header">
-
-                <span>
-                    ${escapeHtml(bookmaker)}
-                </span>
-
-                <span>
-                    ${escapeHtml(
-                        capitalize(category)
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="betting-code-value">
-
-                <code>
-                    ${escapeHtml(code)}
-                </code>
-
-                <button
-                    type="button"
-                    class="copy-code-btn"
-                    onclick="copyBettingCode('${escapeJs(code)}')"
-                >
-                    Copy
-                </button>
-
-            </div>
-
-
-            ${
-                description
-                    ? `
-                        <p class="betting-code-description">
-                            ${escapeHtml(description)}
-                        </p>
-                    `
-                    : ""
-            }
-
-        </article>
-    `;
-
-}
-
-
-// ======================================================
-// COPY REGULAR CODE
-// ======================================================
-
-async function copyBettingCode(
-    code
-) {
-
-    if (!code) {
-
-        return;
-
-    }
-
-
-    try {
-
-        await navigator.clipboard.writeText(
-            code
-        );
-
-
-        showTemporaryToast(
-            "Code copied successfully.",
-            "success"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Copy failed:",
-            error
-        );
-
-
-        showTemporaryToast(
-            "Unable to copy code.",
-            "error"
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// VIP PAGE SETUP
-// ======================================================
-
-function setupVipPage() {
-
-    const vipAccessForm =
-        document.getElementById(
-            "vipAccessForm"
-        );
-
-
-    const vipPage =
-        Boolean(
-            vipAccessForm ||
-            document.getElementById(
-                "vipPredictionsGrid"
-            ) ||
-            document.getElementById(
-                "vipContent"
-            )
-        );
-
-
-    if (!vipPage) {
-
-        return;
-
-    }
-
-
-    setupVipLogout();
-
-    verifyUserForVipPage();
-
-    setupVipAccessForm();
-
-}
-
-
-// ======================================================
-// VERIFY USER FOR VIP PAGE
-// ======================================================
-
-async function verifyUserForVipPage() {
-
-    const token =
-        getAuthToken();
-
-
-    if (!token) {
-
-        updateVipStatusUI({
-            active: false,
-            message:
-                "Please log in to access VIP."
-        });
-
-        return;
-
-    }
-
-
-    try {
-
-        await verifyCurrentUserSession();
-
-    } catch (error) {
-
-        console.warn(
-            "VIP user verification failed:",
-            error
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// VIP ACCESS FORM
-// ======================================================
-
-function setupVipAccessForm() {
-
-    const form =
-        document.getElementById(
-            "vipAccessForm"
-        );
-
-
-    if (!form) {
-
-        return;
-
-    }
-
-
-    if (form.dataset.initialized) {
-
-        return;
-
-    }
-
-
-    form.addEventListener(
-        "submit",
-        handleVipAccess
-    );
-
-
-    form.dataset.initialized =
-        "true";
-
-}
-
-
-// ======================================================
-// HANDLE VIP ACCESS
-// ======================================================
-
-async function handleVipAccess(
-    event
-) {
-
-    if (event) {
-
-        event.preventDefault();
-
-    }
-
-
-    const input =
-        document.getElementById(
-            "vipAccessCode"
-        ) ||
-        document.getElementById(
-            "accessCode"
-        );
-
-
-    const code =
-        input
-            ? input.value.trim()
-            : "";
-
-
-    if (!code) {
-
-        showVipMessage(
-            "Please enter your VIP access code.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const button =
-        event &&
-        event.submitter
-            ? event.submitter
-            : null;
-
-
-    setButtonLoading(
-        button,
-        true,
-        "Verifying..."
-    );
-
-
-    try {
-
-        const data =
-            await apiRequest(
-                "/vip/access",
-                {
-                    method: "POST",
-
-                    body: JSON.stringify({
-                        code
-                    })
-                }
-            );
-
-
-        const vipToken =
-            data &&
-            (
-                data.vipToken ||
-                data.token ||
-                data.accessToken
-            );
-
-
-        if (vipToken) {
-
-            saveVipToken(
-                vipToken
-            );
-
-        }
-
-
-        showVipMessage(
-            data.message ||
-            "VIP access activated successfully.",
-            "success"
-        );
-
-
-        if (input) {
-
-            input.value = "";
-
-        }
-
-
-        await checkVipStatus();
-
-        await loadVipPredictions();
-
-        await loadVipBettingCodes();
-
-    } catch (error) {
-
-        console.error(
-            "VIP access error:",
-            error
-        );
-
-
-        showVipMessage(
-            error.message ||
-            "Invalid or expired VIP access code.",
-            "error"
-        );
-
-    } finally {
-
-        setButtonLoading(
-            button,
-            false
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// CHECK VIP STATUS
-// ======================================================
-
-async function checkVipStatus() {
-
-    const vipToken =
-        getVipToken();
-
-
-    if (!vipToken) {
-
-        updateVipStatusUI({
-            active: false
-        });
-
-        return false;
-
-    }
-
-
-    try {
-
-        const headers = {};
-
-
-        headers.Authorization =
-            `Bearer ${vipToken}`;
-
-
-        const data =
-            await apiRequest(
-                "/vip/status",
-                {
-                    headers
-                }
-            );
-
-
-        updateVipStatusUI(
-            data
-        );
-
-
-        const active =
-            data &&
-            (
-                data.active === true ||
-                data.hasAccess === true ||
-                data.valid === true
-            );
-
-
-        return active;
-
-    } catch (error) {
-
-        console.error(
-            "VIP status error:",
-            error
-        );
-
-
-        updateVipStatusUI({
-            active: false,
-            message:
-                error.message ||
-                "VIP access could not be verified."
-        });
-
-
-        return false;
-
-    }
-
-}
-
-
-// ======================================================
-// UPDATE VIP STATUS UI
-// ======================================================
-
-function updateVipStatusUI(
-    data
-) {
-
-    data =
-        data || {};
-
-
-    const active =
-        data.active === true ||
-        data.hasAccess === true ||
-        data.valid === true;
-
-
-    const vipContent =
-        document.getElementById(
-            "vipContent"
-        );
-
-
-    const vipLocked =
-        document.getElementById(
-            "vipLocked"
-        );
-
-
-    const messageElement =
-        document.getElementById(
-            "vipAccessMessage"
-        ) ||
-        document.getElementById(
-            "vipMessage"
-        );
-
-
-    if (vipContent) {
-
-        vipContent.style.display =
-            active
-                ? ""
-                : "none";
-
-    }
-
-
-    if (vipLocked) {
-
-        vipLocked.style.display =
-            active
-                ? "none"
-                : "";
-
-    }
-
-
-    if (messageElement && data.message) {
-
-        messageElement.textContent =
-            data.message;
-
-        messageElement.className =
-            active
-                ? "success"
-                : "error";
-
-    }
-
-
-    const statusElements =
-        document.querySelectorAll(
-            "[data-vip-status]"
-        );
-
-
-    statusElements.forEach(
-        (element) => {
-
-            element.textContent =
-                active
-                    ? "VIP ACTIVE"
-                    : "VIP LOCKED";
-
-        }
-    );
-
-
-    const expiry =
-        data.expiresAt ||
-        data.expires_at;
-
-
-    const expiryElements =
-        document.querySelectorAll(
-            "[data-vip-expiry]"
-        );
-
-
-    expiryElements.forEach(
-        (element) => {
-
-            element.textContent =
-                expiry
-                    ? formatExpiry(expiry)
-                    : "Not active";
-
-        }
-    );
-
-
-    const plan =
-        data.plan ||
-        "";
-
-
-    const planElements =
-        document.querySelectorAll(
-            "[data-vip-plan]"
-        );
-
-
-    planElements.forEach(
-        (element) => {
-
-            element.textContent =
-                plan
-                    ? formatPlan(plan)
-                    : "VIP";
-
-        }
-    );
-
-}
-
-
-// ======================================================
-// LOAD VIP PREDICTIONS
-// ======================================================
-
-async function loadVipPredictions() {
-
-    const grid =
-        document.getElementById(
-            "vipPredictionsGrid"
-        );
-
-
-    if (!grid) {
-
-        return;
-
-    }
-
-
-    const vipToken =
-        getVipToken();
-
-
-    if (!vipToken) {
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>VIP access required</h3>
-
-                <p>
-                    Enter your valid VIP access code
-                    to view VIP predictions.
-                </p>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    try {
-
-        const headers = {};
-
-
-        headers.Authorization =
-            `Bearer ${vipToken}`;
-
-
-        const data =
-            await apiRequest(
-                "/vip/predictions",
-                {
-                    headers
-                }
-            );
-
-
-        let predictions = [];
-
-
-        if (Array.isArray(data)) {
-
-            predictions = data;
-
-        } else if (
-            data &&
-            Array.isArray(data.predictions)
-        ) {
-
-            predictions =
-                data.predictions;
-
-        }
-
-
-        if (!predictions.length) {
-
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        👑
-                    </div>
-
-                    <h3>No VIP predictions yet</h3>
-
-                    <p>
-                        New VIP predictions will appear
-                        here when published.
-                    </p>
-                </div>
-            `;
-
-            return;
-
-        }
-
-
-        grid.innerHTML =
-            predictions
-                .map(
-                    createVipPredictionCard
-                )
-                .join("");
-
-
-        loadTeamBadges();
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load VIP predictions:",
-            error
-        );
-
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>VIP predictions unavailable</h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Please try again later."
-                    )}
-                </p>
-            </div>
-        `;
-
-    }
-
-}
-
-
-// ======================================================
-// CREATE VIP PREDICTION CARD
-// ======================================================
-
-function createVipPredictionCard(
-    prediction
-) {
-
-    const homeTeam =
-        prediction.homeTeam ||
-        prediction.home_team ||
-        "Home Team";
-
-
-    const awayTeam =
-        prediction.awayTeam ||
-        prediction.away_team ||
-        "Away Team";
-
-
-    const league =
-        prediction.league ||
-        prediction.leagueName ||
-        "Football";
-
-
-    const tip =
-        prediction.prediction ||
-        prediction.tip ||
-        prediction.pick ||
-        "Prediction unavailable";
-
-
-    const analysis =
-        prediction.analysis ||
-        prediction.reason ||
-        "";
-
-
-    const odds =
-        prediction.odds ||
-        prediction.expectedOdds ||
-        "";
-
-
-    const matchDate =
-        prediction.matchDate ||
-        prediction.match_date ||
-        prediction.date ||
-        "";
-
-
-    const matchTime =
-        prediction.matchTime ||
-        prediction.match_time ||
-        prediction.time ||
-        "";
-
-
-    const status =
-        prediction.status ||
-        "pending";
-
-
-    const statusClass =
-        String(status)
-            .toLowerCase()
-            .replace(/[^a-z0-9_-]/g, "");
-
-
-    return `
-        <article class="vip-prediction-card">
-
-            <div class="vip-prediction-header">
-
-                <span class="vip-badge">
-                    VIP
-                </span>
-
-                <span class="prediction-league">
-                    ${escapeHtml(league)}
-                </span>
-
-                <span
-                    class="prediction-status status-${escapeHtml(
-                        statusClass
-                    )}"
-                >
-                    ${escapeHtml(
-                        formatStatus(status)
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="prediction-match">
-
-                <div class="team team-home">
-
-                    <div
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            homeTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            getTeamInitials(homeTeam)
-                        )}
-                    </div>
-
-                    <strong>
-                        ${escapeHtml(homeTeam)}
-                    </strong>
-
-                </div>
-
-
-                <div class="match-center">
-
-                    <span class="match-date">
-                        ${escapeHtml(
-                            formatMatchDate(
-                                matchDate
-                            )
-                        )}
-                    </span>
-
-                    <span class="match-time">
-                        ${escapeHtml(
-                            matchTime || "--:--"
-                        )}
-                    </span>
-
-                    <span class="match-vs">
-                        VS
-                    </span>
-
-                </div>
-
-
-                <div class="team team-away">
-
-                    <div
-                        class="team-badge"
-                        data-team-name="${escapeHtml(
-                            awayTeam
-                        )}"
-                    >
-                        ${escapeHtml(
-                            getTeamInitials(awayTeam)
-                        )}
-                    </div>
-
-                    <strong>
-                        ${escapeHtml(awayTeam)}
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="vip-prediction-content">
-
-                <div class="prediction-label">
-                    VIP PREDICTION
-                </div>
-
-                <div class="prediction-pick">
-                    ${escapeHtml(tip)}
-                </div>
-
-
-                ${
-                    odds
-                        ? `
-                            <div class="prediction-odds">
-                                Expected Odds:
-                                <strong>
-                                    ${escapeHtml(odds)}
-                                </strong>
-                            </div>
-                        `
-                        : ""
-                }
-
-
-                ${
-                    analysis
-                        ? `
-                            <div class="prediction-analysis">
-                                ${escapeHtml(analysis)}
-                            </div>
-                        `
-                        : ""
-                }
-
-            </div>
-
-
-            <div class="prediction-card-bottom">
-
-                <span class="vip-label">
-                    PREMIUM ACCESS
-                </span>
-
-                <span class="match-countdown">
-                    ${escapeHtml(
-                        getMatchCountdown(
-                            matchDate,
-                            matchTime
-                        )
-                    )}
-                </span>
-
-            </div>
-
-        </article>
-    `;
-
-}
-
-
-// ======================================================
-// END OF PART 2
-// ======================================================
-// ======================================================
-// FLEX HUB PREDICTIONS - APP.JS
-// PART 3 / 3
-// VIP CODES, LOGOUT, BADGES, NOTIFICATIONS, PWA & HELPERS
-// ======================================================
-
-
-// ======================================================
-// LOAD VIP BETTING CODES
-// ======================================================
-
-async function loadVipBettingCodes() {
-
-    const grid =
-        document.getElementById(
-            "vipBettingCodesGrid"
-        );
-
-
-    if (!grid) {
-
-        return;
-
-    }
-
-
-    const vipToken =
-        getVipToken();
-
-
-    if (!vipToken) {
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>VIP access required</h3>
-                <p>
-                    Enter your VIP access code to view
-                    premium content.
-                </p>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    try {
-
-        const headers = {};
-
-        headers.Authorization =
-            `Bearer ${vipToken}`;
-
-
-        const data =
-            await apiRequest(
-                "/vip/betting-codes",
-                {
-                    headers
-                }
-            );
-
-
-        let codes = [];
-
-
-        if (Array.isArray(data)) {
-
-            codes = data;
-
-        } else if (
-            data &&
-            Array.isArray(data.codes)
-        ) {
-
-            codes = data.codes;
-
-        }
-
-
-        if (!codes.length) {
-
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        👑
-                    </div>
-
-                    <h3>No VIP codes yet</h3>
-
-                    <p>
-                        New VIP codes will appear here
-                        when published.
-                    </p>
-                </div>
-            `;
-
-            return;
-
-        }
-
-
-        grid.innerHTML =
-            codes
-                .map(
-                    createVipBettingCodeCard
-                )
-                .join("");
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load VIP betting codes:",
-            error
-        );
-
-
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>VIP codes unavailable</h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Please try again later."
-                    )}
-                </p>
-            </div>
-        `;
-
-    }
-
-}
-
-
-// ======================================================
-// CREATE VIP BETTING CODE CARD
-// ======================================================
-
-function createVipBettingCodeCard(
-    item
-) {
-
-    const bookmaker =
-        item.bookmaker ||
-        item.provider ||
-        "VIP Code";
-
-
-    const code =
-        item.code ||
-        "";
-
-
-    const description =
-        item.description ||
-        "";
-
-
-    return `
-        <article class="vip-code-card">
-
-            <div class="vip-code-header">
-
-                <span class="vip-badge">
-                    VIP
-                </span>
-
-                <strong>
-                    ${escapeHtml(bookmaker)}
-                </strong>
-
-            </div>
-
-
-            <div class="vip-code-value">
-
-                <code>
-                    ${escapeHtml(code)}
-                </code>
-
-                <button
-                    type="button"
-                    class="copy-code-btn"
-                    onclick="copyBettingCode('${escapeJs(code)}')"
-                >
-                    Copy
-                </button>
-
-            </div>
-
-
-            ${
-                description
-                    ? `
-                        <p class="vip-code-description">
-                            ${escapeHtml(description)}
-                        </p>
-                    `
-                    : ""
-            }
-
-        </article>
-    `;
-
-}
-
-
-// ======================================================
-// VIP LOGOUT
-// ======================================================
-
-function setupVipLogout() {
-
-    const buttons =
-        document.querySelectorAll(
-            "#vipLogoutButton, [data-vip-logout]"
-        );
-
-
-    buttons.forEach(
-        (button) => {
-
-            if (
-                button.dataset.initialized
-            ) {
-
-                return;
-
-            }
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    clearVipToken();
-
-                    showVipMessage(
-                        "VIP access has been signed out.",
-                        "success"
-                    );
-
-
-                    updateVipStatusUI({
-                        active: false,
-                        message:
-                            "VIP access required."
-                    });
-
-
-                    const grid =
-                        document.getElementById(
-                            "vipPredictionsGrid"
-                        );
-
-
-                    if (grid) {
-
-                        grid.innerHTML = `
-                            <div class="empty-state">
-                                <h3>VIP access required</h3>
-                                <p>
-                                    Enter your VIP access code
-                                    to continue.
-                                </p>
-                            </div>
-                        `;
-
-                    }
-
-
-                    const codeGrid =
-                        document.getElementById(
-                            "vipBettingCodesGrid"
-                        );
-
-
-                    if (codeGrid) {
-
-                        codeGrid.innerHTML = "";
-
-                    }
-
-                }
-            );
-
-
-            button.dataset.initialized =
-                "true";
-
-        }
-    );
-
-}
-
-
-// ======================================================
-// LOAD TEAM BADGES
-// ======================================================
-
-async function loadTeamBadges() {
-
-    const badges =
-        document.querySelectorAll(
-            ".team-badge[data-team-name]"
-        );
-
-
-    if (!badges.length) {
-
-        return;
-
-    }
-
-
-    for (
-        const badge of badges
-    ) {
-
-        if (
-            badge.dataset.badgeLoaded ===
-            "true"
-        ) {
-
-            continue;
-
-        }
-
-
-        const teamName =
-            badge.dataset.teamName;
-
-
-        if (!teamName) {
-
-            continue;
-
-        }
-
-
-        try {
-
-            const url =
-                "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
-                encodeURIComponent(
-                    teamName
-                );
-
-
-            const response =
-                await fetch(url);
-
-
-            if (!response.ok) {
-
-                continue;
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            const team =
-                data &&
-                Array.isArray(data.teams) &&
-                data.teams.length
-                    ? data.teams[0]
-                    : null;
-
-
-            if (
-                team &&
-                team.strBadge
-            ) {
-
-                badge.innerHTML = `
-                    <img
-                        src="${escapeHtml(
-                            team.strBadge
-                        )}"
-                        alt="${escapeHtml(
-                            teamName
-                        )}"
-                        loading="lazy"
-                    >
-                `;
-
-                badge.classList.add(
-                    "has-team-badge"
-                );
-
-            }
-
-
-            badge.dataset.badgeLoaded =
-                "true";
-
-        } catch (error) {
-
-            console.warn(
-                "Team badge lookup failed:",
-                teamName
-            );
-
-        }
-
-    }
-
-}
-
-
-// ======================================================
-// WHATSAPP LINKS
-// ======================================================
+/* =========================================================
+   WHATSAPP LINKS
+   ========================================================= */
 
 function setupWhatsAppLinks() {
 
@@ -4453,31 +1956,3196 @@ function setupWhatsAppLinks() {
 }
 
 
-// ======================================================
-// FOOTER YEAR
-// ======================================================
+/* =========================================================
+   GET FORM VALUE
+   ========================================================= */
 
-function setupFooterYear() {
+function getFormValue(
+    id
+) {
 
-    const yearElement =
+    const element =
         document.getElementById(
-            "currentYear"
+            id
         );
 
 
-    if (yearElement) {
+    if (!element) {
 
-        yearElement.textContent =
-            new Date().getFullYear();
+        return "";
+
+    }
+
+
+    return String(
+        element.value || ""
+    ).trim();
+
+}
+
+
+/* =========================================================
+   ELEMENT MESSAGE
+   ========================================================= */
+
+function showElementMessage(
+    elementOrId,
+    message,
+    type = "info"
+) {
+
+    const element =
+        typeof elementOrId === "string"
+            ? document.getElementById(
+                elementOrId
+            )
+            : elementOrId;
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.textContent =
+        message || "";
+
+
+    element.classList.remove(
+        "success",
+        "error",
+        "warning",
+        "info"
+    );
+
+
+    element.classList.add(
+        type
+    );
+
+}
+
+
+/* =========================================================
+   BUTTON LOADING
+   ========================================================= */
+
+function setButtonLoading(
+    button,
+    loading,
+    loadingText = "Loading..."
+) {
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    if (loading) {
+
+        if (
+            button.dataset.originalText ===
+            undefined
+        ) {
+
+            button.dataset.originalText =
+                button.innerHTML;
+
+        }
+
+
+        button.disabled =
+            true;
+
+
+        button.innerHTML =
+            loadingText;
+
+    } else {
+
+        button.disabled =
+            false;
+
+
+        if (
+            button.dataset.originalText !==
+            undefined
+        ) {
+
+            button.innerHTML =
+                button.dataset.originalText;
+
+        }
 
     }
 
 }
 
 
-// ======================================================
-// FORGOT PASSWORD
-// ======================================================
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(
+    value
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* =========================================================
+   ESCAPE JAVASCRIPT STRING
+   ========================================================= */
+
+function escapeJs(
+    value
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        )
+        .replace(
+            /"/g,
+            '\\"'
+        )
+        .replace(
+            /\r/g,
+            "\\r"
+        )
+        .replace(
+            /\n/g,
+            "\\n"
+        )
+        .replace(
+            /</g,
+            "\\u003C"
+        )
+        .replace(
+            />/g,
+            "\\u003E"
+        );
+
+}
+
+
+/* =========================================================
+   CAPITALIZE
+   ========================================================= */
+
+function capitalize(
+    value
+) {
+
+    if (!value) {
+
+        return "";
+
+    }
+
+
+    const text =
+        String(value)
+            .trim();
+
+
+    if (!text) {
+
+        return "";
+
+    }
+
+
+    return (
+        text.charAt(0).toUpperCase() +
+        text.slice(1)
+    );
+
+}
+
+
+/* =========================================================
+   FORMAT STATUS
+   ========================================================= */
+
+function formatStatus(
+    status
+) {
+
+    if (!status) {
+
+        return "Pending";
+
+    }
+
+
+    const normalized =
+        String(status)
+            .trim()
+            .toLowerCase();
+
+
+    const map = {
+
+        pending: "Pending",
+
+        won: "Won",
+
+        win: "Won",
+
+        winning: "Won",
+
+        lost: "Lost",
+
+        loss: "Lost",
+
+        losing: "Lost",
+
+        void: "Void",
+
+        cancelled: "Cancelled",
+
+        canceled: "Cancelled",
+
+        completed: "Completed",
+
+        active: "Active",
+
+        inactive: "Inactive"
+
+    };
+
+
+    return (
+        map[normalized] ||
+        capitalize(normalized)
+    );
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+   ========================================================= */
+
+function formatMatchDate(
+    date
+) {
+
+    if (!date) {
+
+        return "Date unavailable";
+
+    }
+
+
+    const parsed =
+        new Date(date);
+
+
+    if (
+        Number.isNaN(
+            parsed.getTime()
+        )
+    ) {
+
+        return String(date);
+
+    }
+
+
+    return parsed.toLocaleDateString(
+        undefined,
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FORMAT DATE/TIME
+   ========================================================= */
+
+function formatExpiry(
+    value
+) {
+
+    if (!value) {
+
+        return "";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return String(value);
+
+    }
+
+
+    return date.toLocaleString(
+        undefined,
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FORMAT PLAN
+   ========================================================= */
+
+function formatPlan(
+    plan
+) {
+
+    if (!plan) {
+
+        return "VIP";
+
+    }
+
+
+    return capitalize(
+        String(plan)
+            .trim()
+    );
+
+}
+
+
+/* =========================================================
+   TEMPORARY TOAST
+   ========================================================= */
+
+function showTemporaryToast(
+    message,
+    type = "info"
+) {
+
+    const existing =
+        document.querySelector(
+            ".flex-hub-toast"
+        );
+
+
+    if (existing) {
+
+        existing.remove();
+
+    }
+
+
+    const toast =
+        document.createElement(
+            "div"
+        );
+
+
+    toast.className =
+        `flex-hub-toast ${type}`;
+
+
+    toast.textContent =
+        message || "";
+
+
+    toast.style.cssText = `
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        z-index: 999999;
+        max-width: min(90vw, 460px);
+        padding: 13px 18px;
+        border-radius: 12px;
+        background: #080c14;
+        border: 1px solid rgba(245,185,66,.35);
+        box-shadow: 0 15px 40px rgba(0,0,0,.45);
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+    `;
+
+
+    document.body.appendChild(
+        toast
+    );
+
+
+    setTimeout(
+        () => {
+
+            if (toast) {
+
+                toast.remove();
+
+            }
+
+        },
+        3000
+    );
+
+}
+
+
+/* =========================================================
+   FLEX HUB SUCCESS ANIMATION
+   ========================================================= */
+
+function showFlexHubAnimation(
+    message = "Welcome to FLEX HUB PREDICTIONS"
+) {
+
+    const existing =
+        document.getElementById(
+            "flexHubSuccessAnimation"
+        );
+
+
+    if (existing) {
+
+        existing.remove();
+
+    }
+
+
+    const oldStyle =
+        document.getElementById(
+            "flexHubSuccessAnimationStyles"
+        );
+
+
+    if (oldStyle) {
+
+        oldStyle.remove();
+
+    }
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "flexHubSuccessAnimation";
+
+
+    overlay.innerHTML = `
+        <div class="flex-success-box">
+            <div class="flex-success-logo">⚽</div>
+            <h2>FLEX HUB</h2>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "flexHubSuccessAnimationStyles";
+
+
+    style.textContent = `
+        #flexHubSuccessAnimation {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(3, 5, 8, .92);
+            backdrop-filter: blur(10px);
+        }
+
+        .flex-success-box {
+            width: min(90%, 430px);
+            padding: 34px;
+            text-align: center;
+            border-radius: 24px;
+            background: #080c14;
+            border: 1px solid rgba(245,185,66,.45);
+            box-shadow: 0 25px 80px rgba(0,0,0,.55);
+        }
+
+        .flex-success-logo {
+            font-size: 54px;
+            margin-bottom: 12px;
+        }
+
+        .flex-success-box h2 {
+            margin: 0 0 8px;
+        }
+
+        .flex-success-box p {
+            margin: 0;
+            opacity: .8;
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    setTimeout(
+        () => {
+
+            if (overlay) {
+
+                overlay.remove();
+
+            }
+
+
+            if (style) {
+
+                style.remove();
+
+            }
+
+        },
+        1800
+    );
+
+}
+/* =========================================================
+   FLEX HUB PREDICTIONS
+   COMPLETE APP.JS
+   PART 2/3
+   ========================================================= */
+
+
+/* =========================================================
+   REGULAR ACCESS STATUS
+   ========================================================= */
+
+async function refreshRegularAccessStatus() {
+
+    const token =
+        getUserToken();
+
+
+    if (!token) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/user/access"
+            );
+
+
+        updateRegularAccessUI(
+            data
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Regular access status could not be loaded:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE REGULAR ACCESS UI
+   ========================================================= */
+
+function updateRegularAccessUI(
+    data
+) {
+
+    if (!data) {
+
+        return;
+
+    }
+
+
+    const active =
+        data.active === true ||
+        data.hasAccess === true;
+
+
+    const expiry =
+        data.expires_at ||
+        data.expiresAt ||
+        data.expiry ||
+        null;
+
+
+    const elements =
+        document.querySelectorAll(
+            "[data-regular-access-status]"
+        );
+
+
+    elements.forEach(
+        (element) => {
+
+            if (active) {
+
+                element.textContent =
+                    expiry
+                        ? `Active until ${formatExpiry(expiry)}`
+                        : "Active";
+
+                element.classList.add(
+                    "active"
+                );
+
+                element.classList.remove(
+                    "expired"
+                );
+
+            } else {
+
+                element.textContent =
+                    "Free access";
+
+                element.classList.remove(
+                    "active"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LOAD REGULAR PREDICTIONS
+   ========================================================= */
+
+async function loadPredictions() {
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/predictions"
+            );
+
+
+        if (Array.isArray(data)) {
+
+            allPredictions =
+                data;
+
+        } else if (
+            data &&
+            Array.isArray(
+                data.predictions
+            )
+        ) {
+
+            allPredictions =
+                data.predictions;
+
+        } else {
+
+            allPredictions =
+                [];
+
+        }
+
+
+        renderPredictions();
+
+        updatePredictionStats();
+
+        /*
+           Load badges after prediction cards exist.
+        */
+
+        loadTeamBadges();
+
+        return allPredictions;
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load predictions:",
+            error
+        );
+
+
+        allPredictions =
+            [];
+
+
+        renderPredictions();
+
+
+        const grid =
+            document.getElementById(
+                "predictionsGrid"
+            );
+
+
+        if (
+            grid &&
+            !grid.children.length
+        ) {
+
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <strong>Predictions unavailable</strong>
+                    <p>
+                        Please refresh the page and try again.
+                    </p>
+                </div>
+            `;
+
+        }
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   RENDER PREDICTIONS
+   ========================================================= */
+
+function renderPredictions() {
+
+    const grid =
+        document.getElementById(
+            "predictionsGrid"
+        );
+
+
+    if (!grid) {
+
+        return;
+
+    }
+
+
+    let predictions =
+        Array.isArray(allPredictions)
+            ? [...allPredictions]
+            : [];
+
+
+    /*
+       Optional homepage feature-only mode.
+    */
+
+    const featuredOnly =
+        grid.dataset.homeFeaturedOnly ===
+        "true";
+
+
+    if (featuredOnly) {
+
+        predictions =
+            predictions.filter(
+                (prediction) =>
+                    prediction.featured === true ||
+                    prediction.is_featured === true
+            );
+
+    }
+
+
+    /*
+       League filter.
+    */
+
+    if (
+        currentLeagueFilter &&
+        currentLeagueFilter !== "all"
+    ) {
+
+        predictions =
+            predictions.filter(
+                (prediction) => {
+
+                    const league =
+                        String(
+                            prediction.league ||
+                            ""
+                        )
+                        .trim()
+                        .toLowerCase();
+
+
+                    return (
+                        league ===
+                        currentLeagueFilter
+                    );
+
+                }
+            );
+
+    }
+
+
+    /*
+       Search filter.
+    */
+
+    if (currentSearchTerm) {
+
+        predictions =
+            predictions.filter(
+                (prediction) => {
+
+                    const searchable = [
+
+                        prediction.league,
+
+                        prediction.home_team,
+
+                        prediction.homeTeam,
+
+                        prediction.away_team,
+
+                        prediction.awayTeam,
+
+                        prediction.prediction,
+
+                        prediction.analysis,
+
+                        prediction.category
+
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+
+                    return searchable.includes(
+                        currentSearchTerm
+                    );
+
+                }
+            );
+
+    }
+
+
+    if (!predictions.length) {
+
+        grid.innerHTML = `
+            <div class="empty-state">
+                <strong>No predictions found</strong>
+                <p>
+                    Try another team, league or search term.
+                </p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    grid.innerHTML =
+        predictions
+            .map(
+                createPredictionCard
+            )
+            .join("");
+
+
+    loadTeamBadges();
+
+}
+
+
+/* =========================================================
+   CREATE PREDICTION CARD
+   ========================================================= */
+
+function createPredictionCard(
+    prediction
+) {
+
+    const id =
+        prediction.id ||
+        "";
+
+
+    const league =
+        prediction.league ||
+        "Football";
+
+
+    const homeTeam =
+        prediction.home_team ||
+        prediction.homeTeam ||
+        "Home Team";
+
+
+    const awayTeam =
+        prediction.away_team ||
+        prediction.awayTeam ||
+        "Away Team";
+
+
+    const matchDate =
+        prediction.match_date ||
+        prediction.matchDate ||
+        "";
+
+
+    const matchTime =
+        prediction.match_time ||
+        prediction.matchTime ||
+        "";
+
+
+    const predictionText =
+        prediction.prediction ||
+        "Prediction unavailable";
+
+
+    const analysis =
+        prediction.analysis ||
+        "";
+
+
+    const category =
+        prediction.category ||
+        "regular";
+
+
+    const status =
+        formatStatus(
+            prediction.status
+        );
+
+
+    const homeInitials =
+        getTeamInitials(
+            homeTeam
+        );
+
+
+    const awayInitials =
+        getTeamInitials(
+            awayTeam
+        );
+
+
+    const countdown =
+        getMatchCountdown(
+            matchDate,
+            matchTime
+        );
+
+
+    return `
+        <article
+            class="prediction-card"
+            data-prediction-id="${escapeHtml(id)}"
+        >
+
+            <div class="prediction-card-top">
+
+                <span class="prediction-league">
+                    ${escapeHtml(league)}
+                </span>
+
+                <span class="prediction-status">
+                    ${escapeHtml(status)}
+                </span>
+
+            </div>
+
+
+            <div class="prediction-match">
+
+                <div class="team-block">
+
+                    <div
+                        class="team-badge"
+                        data-team-name="${escapeHtml(homeTeam)}"
+                    >
+                        <span>
+                            ${escapeHtml(homeInitials)}
+                        </span>
+                    </div>
+
+                    <strong>
+                        ${escapeHtml(homeTeam)}
+                    </strong>
+
+                </div>
+
+
+                <div class="match-middle">
+
+                    <span class="match-date">
+                        ${escapeHtml(
+                            formatMatchDate(matchDate)
+                        )}
+                    </span>
+
+                    <strong class="match-time">
+                        ${escapeHtml(
+                            matchTime || "TBA"
+                        )}
+                    </strong>
+
+                    ${
+                        countdown
+                            ? `
+                                <small class="match-countdown">
+                                    ${escapeHtml(countdown)}
+                                </small>
+                            `
+                            : ""
+                    }
+
+                </div>
+
+
+                <div class="team-block">
+
+                    <div
+                        class="team-badge"
+                        data-team-name="${escapeHtml(awayTeam)}"
+                    >
+                        <span>
+                            ${escapeHtml(awayInitials)}
+                        </span>
+                    </div>
+
+                    <strong>
+                        ${escapeHtml(awayTeam)}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="prediction-selection">
+
+                <span>
+                    Prediction
+                </span>
+
+                <strong>
+                    ${escapeHtml(predictionText)}
+                </strong>
+
+            </div>
+
+
+            ${
+                analysis
+                    ? `
+                        <div class="prediction-analysis">
+                            <strong>Analysis</strong>
+                            <p>
+                                ${escapeHtml(analysis)}
+                            </p>
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            <div class="prediction-card-bottom">
+
+                <span class="prediction-category">
+                    ${escapeHtml(
+                        formatPlan(category)
+                    )}
+                </span>
+
+                <span class="prediction-id">
+                    #${escapeHtml(id)}
+                </span>
+
+            </div>
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   TEAM INITIALS
+   ========================================================= */
+
+function getTeamInitials(
+    teamName
+) {
+
+    if (!teamName) {
+
+        return "FC";
+
+    }
+
+
+    const words =
+        String(teamName)
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+
+    if (words.length === 1) {
+
+        return words[0]
+            .slice(0, 2)
+            .toUpperCase();
+
+    }
+
+
+    return (
+        words[0][0] +
+        words[words.length - 1][0]
+    )
+        .toUpperCase();
+
+}
+
+
+/* =========================================================
+   MATCH COUNTDOWN
+   ========================================================= */
+
+function getMatchCountdown(
+    date,
+    time
+) {
+
+    if (!date || !time) {
+
+        return "";
+
+    }
+
+
+    const matchDate =
+        new Date(
+            `${date}T${time}`
+        );
+
+
+    if (
+        Number.isNaN(
+            matchDate.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    const difference =
+        matchDate.getTime() -
+        Date.now();
+
+
+    if (difference <= 0) {
+
+        return "Match started";
+
+    }
+
+
+    const totalMinutes =
+        Math.floor(
+            difference /
+            60000
+        );
+
+
+    const days =
+        Math.floor(
+            totalMinutes /
+            1440
+        );
+
+
+    const hours =
+        Math.floor(
+            (
+                totalMinutes %
+                1440
+            ) /
+            60
+        );
+
+
+    const minutes =
+        totalMinutes %
+        60;
+
+
+    if (days > 0) {
+
+        return `${days}d ${hours}h`;
+
+    }
+
+
+    if (hours > 0) {
+
+        return `${hours}h ${minutes}m`;
+
+    }
+
+
+    return `${minutes}m`;
+
+}
+
+
+/* =========================================================
+   UPDATE PREDICTION STATS
+   ========================================================= */
+
+function updatePredictionStats() {
+
+    const predictionCount =
+        document.querySelectorAll(
+            "[data-prediction-count]"
+        );
+
+
+    predictionCount.forEach(
+        (element) => {
+
+            element.textContent =
+                String(
+                    allPredictions.length
+                );
+
+        }
+    );
+
+
+    const majorLeagueCount =
+        document.querySelectorAll(
+            "[data-league-count]"
+        );
+
+
+    if (majorLeagueCount.length) {
+
+        const leagues =
+            new Set(
+                allPredictions
+                    .map(
+                        (item) =>
+                            item.league
+                    )
+                    .filter(Boolean)
+            );
+
+
+        majorLeagueCount.forEach(
+            (element) => {
+
+                element.textContent =
+                    String(
+                        leagues.size
+                    );
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD RESULTS
+   ========================================================= */
+
+async function loadResults() {
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/results"
+            );
+
+
+        if (Array.isArray(data)) {
+
+            allResults =
+                data;
+
+        } else if (
+            data &&
+            Array.isArray(
+                data.results
+            )
+        ) {
+
+            allResults =
+                data.results;
+
+        } else {
+
+            allResults =
+                [];
+
+        }
+
+
+        renderResults();
+
+        return allResults;
+
+    } catch (error) {
+
+        console.warn(
+            "Results loading failed:",
+            error
+        );
+
+
+        allResults =
+            [];
+
+
+        renderResults();
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   RENDER RESULTS
+   ========================================================= */
+
+function renderResults() {
+
+    const containers = [
+
+        document.getElementById(
+            "resultsGrid"
+        ),
+
+        document.getElementById(
+            "recentResultsGrid"
+        ),
+
+        document.getElementById(
+            "resultsContainer"
+        )
+
+    ].filter(Boolean);
+
+
+    if (!containers.length) {
+
+        return;
+
+    }
+
+
+    let results =
+        Array.isArray(allResults)
+            ? [...allResults]
+            : [];
+
+
+    if (
+        currentResultFilter &&
+        currentResultFilter !== "all"
+    ) {
+
+        results =
+            results.filter(
+                (result) => {
+
+                    const status =
+                        String(
+                            result.status ||
+                            ""
+                        )
+                        .trim()
+                        .toLowerCase();
+
+
+                    if (
+                        currentResultFilter ===
+                        "won"
+                    ) {
+
+                        return [
+                            "won",
+                            "win",
+                            "winning"
+                        ].includes(
+                            status
+                        );
+
+                    }
+
+
+                    if (
+                        currentResultFilter ===
+                        "lost"
+                    ) {
+
+                        return [
+                            "lost",
+                            "loss",
+                            "losing"
+                        ].includes(
+                            status
+                        );
+
+                    }
+
+
+                    return (
+                        status ===
+                        currentResultFilter
+                    );
+
+                }
+            );
+
+    }
+
+
+    const html =
+        results.length
+            ? results
+                .map(
+                    createResultCard
+                )
+                .join("")
+            : `
+                <div class="empty-state">
+                    <strong>No results available</strong>
+                    <p>
+                        Results will appear here after matches are checked.
+                    </p>
+                </div>
+            `;
+
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                html;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   CREATE RESULT CARD
+   ========================================================= */
+
+function createResultCard(
+    result
+) {
+
+    const league =
+        result.league ||
+        "Football";
+
+
+    const homeTeam =
+        result.home_team ||
+        result.homeTeam ||
+        "Home Team";
+
+
+    const awayTeam =
+        result.away_team ||
+        result.awayTeam ||
+        "Away Team";
+
+
+    const date =
+        result.match_date ||
+        result.matchDate ||
+        "";
+
+
+    const time =
+        result.match_time ||
+        result.matchTime ||
+        "";
+
+
+    const prediction =
+        result.prediction ||
+        "Prediction unavailable";
+
+
+    const status =
+        formatStatus(
+            result.status
+        );
+
+
+    const statusClass =
+        String(
+            result.status ||
+            "pending"
+        )
+        .toLowerCase()
+        .replace(
+            /[^a-z0-9_-]/g,
+            ""
+        );
+
+
+    return `
+        <article
+            class="result-card"
+            data-result-status="${escapeHtml(statusClass)}"
+        >
+
+            <div class="result-card-top">
+
+                <span>
+                    ${escapeHtml(league)}
+                </span>
+
+                <strong class="result-status ${escapeHtml(statusClass)}">
+                    ${escapeHtml(status)}
+                </strong>
+
+            </div>
+
+
+            <div class="result-teams">
+
+                <strong>
+                    ${escapeHtml(homeTeam)}
+                </strong>
+
+                <span>
+                    vs
+                </span>
+
+                <strong>
+                    ${escapeHtml(awayTeam)}
+                </strong>
+
+            </div>
+
+
+            <div class="result-info">
+
+                <span>
+                    ${escapeHtml(
+                        formatMatchDate(date)
+                    )}
+                </span>
+
+                <span>
+                    ${escapeHtml(
+                        time || "TBA"
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="result-prediction">
+
+                <span>
+                    Prediction
+                </span>
+
+                <strong>
+                    ${escapeHtml(prediction)}
+                </strong>
+
+            </div>
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   REGULAR BETTING / CODE CONTENT
+   ========================================================= */
+
+async function loadRegularBettingCodes() {
+
+    const grid =
+        document.getElementById(
+            "bettingCodesGrid"
+        );
+
+
+    if (!grid) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/betting-codes"
+            );
+
+
+        let codes = [];
+
+
+        if (Array.isArray(data)) {
+
+            codes =
+                data;
+
+        } else if (
+            data &&
+            Array.isArray(data.codes)
+        ) {
+
+            codes =
+                data.codes;
+
+        }
+
+
+        if (!codes.length) {
+
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <strong>No codes available</strong>
+                    <p>
+                        New content will appear here when available.
+                    </p>
+                </div>
+            `;
+
+            return [];
+
+        }
+
+
+        grid.innerHTML =
+            codes
+                .map(
+                    createBettingCodeCard
+                )
+                .join("");
+
+
+        return codes;
+
+    } catch (error) {
+
+        console.warn(
+            "Regular betting code loading failed:",
+            error
+        );
+
+
+        grid.innerHTML = `
+            <div class="empty-state">
+                <strong>Content unavailable</strong>
+                <p>
+                    Please try again later.
+                </p>
+            </div>
+        `;
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   CREATE CODE CARD
+   ========================================================= */
+
+function createBettingCodeCard(
+    item
+) {
+
+    const bookmaker =
+        item.bookmaker ||
+        "Bookmaker";
+
+
+    const code =
+        item.code ||
+        "";
+
+
+    const description =
+        item.description ||
+        "";
+
+
+    const category =
+        item.category ||
+        "regular";
+
+
+    return `
+        <article class="code-card">
+
+            <div class="code-card-header">
+
+                <strong>
+                    ${escapeHtml(bookmaker)}
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        formatPlan(category)
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="code-value">
+
+                <code>
+                    ${escapeHtml(code)}
+                </code>
+
+                ${
+                    code
+                        ? `
+                            <button
+                                type="button"
+                                onclick="copyBettingCode('${escapeJs(code)}')"
+                            >
+                                Copy
+                            </button>
+                        `
+                        : ""
+                }
+
+            </div>
+
+
+            ${
+                description
+                    ? `
+                        <p>
+                            ${escapeHtml(description)}
+                        </p>
+                    `
+                    : ""
+            }
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   COPY BETTING CODE
+   ========================================================= */
+
+async function copyBettingCode(
+    code
+) {
+
+    if (!code) {
+
+        return;
+
+    }
+
+
+    try {
+
+        if (
+            navigator.clipboard &&
+            navigator.clipboard.writeText
+        ) {
+
+            await navigator.clipboard.writeText(
+                code
+            );
+
+        } else {
+
+            const textarea =
+                document.createElement(
+                    "textarea"
+                );
+
+
+            textarea.value =
+                code;
+
+
+            textarea.style.position =
+                "fixed";
+
+
+            textarea.style.opacity =
+                "0";
+
+
+            document.body.appendChild(
+                textarea
+            );
+
+
+            textarea.select();
+
+
+            document.execCommand(
+                "copy"
+            );
+
+
+            textarea.remove();
+
+        }
+
+
+        showTemporaryToast(
+            "Code copied.",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Unable to copy code:",
+            error
+        );
+
+
+        showTemporaryToast(
+            "Unable to copy the code.",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   REGULAR PAYMENT GATE
+   ========================================================= */
+
+function setupRegularPaymentGate() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-regular-payment], #regularPaymentButton"
+        );
+
+
+    buttons.forEach(
+        (button) => {
+
+            if (
+                button.dataset.initialized
+            ) {
+
+                return;
+
+            }
+
+
+            button.addEventListener(
+                "click",
+                initializeRegularPayment
+            );
+
+
+            button.dataset.initialized =
+                "true";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   INITIALIZE REGULAR PAYMENT
+   ========================================================= */
+
+async function initializeRegularPayment(
+    event
+) {
+
+    if (event) {
+
+        event.preventDefault();
+
+    }
+
+
+    try {
+
+        showTemporaryToast(
+            "Payment service is being prepared.",
+            "info"
+        );
+
+
+        const data =
+            await apiRequest(
+                "/payments/initialize",
+                {
+                    method: "POST",
+
+                    body: JSON.stringify({
+                        amount: 50
+                    })
+                }
+            );
+
+
+        const paymentUrl =
+            data &&
+            (
+                data.paymentUrl ||
+                data.authorization_url ||
+                data.url
+            );
+
+
+        if (paymentUrl) {
+
+            window.location.href =
+                paymentUrl;
+
+            return;
+
+        }
+
+
+        showTemporaryToast(
+            data.message ||
+            "Payment service is not available yet.",
+            "error"
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Payment initialization failed:",
+            error
+        );
+
+
+        showTemporaryToast(
+            error.message ||
+            "Payment service is not available yet.",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   VIP PAGE SETUP
+   ========================================================= */
+
+function setupVipPage() {
+
+    verifyUserForVipPage()
+        .then(
+            (valid) => {
+
+                if (!valid) {
+
+                    showVipLockedState(
+                        "Please sign in to access VIP."
+                    );
+
+                    return;
+
+                }
+
+
+                setupVipAccessForm();
+
+                checkVipStatus();
+
+            }
+        )
+        .catch(
+            (error) => {
+
+                console.error(
+                    "VIP initialization error:",
+                    error
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   VERIFY USER FOR VIP
+   ========================================================= */
+
+async function verifyUserForVipPage() {
+
+    const token =
+        getUserToken();
+
+
+    if (!token) {
+
+        return false;
+
+    }
+
+
+    const storedUser =
+        getStoredUser();
+
+
+    if (storedUser) {
+
+        currentUser =
+            storedUser;
+
+    }
+
+
+    const valid =
+        await verifyCurrentUserSession(
+            false
+        );
+
+
+    return valid;
+
+}
+
+
+/* =========================================================
+   VIP ACCESS FORM
+   ========================================================= */
+
+function setupVipAccessForm() {
+
+    const form =
+        document.getElementById(
+            "vipAccessForm"
+        );
+
+
+    if (!form) {
+
+        return;
+
+    }
+
+
+    if (
+        form.dataset.initialized
+    ) {
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        handleVipAccess
+    );
+
+
+    form.dataset.initialized =
+        "true";
+
+}
+
+
+/* =========================================================
+   HANDLE VIP ACCESS
+   ========================================================= */
+
+async function handleVipAccess(
+    event
+) {
+
+    if (event) {
+
+        event.preventDefault();
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "vipAccessCode"
+        ) ||
+        document.getElementById(
+            "accessCode"
+        );
+
+
+    const code =
+        input
+            ? String(
+                input.value || ""
+            ).trim()
+            : "";
+
+
+    if (!code) {
+
+        showVipMessage(
+            "Enter your VIP access code.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const form =
+        document.getElementById(
+            "vipAccessForm"
+        );
+
+
+    const button =
+        form
+            ? form.querySelector(
+                'button[type="submit"]'
+            )
+            : null;
+
+
+    try {
+
+        setButtonLoading(
+            button,
+            true,
+            "Checking..."
+        );
+
+
+        showVipMessage(
+            "Checking your VIP access code...",
+            "info"
+        );
+
+
+        const data =
+            await apiRequest(
+                "/vip/access",
+                {
+                    method: "POST",
+
+                    body: JSON.stringify({
+                        code
+                    })
+                }
+            );
+
+
+        const vipToken =
+            data &&
+            (
+                data.token ||
+                data.vipToken ||
+                data.accessToken
+            );
+
+
+        if (!vipToken) {
+
+            throw new Error(
+                "VIP access was not returned by the server."
+            );
+
+        }
+
+
+        localStorage.setItem(
+            STORAGE_KEYS.VIP_TOKEN,
+            vipToken
+        );
+
+
+        window.vipAccessActive =
+            true;
+
+
+        showVipMessage(
+            data.message ||
+            "VIP access activated successfully.",
+            "success"
+        );
+
+
+        await checkVipStatus();
+
+    } catch (error) {
+
+        console.error(
+            "VIP access error:",
+            error
+        );
+
+
+        showVipMessage(
+            error.message ||
+            "Unable to activate VIP access.",
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            button,
+            false
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CHECK VIP STATUS
+   ========================================================= */
+
+async function checkVipStatus() {
+
+    const token =
+        getUserToken();
+
+
+    const vipToken =
+        getVipToken();
+
+
+    if (!token) {
+
+        updateVipStatusUI({
+            active: false
+        });
+
+        return false;
+
+    }
+
+
+    if (!vipToken) {
+
+        updateVipStatusUI({
+            active: false
+        });
+
+        return false;
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/vip/status",
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${vipToken}`
+                    }
+                }
+            );
+
+
+        const active =
+            data &&
+            (
+                data.active === true ||
+                data.hasAccess === true ||
+                data.status === "active"
+            );
+
+
+        window.vipAccessActive =
+            active;
+
+
+        updateVipStatusUI(
+            data
+        );
+
+
+        if (active) {
+
+            await loadVipPredictions();
+
+            await loadVipBettingCodes();
+
+        }
+
+
+        return active;
+
+    } catch (error) {
+
+        console.warn(
+            "VIP status check failed:",
+            error
+        );
+
+
+        if (
+            error.status === 401 ||
+            error.status === 403
+        ) {
+
+            localStorage.removeItem(
+                STORAGE_KEYS.VIP_TOKEN
+            );
+
+            window.vipAccessActive =
+                false;
+
+        }
+
+
+        updateVipStatusUI({
+            active: false
+        });
+
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE VIP STATUS UI
+   ========================================================= */
+
+function updateVipStatusUI(
+    data
+) {
+
+    const active =
+        data &&
+        (
+            data.active === true ||
+            data.hasAccess === true ||
+            data.status === "active"
+        );
+
+
+    const locked =
+        document.getElementById(
+            "vipLocked"
+        );
+
+
+    const content =
+        document.getElementById(
+            "vipContent"
+        );
+
+
+    if (active) {
+
+        if (locked) {
+
+            locked.style.display =
+                "none";
+
+        }
+
+
+        if (content) {
+
+            content.style.display =
+                "";
+
+        }
+
+    } else {
+
+        if (locked) {
+
+            locked.style.display =
+                "";
+
+        }
+
+
+        if (content) {
+
+            content.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    const statusElements =
+        document.querySelectorAll(
+            "[data-vip-status]"
+        );
+
+
+    statusElements.forEach(
+        (element) => {
+
+            if (active) {
+
+                const expiry =
+                    data &&
+                    (
+                        data.expires_at ||
+                        data.expiresAt ||
+                        data.expiry
+                    );
+
+
+                element.textContent =
+                    expiry
+                        ? `VIP active until ${formatExpiry(expiry)}`
+                        : "VIP Active";
+
+
+                element.classList.add(
+                    "active"
+                );
+
+            } else {
+
+                element.textContent =
+                    "VIP Locked";
+
+                element.classList.remove(
+                    "active"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SHOW VIP LOCKED STATE
+   ========================================================= */
+
+function showVipLockedState(
+    message
+) {
+
+    const locked =
+        document.getElementById(
+            "vipLocked"
+        );
+
+
+    const content =
+        document.getElementById(
+            "vipContent"
+        );
+
+
+    if (content) {
+
+        content.style.display =
+            "none";
+
+    }
+
+
+    if (locked) {
+
+        locked.style.display =
+            "";
+
+    }
+
+
+    showVipMessage(
+        message,
+        "warning"
+    );
+
+}
+ /* =========================================================
+    FLEX HUB PREDICTIONS
+    COMPLETE APP.JS
+    PART 3/3
+    ========================================================= */
+
+
+/* =========================================================
+   LOAD VIP PREDICTIONS
+   ========================================================= */
+
+async function loadVipPredictions() {
+
+    const grid =
+        document.getElementById(
+            "vipPredictionsGrid"
+        );
+
+
+    if (!grid) {
+
+        return [];
+
+    }
+
+
+    const vipToken =
+        getVipToken();
+
+
+    if (!vipToken) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/vip/predictions",
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${vipToken}`
+                    }
+                }
+            );
+
+
+        let predictions = [];
+
+
+        if (Array.isArray(data)) {
+
+            predictions =
+                data;
+
+        } else if (
+            data &&
+            Array.isArray(
+                data.predictions
+            )
+        ) {
+
+            predictions =
+                data.predictions;
+
+        }
+
+
+        window.vipPredictionCount =
+            predictions.length;
+
+
+        if (!predictions.length) {
+
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <strong>No VIP predictions available</strong>
+                    <p>
+                        New VIP predictions will appear here.
+                    </p>
+                </div>
+            `;
+
+            return [];
+
+        }
+
+
+        grid.innerHTML =
+            predictions
+                .map(
+                    createVipPredictionCard
+                )
+                .join("");
+
+
+        loadTeamBadges();
+
+
+        return predictions;
+
+    } catch (error) {
+
+        console.warn(
+            "VIP predictions loading failed:",
+            error
+        );
+
+
+        grid.innerHTML = `
+            <div class="empty-state">
+                <strong>VIP predictions unavailable</strong>
+                <p>
+                    Your VIP access may have expired.
+                </p>
+            </div>
+        `;
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   CREATE VIP PREDICTION CARD
+   ========================================================= */
+
+function createVipPredictionCard(
+    prediction
+) {
+
+    const id =
+        prediction.id ||
+        "";
+
+
+    const league =
+        prediction.league ||
+        "Football";
+
+
+    const homeTeam =
+        prediction.home_team ||
+        prediction.homeTeam ||
+        "Home Team";
+
+
+    const awayTeam =
+        prediction.away_team ||
+        prediction.awayTeam ||
+        "Away Team";
+
+
+    const matchDate =
+        prediction.match_date ||
+        prediction.matchDate ||
+        "";
+
+
+    const matchTime =
+        prediction.match_time ||
+        prediction.matchTime ||
+        "";
+
+
+    const predictionText =
+        prediction.prediction ||
+        "Prediction unavailable";
+
+
+    const analysis =
+        prediction.analysis ||
+        "";
+
+
+    const status =
+        formatStatus(
+            prediction.status
+        );
+
+
+    return `
+        <article
+            class="prediction-card vip-prediction-card"
+            data-vip-prediction-id="${escapeHtml(id)}"
+        >
+
+            <div class="prediction-card-top">
+
+                <span class="prediction-league">
+                    ${escapeHtml(league)}
+                </span>
+
+                <span class="prediction-status vip-status">
+                    VIP
+                </span>
+
+            </div>
+
+
+            <div class="prediction-match">
+
+                <div class="team-block">
+
+                    <div
+                        class="team-badge"
+                        data-team-name="${escapeHtml(homeTeam)}"
+                    >
+                        <span>
+                            ${escapeHtml(
+                                getTeamInitials(homeTeam)
+                            )}
+                        </span>
+                    </div>
+
+                    <strong>
+                        ${escapeHtml(homeTeam)}
+                    </strong>
+
+                </div>
+
+
+                <div class="match-middle">
+
+                    <span class="match-date">
+                        ${escapeHtml(
+                            formatMatchDate(matchDate)
+                        )}
+                    </span>
+
+                    <strong class="match-time">
+                        ${escapeHtml(
+                            matchTime || "TBA"
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div class="team-block">
+
+                    <div
+                        class="team-badge"
+                        data-team-name="${escapeHtml(awayTeam)}"
+                    >
+                        <span>
+                            ${escapeHtml(
+                                getTeamInitials(awayTeam)
+                            )}
+                        </span>
+                    </div>
+
+                    <strong>
+                        ${escapeHtml(awayTeam)}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="prediction-selection">
+
+                <span>
+                    VIP Prediction
+                </span>
+
+                <strong>
+                    ${escapeHtml(predictionText)}
+                </strong>
+
+            </div>
+
+
+            ${
+                analysis
+                    ? `
+                        <div class="prediction-analysis">
+
+                            <strong>
+                                Analysis
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(analysis)}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            <div class="prediction-card-bottom">
+
+                <span class="prediction-category">
+                    ${escapeHtml(status)}
+                </span>
+
+                <span class="prediction-id">
+                    #${escapeHtml(id)}
+                </span>
+
+            </div>
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   LOAD VIP BETTING CODES
+   ========================================================= */
+
+async function loadVipBettingCodes() {
+
+    const grid =
+        document.getElementById(
+            "vipBettingCodesGrid"
+        );
+
+
+    if (!grid) {
+
+        return [];
+
+    }
+
+
+    const vipToken =
+        getVipToken();
+
+
+    if (!vipToken) {
+
+        return [];
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/vip/betting-codes",
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${vipToken}`
+                    }
+                }
+            );
+
+
+        let codes = [];
+
+
+        if (Array.isArray(data)) {
+
+            codes =
+                data;
+
+        } else if (
+            data &&
+            Array.isArray(data.codes)
+        ) {
+
+            codes =
+                data.codes;
+
+        }
+
+
+        if (!codes.length) {
+
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <strong>No VIP codes available</strong>
+                    <p>
+                        New VIP content will appear here.
+                    </p>
+                </div>
+            `;
+
+            return [];
+
+        }
+
+
+        grid.innerHTML =
+            codes
+                .map(
+                    createVipBettingCodeCard
+                )
+                .join("");
+
+
+        return codes;
+
+    } catch (error) {
+
+        console.warn(
+            "VIP code loading failed:",
+            error
+        );
+
+
+        grid.innerHTML = `
+            <div class="empty-state">
+                <strong>VIP codes unavailable</strong>
+                <p>
+                    Please check your VIP access.
+                </p>
+            </div>
+        `;
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   CREATE VIP BETTING CODE CARD
+   ========================================================= */
+
+function createVipBettingCodeCard(
+    item
+) {
+
+    const bookmaker =
+        item.bookmaker ||
+        "Bookmaker";
+
+
+    const code =
+        item.code ||
+        "";
+
+
+    const description =
+        item.description ||
+        "";
+
+
+    return `
+        <article class="code-card vip-code-card">
+
+            <div class="code-card-header">
+
+                <strong>
+                    ${escapeHtml(bookmaker)}
+                </strong>
+
+                <span>
+                    VIP
+                </span>
+
+            </div>
+
+
+            <div class="code-value">
+
+                <code>
+                    ${escapeHtml(code)}
+                </code>
+
+                ${
+                    code
+                        ? `
+                            <button
+                                type="button"
+                                onclick="copyBettingCode('${escapeJs(code)}')"
+                            >
+                                Copy
+                            </button>
+                        `
+                        : ""
+                }
+
+            </div>
+
+
+            ${
+                description
+                    ? `
+                        <p>
+                            ${escapeHtml(description)}
+                        </p>
+                    `
+                    : ""
+            }
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   VIP MESSAGE
+   ========================================================= */
+
+function showVipMessage(
+    message,
+    type = "info"
+) {
+
+    const element =
+        document.getElementById(
+            "vipAccessMessage"
+        ) ||
+        document.getElementById(
+            "vipMessage"
+        );
+
+
+    showElementMessage(
+        element,
+        message,
+        type
+    );
+
+}
+
+
+/* =========================================================
+   FORGOT PASSWORD
+   ========================================================= */
 
 function setupForgotPassword() {
 
@@ -4494,7 +5162,9 @@ function setupForgotPassword() {
     }
 
 
-    if (button.dataset.initialized) {
+    if (
+        button.dataset.initialized
+    ) {
 
         return;
 
@@ -4513,9 +5183,9 @@ function setupForgotPassword() {
 }
 
 
-// ======================================================
-// SHOW FORGOT PASSWORD MODAL
-// ======================================================
+/* =========================================================
+   SHOW FORGOT PASSWORD
+   ========================================================= */
 
 function showForgotPasswordModal() {
 
@@ -4539,9 +5209,9 @@ function showForgotPasswordModal() {
 }
 
 
-// ======================================================
-// HANDLE FORGOT PASSWORD
-// ======================================================
+/* =========================================================
+   HANDLE FORGOT PASSWORD
+   ========================================================= */
 
 async function handleForgotPassword(
     identifier
@@ -4561,6 +5231,8 @@ async function handleForgotPassword(
                 "/forgot-password",
                 {
                     method: "POST",
+
+                    skipAuth: true,
 
                     body: JSON.stringify({
                         identifier
@@ -4594,23 +5266,19 @@ async function handleForgotPassword(
 }
 
 
-// ======================================================
-// NOTIFICATION CENTER
-// ======================================================
-
-let notificationTimer =
-    null;
-
+/* =========================================================
+   NOTIFICATION CENTER
+   ========================================================= */
 
 function setupNotificationCenter() {
 
-    const notificationButtons =
+    const buttons =
         document.querySelectorAll(
             "[data-notification-toggle], #notificationButton, #notificationBell"
         );
 
 
-    notificationButtons.forEach(
+    buttons.forEach(
         (button) => {
 
             if (
@@ -4637,16 +5305,26 @@ function setupNotificationCenter() {
 
     injectNotificationStyles();
 
-    loadNotifications();
-
     startNotificationPolling();
+
+
+    /*
+       Only load notifications when a user token
+       already exists.
+    */
+
+    if (getUserToken()) {
+
+        loadNotifications();
+
+    }
 
 }
 
 
-// ======================================================
-// START NOTIFICATION POLLING
-// ======================================================
+/* =========================================================
+   NOTIFICATION POLLING
+   ========================================================= */
 
 function startNotificationPolling() {
 
@@ -4663,7 +5341,9 @@ function startNotificationPolling() {
         setInterval(
             () => {
 
-                if (getAuthToken()) {
+                if (
+                    getUserToken()
+                ) {
 
                     loadNotifications();
 
@@ -4676,15 +5356,17 @@ function startNotificationPolling() {
 }
 
 
-// ======================================================
-// LOAD NOTIFICATIONS
-// ======================================================
+/* =========================================================
+   LOAD NOTIFICATIONS
+   ========================================================= */
 
 async function loadNotifications() {
 
-    if (!getAuthToken()) {
+    if (!getUserToken()) {
 
-        updateNotificationBadge(0);
+        updateNotificationBadge(
+            0
+        );
 
         return;
 
@@ -4704,11 +5386,14 @@ async function loadNotifications() {
 
         if (Array.isArray(data)) {
 
-            notifications = data;
+            notifications =
+                data;
 
         } else if (
             data &&
-            Array.isArray(data.notifications)
+            Array.isArray(
+                data.notifications
+            )
         ) {
 
             notifications =
@@ -4737,9 +5422,9 @@ async function loadNotifications() {
 }
 
 
-// ======================================================
-// RENDER NOTIFICATIONS
-// ======================================================
+/* =========================================================
+   RENDER NOTIFICATIONS
+   ========================================================= */
 
 function renderNotifications(
     notifications
@@ -4774,15 +5459,25 @@ function renderNotifications(
 
         panel.innerHTML = `
             <div class="notification-empty">
+
                 <span>🔔</span>
-                <strong>No notifications</strong>
+
+                <strong>
+                    No notifications
+                </strong>
+
                 <p>
                     You're all caught up.
                 </p>
+
             </div>
         `;
 
-        updateNotificationBadge(0);
+
+        updateNotificationBadge(
+            0
+        );
+
 
         return;
 
@@ -4808,7 +5503,9 @@ function renderNotifications(
         <div class="notification-list">
 
             ${notifications
-                .map(createNotificationHTML)
+                .map(
+                    createNotificationHTML
+                )
                 .join("")}
 
         </div>
@@ -4870,9 +5567,9 @@ function renderNotifications(
 }
 
 
-// ======================================================
-// CREATE NOTIFICATION HTML
-// ======================================================
+/* =========================================================
+   CREATE NOTIFICATION HTML
+   ========================================================= */
 
 function createNotificationHTML(
     notification
@@ -4912,9 +5609,7 @@ function createNotificationHTML(
                     ? "read"
                     : "unread"
             }"
-            data-notification-id="${escapeHtml(
-                id
-            )}"
+            data-notification-id="${escapeHtml(id)}"
         >
 
             <div class="notification-icon">
@@ -4936,9 +5631,7 @@ function createNotificationHTML(
                         ? `
                             <small>
                                 ${escapeHtml(
-                                    formatExpiry(
-                                        createdAt
-                                    )
+                                    formatExpiry(createdAt)
                                 )}
                             </small>
                         `
@@ -4953,9 +5646,9 @@ function createNotificationHTML(
 }
 
 
-// ======================================================
-// TOGGLE NOTIFICATION PANEL
-// ======================================================
+/* =========================================================
+   TOGGLE NOTIFICATION PANEL
+   ========================================================= */
 
 function toggleNotificationPanel(
     event
@@ -5007,9 +5700,9 @@ function toggleNotificationPanel(
 }
 
 
-// ======================================================
-// MARK ONE NOTIFICATION READ
-// ======================================================
+/* =========================================================
+   MARK NOTIFICATION READ
+   ========================================================= */
 
 async function markNotificationRead(
     notificationId
@@ -5034,7 +5727,7 @@ async function markNotificationRead(
         );
 
 
-        loadNotifications();
+        await loadNotifications();
 
     } catch (error) {
 
@@ -5048,9 +5741,9 @@ async function markNotificationRead(
 }
 
 
-// ======================================================
-// MARK ALL NOTIFICATIONS READ
-// ======================================================
+/* =========================================================
+   MARK ALL NOTIFICATIONS READ
+   ========================================================= */
 
 async function markAllNotificationsRead() {
 
@@ -5064,7 +5757,8 @@ async function markAllNotificationsRead() {
         );
 
 
-        loadNotifications();
+        await loadNotifications();
+
 
         showTemporaryToast(
             "All notifications marked as read.",
@@ -5083,9 +5777,9 @@ async function markAllNotificationsRead() {
 }
 
 
-// ======================================================
-// UPDATE NOTIFICATION BADGE
-// ======================================================
+/* =========================================================
+   NOTIFICATION BADGE
+   ========================================================= */
 
 function updateNotificationBadge(
     count
@@ -5123,9 +5817,9 @@ function updateNotificationBadge(
 }
 
 
-// ======================================================
-// NOTIFICATION STYLES
-// ======================================================
+/* =========================================================
+   NOTIFICATION STYLES
+   ========================================================= */
 
 function injectNotificationStyles() {
 
@@ -5203,14 +5897,132 @@ function injectNotificationStyles() {
 
 }
 
-// ======================================================
-// PWA INSTALL
-// ======================================================
 
-// deferredInstallPrompt is already declared earlier
-// in app.js. Do not declare it again here.
+/* =========================================================
+   TEAM BADGES
+   ========================================================= */
+
+async function loadTeamBadges() {
+
+    const badges =
+        document.querySelectorAll(
+            ".team-badge[data-team-name]"
+        );
 
 
+    if (!badges.length) {
+
+        return;
+
+    }
+
+
+    for (
+        const badge of badges
+    ) {
+
+        if (
+            badge.dataset.badgeLoaded ===
+            "true"
+        ) {
+
+            continue;
+
+        }
+
+
+        const teamName =
+            badge.dataset.teamName;
+
+
+        if (!teamName) {
+
+            continue;
+
+        }
+
+
+        try {
+
+            const url =
+                "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
+                encodeURIComponent(
+                    teamName
+                );
+
+
+            const response =
+                await fetch(
+                    url
+                );
+
+
+            if (!response.ok) {
+
+                continue;
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            const team =
+                data &&
+                Array.isArray(
+                    data.teams
+                ) &&
+                data.teams.length
+                    ? data.teams[0]
+                    : null;
+
+
+            if (
+                team &&
+                team.strBadge
+            ) {
+
+                badge.innerHTML = `
+                    <img
+                        src="${escapeHtml(
+                            team.strBadge
+                        )}"
+                        alt="${escapeHtml(
+                            teamName
+                        )}"
+                        loading="lazy"
+                    >
+                `;
+
+
+                badge.classList.add(
+                    "has-team-badge"
+                );
+
+            }
+
+
+            badge.dataset.badgeLoaded =
+                "true";
+
+        } catch (error) {
+
+            console.warn(
+                "Team badge lookup failed:",
+                teamName
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   PWA INSTALL
+   ========================================================= */
 
 function setupPWAInstall() {
 
@@ -5225,6 +6037,7 @@ function setupPWAInstall() {
         (event) => {
 
             event.preventDefault();
+
 
             deferredInstallPrompt =
                 event;
@@ -5243,10 +6056,23 @@ function setupPWAInstall() {
 
     if (installButton) {
 
+        if (
+            installButton.dataset.initialized
+        ) {
+
+            return;
+
+        }
+
+
         installButton.addEventListener(
             "click",
             installPWA
         );
+
+
+        installButton.dataset.initialized =
+            "true";
 
     }
 
@@ -5258,6 +6084,7 @@ function setupPWAInstall() {
             deferredInstallPrompt =
                 null;
 
+
             hideInstallButton();
 
         }
@@ -5266,9 +6093,9 @@ function setupPWAInstall() {
 }
 
 
-// ======================================================
-// INSTALL PWA
-// ======================================================
+/* =========================================================
+   INSTALL PWA
+   ========================================================= */
 
 async function installPWA() {
 
@@ -5303,6 +6130,7 @@ async function installPWA() {
         deferredInstallPrompt =
             null;
 
+
         hideInstallButton();
 
     }
@@ -5310,9 +6138,9 @@ async function installPWA() {
 }
 
 
-// ======================================================
-// HIDE INSTALL BUTTON
-// ======================================================
+/* =========================================================
+   HIDE INSTALL BUTTON
+   ========================================================= */
 
 function hideInstallButton() {
 
@@ -5332,705 +6160,9 @@ function hideInstallButton() {
 }
 
 
-// ======================================================
-// FLEX HUB SUCCESS ANIMATION
-// ======================================================
-
-function showFlexHubAnimation(
-    message = "Welcome to FLEX HUB PREDICTIONS"
-) {
-
-    const existing =
-        document.getElementById(
-            "flexHubSuccessAnimation"
-        );
-
-
-    if (existing) {
-
-        existing.remove();
-
-    }
-
-
-    const overlay =
-        document.createElement(
-            "div"
-        );
-
-
-    overlay.id =
-        "flexHubSuccessAnimation";
-
-
-    overlay.innerHTML = `
-        <div class="flex-success-box">
-
-            <div class="flex-success-logo">
-                ⚽
-            </div>
-
-            <h2>
-                FLEX HUB
-            </h2>
-
-            <p>
-                ${escapeHtml(message)}
-            </p>
-
-        </div>
-    `;
-
-
-    const style =
-        document.createElement(
-            "style"
-        );
-
-
-    style.id =
-        "flexHubSuccessAnimationStyles";
-
-
-    style.textContent = `
-        #flexHubSuccessAnimation {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(3, 5, 8, .92);
-            backdrop-filter: blur(10px);
-            animation: flexFadeIn .25s ease;
-        }
-
-        .flex-success-box {
-            width: min(90%, 430px);
-            padding: 34px;
-            text-align: center;
-            border-radius: 24px;
-            background: #080c14;
-            border: 1px solid rgba(245, 185, 66, .45);
-            box-shadow: 0 25px 80px rgba(0,0,0,.55);
-        }
-
-        .flex-success-logo {
-            font-size: 54px;
-            margin-bottom: 12px;
-        }
-
-        .flex-success-box h2 {
-            margin: 0 0 8px;
-        }
-
-        .flex-success-box p {
-            margin: 0;
-            opacity: .8;
-        }
-
-        @keyframes flexFadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-    `;
-
-
-    document.head.appendChild(
-        style
-    );
-
-
-    document.body.appendChild(
-        overlay
-    );
-
-
-    setTimeout(
-        () => {
-
-            if (overlay) {
-
-                overlay.remove();
-
-            }
-
-
-            if (style) {
-
-                style.remove();
-
-            }
-
-        },
-        1800
-    );
-
-}
-
-
-// ======================================================
-// FORM VALUE HELPER
-// ======================================================
-
-function getFormValue(
-    id
-) {
-
-    const element =
-        document.getElementById(id);
-
-
-    if (!element) {
-
-        return "";
-
-    }
-
-
-    return String(
-        element.value || ""
-    ).trim();
-
-}
-
-
-// ======================================================
-// GENERIC MESSAGE HELPER
-// ======================================================
-
-function showElementMessage(
-    elementOrId,
-    message,
-    type = "info"
-) {
-
-    const element =
-        typeof elementOrId === "string"
-            ? document.getElementById(
-                elementOrId
-            )
-            : elementOrId;
-
-
-    if (!element) {
-
-        return;
-
-    }
-
-
-    element.textContent =
-        message || "";
-
-
-    element.classList.remove(
-        "success",
-        "error",
-        "warning",
-        "info"
-    );
-
-
-    element.classList.add(
-        type
-    );
-
-}
-
-
-// ======================================================
-// VIP MESSAGE HELPER
-// ======================================================
-
-function showVipMessage(
-    message,
-    type = "info"
-) {
-
-    const element =
-        document.getElementById(
-            "vipAccessMessage"
-        ) ||
-        document.getElementById(
-            "vipMessage"
-        );
-
-
-    showElementMessage(
-        element,
-        message,
-        type
-    );
-
-}
-
-
-// ======================================================
-// BUTTON LOADING
-// ======================================================
-
-function setButtonLoading(
-    button,
-    loading,
-    loadingText = "Loading..."
-) {
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    if (loading) {
-
-        if (
-            button.dataset.originalText ===
-            undefined
-        ) {
-
-            button.dataset.originalText =
-                button.innerHTML;
-
-        }
-
-
-        button.disabled =
-            true;
-
-
-        button.innerHTML =
-            loadingText;
-
-    } else {
-
-        button.disabled =
-            false;
-
-
-        if (
-            button.dataset.originalText !==
-            undefined
-        ) {
-
-            button.innerHTML =
-                button.dataset.originalText;
-
-        }
-
-    }
-
-}
-
-
-// ======================================================
-// FORMAT STATUS
-// ======================================================
-
-function formatStatus(
-    status
-) {
-
-    if (!status) {
-
-        return "Pending";
-
-    }
-
-
-    const normalized =
-        String(status)
-            .trim()
-            .toLowerCase();
-
-
-    const map = {
-
-        pending: "Pending",
-
-        won: "Won",
-
-        win: "Won",
-
-        winning: "Won",
-
-        lost: "Lost",
-
-        loss: "Lost",
-
-        losing: "Lost",
-
-        void: "Void",
-
-        cancelled: "Cancelled",
-
-        canceled: "Cancelled",
-
-        completed: "Completed",
-
-        active: "Active",
-
-        inactive: "Inactive"
-
-    };
-
-
-    return (
-        map[normalized] ||
-        capitalize(
-            normalized
-        )
-    );
-
-}
-
-
-// ======================================================
-// FORMAT PLAN
-// ======================================================
-
-function formatPlan(
-    plan
-) {
-
-    if (!plan) {
-
-        return "VIP";
-
-    }
-
-
-    const normalized =
-        String(plan)
-            .trim()
-            .toLowerCase();
-
-
-    if (
-        normalized.includes("week")
-    ) {
-
-        return capitalize(
-            normalized
-        );
-
-    }
-
-
-    if (
-        normalized.includes("month")
-    ) {
-
-        return capitalize(
-            normalized
-        );
-
-    }
-
-
-    return capitalize(
-        normalized
-    );
-
-}
-
-
-// ======================================================
-// FORMAT MATCH DATE
-// ======================================================
-
-function formatMatchDate(
-    date
-) {
-
-    if (!date) {
-
-        return "Date unavailable";
-
-    }
-
-
-    const parsed =
-        new Date(date);
-
-
-    if (
-        Number.isNaN(
-            parsed.getTime()
-        )
-    ) {
-
-        return String(date);
-
-    }
-
-
-    return parsed.toLocaleDateString(
-        undefined,
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
-
-}
-
-
-// ======================================================
-// FORMAT EXPIRY / DATE-TIME
-// ======================================================
-
-function formatExpiry(
-    value
-) {
-
-    if (!value) {
-
-        return "";
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return String(value);
-
-    }
-
-
-    return date.toLocaleString(
-        undefined,
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
-
-}
-
-
-// ======================================================
-// CAPITALIZE
-// ======================================================
-
-function capitalize(
-    value
-) {
-
-    if (!value) {
-
-        return "";
-
-    }
-
-
-    const text =
-        String(value)
-            .trim();
-
-
-    if (!text) {
-
-        return "";
-
-    }
-
-
-    return (
-        text.charAt(0).toUpperCase() +
-        text.slice(1)
-    );
-
-}
-
-
-// ======================================================
-// ESCAPE HTML
-// ======================================================
-
-function escapeHtml(
-    value
-) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return "";
-
-    }
-
-
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-// ======================================================
-// ESCAPE JAVASCRIPT STRING
-// ======================================================
-
-function escapeJs(
-    value
-) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return "";
-
-    }
-
-
-    return String(value)
-        .replace(
-            /\\/g,
-            "\\\\"
-        )
-        .replace(
-            /'/g,
-            "\\'"
-        )
-        .replace(
-            /"/g,
-            '\\"'
-        )
-        .replace(
-            /\r/g,
-            "\\r"
-        )
-        .replace(
-            /\n/g,
-            "\\n"
-        )
-        .replace(
-            /</g,
-            "\\u003C"
-        )
-        .replace(
-            />/g,
-            "\\u003E"
-        );
-
-}
-
-
-// ======================================================
-// TEMPORARY TOAST
-// ======================================================
-
-function showTemporaryToast(
-    message,
-    type = "info"
-) {
-
-    const existing =
-        document.querySelector(
-            ".flex-hub-toast"
-        );
-
-
-    if (existing) {
-
-        existing.remove();
-
-    }
-
-
-    const toast =
-        document.createElement(
-            "div"
-        );
-
-
-    toast.className =
-        `flex-hub-toast ${type}`;
-
-
-    toast.textContent =
-        message || "";
-
-
-    toast.style.cssText = `
-        position: fixed;
-        left: 50%;
-        bottom: 28px;
-        transform: translateX(-50%);
-        z-index: 999999;
-        max-width: min(90vw, 460px);
-        padding: 13px 18px;
-        border-radius: 12px;
-        background: #080c14;
-        border: 1px solid rgba(245,185,66,.35);
-        box-shadow: 0 15px 40px rgba(0,0,0,.45);
-        color: #ffffff;
-        font-size: 14px;
-        font-weight: 600;
-        text-align: center;
-    `;
-
-
-    document.body.appendChild(
-        toast
-    );
-
-
-    setTimeout(
-        () => {
-
-            toast.remove();
-
-        },
-        3000
-    );
-
-}
-
-
-// ======================================================
-// GLOBAL FUNCTIONS
-// ======================================================
+/* =========================================================
+   GLOBAL FUNCTIONS
+   ========================================================= */
 
 window.copyBettingCode =
     copyBettingCode;
@@ -6060,29 +6192,63 @@ window.handleVipAccess =
     handleVipAccess;
 
 
-// ======================================================
-// FINAL SAFETY CHECK
-// ======================================================
-
-window.FLEX_HUB_APP =
-    {
-        version: "3.0",
-
-        loadPredictions,
-        loadResults,
-
-        loadVipPredictions,
-        loadVipBettingCodes,
-
-        checkVipStatus,
-
-        handleLogin,
-        handleRegister,
-
-        handleSignOut
-    };
+window.installPWA =
+    installPWA;
 
 
-// ======================================================
-// END OF APP.JS
-// ======================================================
+/* =========================================================
+   FLEX HUB GLOBAL APP OBJECT
+   ========================================================= */
+
+window.FLEX_HUB_APP = {
+
+    version: "4.0",
+
+    apiBaseUrl:
+        API_BASE_URL,
+
+    getUserToken,
+
+    getAuthToken,
+
+    getVipToken,
+
+    getStoredUser,
+
+    checkUserSession,
+
+    verifyCurrentUserSession,
+
+    handleLogin,
+
+    handleRegister,
+
+    handleSignOut,
+
+    loadPredictions,
+
+    loadResults,
+
+    loadVipPredictions,
+
+    loadVipBettingCodes,
+
+    checkVipStatus,
+
+    loadNotifications
+
+};
+
+
+/* =========================================================
+   FINAL SAFETY CHECK
+   ========================================================= */
+
+console.log(
+    "FLEX HUB PREDICTIONS app.js loaded successfully."
+);
+
+
+/* =========================================================
+   END OF APP.JS
+   ========================================================= */
