@@ -1964,6 +1964,7 @@ let adminResults = [];
 let adminUsers = [];
 let adminNotifications = [];
 let adminActivityLogs = [];
+let adminBettingCodes = [];
 
 let adminAutoRefreshTimer = null;
 
@@ -3498,6 +3499,380 @@ function renderSubscriptions() {
 
             })
             .join("");
+}
+    // ======================================================
+// BOOKING CODES
+// ======================================================
+
+async function loadBettingCodes() {
+    const data = await apiRequest("/admin/betting-codes");
+
+    adminBettingCodes = Array.isArray(data)
+        ? data
+        : (
+            data.codes ||
+            data.bettingCodes ||
+            []
+        );
+
+    renderBettingCodes();
+
+    return adminBettingCodes;
+}
+
+
+function renderBettingCodes() {
+
+    const tbody = document.getElementById(
+        "bookingCodesTableBody"
+    );
+
+    if (!tbody) return;
+
+
+    if (!adminBettingCodes.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state">
+                    No booking codes available.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    tbody.innerHTML = adminBettingCodes.map(item => {
+
+        const category =
+            String(item.category || "regular").toUpperCase();
+
+        const status =
+            String(item.status || "active").toUpperCase();
+
+        const statusClass =
+            item.status === "active"
+                ? "status-success"
+                : "status-danger";
+
+
+        return `
+            <tr>
+
+                <td>
+                    ${escapeHTML(item.bookmaker || "")}
+                </td>
+
+                <td>
+                    <strong>
+                        ${escapeHTML(item.code || "")}
+                    </strong>
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        item.description || "—"
+                    )}
+                </td>
+
+                <td>
+                    <span class="status-badge">
+                        ${escapeHTML(category)}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        ${escapeHTML(status)}
+                    </span>
+                </td>
+
+                <td>
+                    ${formatDate(item.created_at)}
+                </td>
+
+                <td>
+
+                    <div class="table-actions">
+
+                        <button
+                            type="button"
+                            class="small-button"
+                            onclick="toggleBookingCodeStatus(${Number(item.id)})"
+                        >
+                            ${
+                                item.status === "active"
+                                    ? "Deactivate"
+                                    : "Activate"
+                            }
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="small-button danger"
+                            onclick="deleteBookingCode(${Number(item.id)})"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+        `;
+
+    }).join("");
+}
+
+
+async function saveBookingCode(event) {
+
+    event.preventDefault();
+
+
+    const bookmaker =
+        document.getElementById(
+            "bookingCodeBookmaker"
+        ).value.trim();
+
+
+    const code =
+        document.getElementById(
+            "bookingCodeValue"
+        ).value.trim();
+
+
+    const category =
+        document.getElementById(
+            "bookingCodeCategory"
+        ).value;
+
+
+    const status =
+        document.getElementById(
+            "bookingCodeStatus"
+        ).value;
+
+
+    const description =
+        document.getElementById(
+            "bookingCodeDescription"
+        ).value.trim();
+
+
+    const message =
+        document.getElementById(
+            "bookingCodeMessage"
+        );
+
+
+    const button =
+        document.getElementById(
+            "saveBookingCodeButton"
+        );
+
+
+    if (!bookmaker || !code) {
+
+        showMessage(
+            message,
+            "Please enter the bookmaker and booking code.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        setButtonLoading(
+            button,
+            true,
+            "Adding..."
+        );
+
+
+        await apiRequest(
+            "/admin/betting-codes",
+            {
+                method: "POST",
+
+                body: {
+                    bookmaker,
+                    code,
+                    description,
+                    category,
+                    status
+                }
+            }
+        );
+
+
+        showMessage(
+            message,
+            "Booking code added successfully.",
+            "success"
+        );
+
+
+        document
+            .getElementById("bookingCodeForm")
+            .reset();
+
+
+        document
+            .getElementById("bookingCodeCategory")
+            .value = "regular";
+
+
+        document
+            .getElementById("bookingCodeStatus")
+            .value = "active";
+
+
+        await loadBettingCodes();
+
+    } catch (error) {
+
+        showMessage(
+            message,
+            error.message ||
+            "Failed to add booking code.",
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            button,
+            false
+        );
+    }
+}
+
+
+function clearBookingCodeForm() {
+
+    const form =
+        document.getElementById(
+            "bookingCodeForm"
+        );
+
+
+    if (form) {
+        form.reset();
+    }
+
+
+    const category =
+        document.getElementById(
+            "bookingCodeCategory"
+        );
+
+
+    const status =
+        document.getElementById(
+            "bookingCodeStatus"
+        );
+
+
+    if (category) {
+        category.value = "regular";
+    }
+
+
+    if (status) {
+        status.value = "active";
+    }
+
+
+    clearMessage(
+        document.getElementById(
+            "bookingCodeMessage"
+        )
+    );
+}
+
+
+async function deleteBookingCode(id) {
+
+    if (
+        !confirm(
+            "Delete this booking code?"
+        )
+    ) {
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `/admin/betting-codes/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        await loadBettingCodes();
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "Failed to delete booking code."
+        );
+    }
+}
+
+
+async function toggleBookingCodeStatus(id) {
+
+    const item =
+        adminBettingCodes.find(
+            code =>
+                Number(code.id) === Number(id)
+        );
+
+
+    if (!item) return;
+
+
+    const nextStatus =
+        item.status === "active"
+            ? "inactive"
+            : "active";
+
+
+    try {
+
+        await apiRequest(
+            `/admin/betting-codes/${id}/status`,
+            {
+                method: "PATCH",
+
+                body: {
+                    status: nextStatus
+                }
+            }
+        );
+
+
+        await loadBettingCodes();
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "Failed to update booking code status."
+        );
+    }
 }
 
 
