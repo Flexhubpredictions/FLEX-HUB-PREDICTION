@@ -6100,6 +6100,105 @@ async function generateSubscription(event) {
     }
 }
 
+    /* =========================================================
+   CHECK ADMIN SESSION
+   ========================================================= */
+
+async function checkAdminSession() {
+
+    const savedToken =
+        localStorage.getItem(ADMIN_TOKEN_KEY);
+
+    const loginScreen =
+        document.getElementById("adminLoginScreen");
+
+    const adminApp =
+        document.getElementById("adminApp");
+
+    /*
+     * No saved admin token.
+     * Show the login screen.
+     */
+    if (!savedToken) {
+
+        adminToken = null;
+
+        if (loginScreen) {
+            loginScreen.style.display = "flex";
+        }
+
+        if (adminApp) {
+            adminApp.style.display = "none";
+        }
+
+        return;
+    }
+
+    /*
+     * Restore saved token.
+     */
+    adminToken = savedToken;
+
+    try {
+
+        /*
+         * Verify the token with the backend.
+         */
+        await apiRequest("/admin/me");
+
+        /*
+         * Token is valid.
+         * Hide login and open dashboard.
+         */
+        if (loginScreen) {
+            loginScreen.style.display = "none";
+        }
+
+        if (adminApp) {
+            adminApp.style.display = "block";
+        }
+
+        /*
+         * Load all admin information.
+         */
+        await refreshAdminData(false);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Admin session check failed:",
+            error
+        );
+
+        /*
+         * Remove invalid/expired token.
+         */
+        adminToken = null;
+        clearAdminToken();
+
+        /*
+         * Return to login screen.
+         */
+        if (loginScreen) {
+            loginScreen.style.display = "flex";
+        }
+
+        if (adminApp) {
+            adminApp.style.display = "none";
+        }
+
+        showMessage(
+            "loginMessage",
+            "Your admin session has expired. Please log in again.",
+            "error"
+        );
+    }
+}
         /* =========================================================
            EVENT LISTENERS
            ========================================================= */
