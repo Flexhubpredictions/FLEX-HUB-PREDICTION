@@ -1,1182 +1,3052 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>FLEX HUB — Admin Panel</title>
-
-<style>
-:root {
-    --black:#05070b;
-    --black2:#0b0f16;
-    --black3:#111722;
-    --gold:#f5b942;
-    --gold-light:#ffd76a;
-    --blue:#1479ff;
-    --blue-light:#45a3ff;
-    --white:#fff;
-    --muted:#9ba7b7;
-    --green:#22c55e;
-    --red:#ef4444;
-    --orange:#f59e0b;
-    --border:rgba(255,255,255,.09);
-}
-
-* {
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-}
-
-body {
-    font-family:Arial,Helvetica,sans-serif;
-    background:
-        radial-gradient(circle at top right,rgba(20,121,255,.14),transparent 30%),
-        radial-gradient(circle at top left,rgba(245,185,66,.10),transparent 25%),
-        var(--black);
-    color:var(--white);
-    min-height:100vh;
-}
-
-button,input,select,textarea {
-    font:inherit;
-}
-
-button {
-    cursor:pointer;
-}
-
-.login-page {
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:20px;
-}
-
-.login-card {
-    width:100%;
-    max-width:430px;
-    background:rgba(11,15,22,.96);
-    border:1px solid rgba(245,185,66,.25);
-    border-radius:22px;
-    padding:35px;
-    box-shadow:0 25px 80px rgba(0,0,0,.55);
-}
-
-.brand {
-    text-align:center;
-    margin-bottom:30px;
-}
-
-.brand-logo {
-    width:70px;
-    height:70px;
-    margin:auto;
-    border-radius:18px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:linear-gradient(135deg,var(--gold),var(--blue));
-    color:#000;
-    font-size:25px;
-    font-weight:900;
-}
-
-.brand h1 {
-    margin-top:15px;
-    font-size:25px;
-}
-
-.brand p {
-    color:var(--muted);
-    margin-top:7px;
-}
-
-.form-group {
-    margin-bottom:18px;
-}
-
-label {
-    display:block;
-    margin-bottom:8px;
-    font-weight:700;
-    font-size:14px;
-}
-
-input,select,textarea {
-    width:100%;
-    padding:13px 14px;
-    border-radius:10px;
-    border:1px solid var(--border);
-    background:#070a10;
-    color:var(--white);
-    outline:none;
-}
-
-input:focus,select:focus,textarea:focus {
-    border-color:var(--gold);
-}
-
-textarea {
-    min-height:110px;
-    resize:vertical;
-}
-
-.primary-btn {
-    width:100%;
-    border:none;
-    border-radius:11px;
-    padding:14px;
-    font-weight:800;
-    color:#05070b;
-    background:linear-gradient(135deg,var(--gold),var(--gold-light));
-}
-
-.message {
-    margin-top:15px;
-    padding:11px;
-    border-radius:9px;
-    display:none;
-    font-size:14px;
-}
-
-.message.error {
-    display:block;
-    background:rgba(239,68,68,.12);
-    color:#ff8c8c;
-}
-
-.message.success {
-    display:block;
-    background:rgba(34,197,94,.12);
-    color:#71e99b;
-}
-
-.admin-app {
-    display:none;
-}
-
-.topbar {
-    min-height:72px;
-    padding:0 25px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    background:rgba(5,7,11,.92);
-    border-bottom:1px solid var(--border);
-    position:sticky;
-    top:0;
-    z-index:20;
-    backdrop-filter:blur(15px);
-}
-
-.topbar-brand {
-    font-weight:900;
-}
-
-.topbar-brand span {
-    color:var(--gold);
-}
-
-.topbar-actions {
-    display:flex;
-    gap:10px;
-}
-
-.small-btn {
-    border:1px solid var(--border);
-    background:var(--black3);
-    color:var(--white);
-    padding:9px 14px;
-    border-radius:9px;
-    font-weight:700;
-}
-
-.small-btn:hover {
-    border-color:var(--gold);
-    color:var(--gold);
-}
-
-.danger-btn {
-    border-color:rgba(239,68,68,.3);
-    color:#ff8c8c;
-}
-
-.admin-container {
-    width:min(1400px,94%);
-    margin:30px auto;
-}
-
-.page-heading {
-    margin-bottom:25px;
-}
-
-.page-heading h2 {
-    font-size:30px;
-}
-
-.page-heading p {
-    margin-top:7px;
-    color:var(--muted);
-}
-
-.stats-grid {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:16px;
-    margin-bottom:25px;
-}
-
-.stat-card {
-    background:linear-gradient(145deg,var(--black2),var(--black3));
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:20px;
-}
-
-.stat-card p {
-    color:var(--muted);
-    font-size:13px;
-    margin-bottom:10px;
-}
-
-.stat-card h3 {
-    font-size:30px;
-}
-
-.panel {
-    background:rgba(11,15,22,.95);
-    border:1px solid var(--border);
-    border-radius:18px;
-    padding:23px;
-    margin-bottom:25px;
-}
-
-.panel-heading {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:15px;
-    margin-bottom:20px;
-}
-
-.panel-heading h3 {
-    font-size:20px;
-}
-
-.panel-heading p {
-    color:var(--muted);
-    font-size:13px;
-    margin-top:4px;
-}
-
-.prediction-form {
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:17px;
-}
-
-.full-width {
-    grid-column:1/-1;
-}
-
-.team-row {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:15px;
-}
-
-.form-actions {
-    grid-column:1/-1;
-    display:flex;
-    gap:10px;
-}
-
-.form-actions button {
-    width:auto;
-    min-width:160px;
-}
-
-.secondary-btn {
-    border:1px solid var(--border);
-    background:var(--black3);
-    color:var(--white);
-    border-radius:10px;
-    padding:13px 18px;
-    font-weight:700;
-}
-
-.filters {
-    display:grid;
-    grid-template-columns:1.5fr 1fr 1fr;
-    gap:12px;
-    margin-bottom:20px;
-}
-
-.table-wrapper {
-    overflow-x:auto;
-}
-
-table {
-    width:100%;
-    border-collapse:collapse;
-    min-width:900px;
-}
-
-th,td {
-    padding:14px 12px;
-    text-align:left;
-    border-bottom:1px solid var(--border);
-    vertical-align:middle;
-}
-
-th {
-    color:var(--gold);
-    font-size:12px;
-    text-transform:uppercase;
-}
-
-td {
-    font-size:14px;
-}
-
-.match-name {
-    font-weight:800;
-}
-
-.match-league {
-    color:var(--muted);
-    font-size:12px;
-    margin-top:4px;
-}
-
-.badge {
-    display:inline-flex;
-    padding:6px 10px;
-    border-radius:999px;
-    font-size:11px;
-    font-weight:800;
-}
-
-.badge-regular {
-    background:rgba(20,121,255,.12);
-    color:#62adff;
-}
-
-.badge-vip {
-    background:rgba(245,185,66,.12);
-    color:var(--gold-light);
-}
-
-.badge-pending {
-    background:rgba(245,158,11,.12);
-    color:#ffc45c;
-}
-
-.badge-won {
-    background:rgba(34,197,94,.12);
-    color:#67e58f;
-}
-
-.badge-lost {
-    background:rgba(239,68,68,.12);
-    color:#ff8585;
-}
-
-.badge-void {
-    background:rgba(148,163,184,.12);
-    color:#c3ccd8;
-}
-
-.badge-unused {
-    background:rgba(20,121,255,.12);
-    color:#62adff;
-}
-
-.badge-active {
-    background:rgba(34,197,94,.12);
-    color:#67e58f;
-}
-
-.badge-expired {
-    background:rgba(239,68,68,.12);
-    color:#ff8585;
-}
-
-.action-buttons {
-    display:flex;
-    gap:7px;
-}
-
-.edit-btn,
-.delete-btn,
-.copy-btn {
-    border:1px solid var(--border);
-    padding:7px 10px;
-    border-radius:7px;
-    background:var(--black3);
-    font-size:12px;
-    font-weight:700;
-}
-
-.edit-btn {
-    color:var(--blue-light);
-}
-
-.delete-btn {
-    color:#ff8585;
-}
-
-.copy-btn {
-    color:var(--gold);
-}
-
-.subscription-generator {
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:15px;
-    align-items:end;
-}
-
-.subscription-generator button {
-    width:auto;
-    min-width:190px;
-}
-
-.generated-code {
-    display:none;
-    margin-top:18px;
-    padding:18px;
-    border-radius:12px;
-    border:1px solid rgba(245,185,66,.25);
-    background:rgba(245,185,66,.06);
-}
-
-.generated-code strong {
-    display:block;
-    color:var(--gold);
-    margin-bottom:8px;
-}
-
-.code-display {
-    font-size:20px;
-    font-weight:900;
-    letter-spacing:1.5px;
-    word-break:break-all;
-}
-
-.empty-state,
-.loading {
-    text-align:center;
-    padding:35px;
-    color:var(--muted);
-}
-
-@media(max-width:900px) {
-
-    .stats-grid {
-        grid-template-columns:repeat(2,1fr);
-    }
-
-    .prediction-form {
-        grid-template-columns:1fr;
-    }
-
-    .filters {
-        grid-template-columns:1fr;
-    }
-
-    .full-width {
-        grid-column:auto;
-    }
-
-    .form-actions {
-        grid-column:auto;
-        flex-direction:column;
-    }
-
-    .form-actions button {
-        width:100%;
-    }
-
-    .subscription-generator {
-        grid-template-columns:1fr;
-    }
-
-    .subscription-generator button {
-        width:100%;
-    }
-}
-
-@media(max-width:600px) {
-
-    .topbar {
-        padding:12px 15px;
-        flex-direction:column;
-        align-items:flex-start;
-        gap:12px;
-    }
-
-    .topbar-actions {
-        width:100%;
-    }
-
-    .topbar-actions button {
-        flex:1;
-    }
-
-    .stats-grid {
-        gap:10px;
-    }
-
-    .stat-card {
-        padding:15px;
-    }
-
-    .stat-card h3 {
-        font-size:24px;
-    }
-
-    .panel {
-        padding:16px;
-    }
-
-    .team-row {
-        grid-template-columns:1fr;
-    }
-}
-</style>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>FLEX HUB PREDICTIONS — Admin Panel</title>
+
+    <meta
+        name="description"
+        content="FLEX HUB PREDICTIONS Administration Panel"
+    >
+
+    <style>
+
+        /* =====================================================
+           ROOT
+           ===================================================== */
+
+        :root {
+            --black: #030508;
+            --black-2: #070a10;
+            --black-3: #0d121b;
+            --black-4: #151c27;
+
+            --gold: #f5b942;
+            --gold-light: #ffd978;
+
+            --blue: #1479ff;
+            --blue-light: #4da3ff;
+
+            --green: #25d366;
+            --red: #ff4d5a;
+            --orange: #ff9f43;
+
+            --white: #ffffff;
+            --text: #edf2f7;
+            --muted: #94a3b8;
+
+            --border: rgba(255,255,255,.09);
+
+            --shadow:
+                0 20px 60px rgba(0,0,0,.45);
+
+            --radius: 18px;
+        }
+
+
+        /* =====================================================
+           RESET
+           ===================================================== */
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+
+        body {
+            min-height: 100vh;
+
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at top right,
+                    rgba(20,121,255,.14),
+                    transparent 32%
+                ),
+                radial-gradient(
+                    circle at top left,
+                    rgba(245,185,66,.08),
+                    transparent 30%
+                ),
+                var(--black);
+
+            color: var(--text);
+        }
+
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+
+        button {
+            cursor: pointer;
+        }
+
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+
+        /* =====================================================
+           LOGIN SCREEN
+           ===================================================== */
+
+        #adminLoginScreen {
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 24px;
+        }
+
+
+        .login-card {
+
+            width: 100%;
+            max-width: 440px;
+
+            padding: 35px;
+
+            border:
+                1px solid
+                rgba(245,185,66,.18);
+
+            border-radius: 24px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(21,28,39,.96),
+                    rgba(3,5,8,.98)
+                );
+
+            box-shadow: var(--shadow);
+
+            text-align: center;
+        }
+
+
+        .admin-logo {
+
+            width: 74px;
+            height: 74px;
+
+            margin: 0 auto 20px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 22px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    #c58b1e
+                );
+
+            color: #080808;
+
+            font-size: 30px;
+
+            font-weight: 900;
+
+            box-shadow:
+                0 12px 35px
+                rgba(245,185,66,.22);
+        }
+
+
+        .login-card h1 {
+
+            font-size: 28px;
+
+            margin-bottom: 8px;
+
+            color: var(--white);
+        }
+
+
+        .login-card p {
+
+            color: var(--muted);
+
+            font-size: 14px;
+
+            margin-bottom: 28px;
+        }
+
+
+        /* =====================================================
+           FORMS
+           ===================================================== */
+
+        .form-group {
+
+            margin-bottom: 17px;
+
+            text-align: left;
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            color: #dce5ef;
+
+            font-size: 13px;
+
+            font-weight: 700;
+        }
+
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+
+            width: 100%;
+
+            padding: 13px 14px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 12px;
+
+            outline: none;
+
+            background:
+                rgba(255,255,255,.045);
+
+            color: var(--white);
+
+            transition:
+                .2s ease;
+        }
+
+
+        .form-group textarea {
+
+            min-height: 110px;
+
+            resize: vertical;
+        }
+
+
+        .form-group select option {
+
+            background: var(--black-3);
+
+            color: white;
+        }
+
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+
+            border-color:
+                var(--blue);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(20,121,255,.12);
+        }
+
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .button {
+
+            border: none;
+
+            border-radius: 11px;
+
+            padding: 11px 17px;
+
+            font-weight: 800;
+
+            transition:
+                transform .2s ease,
+                opacity .2s ease,
+                box-shadow .2s ease;
+        }
+
+
+        .button:hover {
+
+            transform: translateY(-1px);
+        }
+
+
+        .button:disabled {
+
+            opacity: .55;
+
+            cursor: not-allowed;
+
+            transform: none;
+        }
+
+
+        .primary-button {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    #d69b22
+                );
+
+            color: #080808;
+
+            box-shadow:
+                0 8px 25px
+                rgba(245,185,66,.13);
+        }
+
+
+        .blue-button {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    #075dcc
+                );
+
+            color: white;
+        }
+
+
+        .success-button {
+
+            background:
+                rgba(37,211,102,.13);
+
+            color:
+                #69ed9a;
+
+            border:
+                1px solid
+                rgba(37,211,102,.25);
+        }
+
+
+        .danger-button {
+
+            background:
+                rgba(255,77,90,.12);
+
+            color:
+                #ff7c86;
+
+            border:
+                1px solid
+                rgba(255,77,90,.22);
+        }
+
+
+        .warning-button {
+
+            background:
+                rgba(255,159,67,.12);
+
+            color:
+                #ffb86e;
+
+            border:
+                1px solid
+                rgba(255,159,67,.22);
+        }
+
+
+        .secondary-button {
+
+            background:
+                rgba(255,255,255,.06);
+
+            color:
+                var(--text);
+
+            border:
+                1px solid
+                var(--border);
+        }
+
+
+        /* =====================================================
+           MESSAGES
+           ===================================================== */
+
+        .message {
+
+            display: none;
+
+            margin-top: 13px;
+
+            padding: 12px 14px;
+
+            border-radius: 10px;
+
+            font-size: 13px;
+
+            text-align: left;
+        }
+
+
+        .message.success {
+
+            display: block;
+
+            background:
+                rgba(37,211,102,.10);
+
+            color:
+                #72eca0;
+
+            border:
+                1px solid
+                rgba(37,211,102,.20);
+        }
+
+
+        .message.error {
+
+            display: block;
+
+            background:
+                rgba(255,77,90,.10);
+
+            color:
+                #ff8991;
+
+            border:
+                1px solid
+                rgba(255,77,90,.20);
+        }
+
+
+        /* =====================================================
+           ADMIN APP
+           ===================================================== */
+
+        #adminApp {
+
+            display: none;
+
+            min-height: 100vh;
+        }
+
+
+        .admin-header {
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 100;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            background:
+                rgba(3,5,8,.91);
+
+            backdrop-filter:
+                blur(18px);
+        }
+
+
+        .admin-header-inner {
+
+            max-width: 1500px;
+
+            margin: auto;
+
+            padding:
+                15px 22px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+        }
+
+
+        .brand {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+        }
+
+
+        .brand-icon {
+
+            width: 42px;
+            height: 42px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 12px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    #b97e15
+                );
+
+            color: #080808;
+
+            font-weight: 900;
+        }
+
+
+        .brand-text strong {
+
+            display: block;
+
+            color: white;
+
+            font-size: 15px;
+        }
+
+
+        .brand-text span {
+
+            display: block;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            margin-top: 2px;
+        }
+
+
+        .header-actions {
+
+            display: flex;
+
+            gap: 9px;
+
+            flex-wrap: wrap;
+
+            justify-content: flex-end;
+        }
+
+
+        /* =====================================================
+           MAIN
+           ===================================================== */
+
+        .admin-container {
+
+            width: min(
+                1500px,
+                calc(100% - 32px)
+            );
+
+            margin: auto;
+
+            padding:
+                28px 0 60px;
+        }
+
+
+        .page-heading {
+
+            margin-bottom: 25px;
+        }
+
+
+        .page-heading h2 {
+
+            font-size: 30px;
+
+            margin-bottom: 6px;
+
+            color: white;
+        }
+
+
+        .page-heading p {
+
+            color: var(--muted);
+
+            font-size: 14px;
+        }
+
+
+        /* =====================================================
+           STAT CARDS
+           ===================================================== */
+
+        .stats-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(8, minmax(0, 1fr));
+
+            gap: 12px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .stat-card {
+
+            min-height: 115px;
+
+            padding: 18px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                var(--radius);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(21,28,39,.88),
+                    rgba(7,10,16,.88)
+                );
+
+            box-shadow:
+                0 12px 35px
+                rgba(0,0,0,.18);
+        }
+
+
+        .stat-card span {
+
+            display: block;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            font-weight: 800;
+
+            text-transform: uppercase;
+
+            letter-spacing: .7px;
+
+            margin-bottom: 13px;
+        }
+
+
+        .stat-card strong {
+
+            font-size: 26px;
+
+            color: white;
+        }
+
+
+        .stat-card.gold strong {
+            color: var(--gold);
+        }
+
+
+        .stat-card.blue strong {
+            color: var(--blue-light);
+        }
+
+
+        .stat-card.green strong {
+            color: #68ed99;
+        }
+
+
+        .stat-card.red strong {
+            color: #ff7881;
+        }
+
+
+        /* =====================================================
+           SECTION
+           ===================================================== */
+
+        .admin-section {
+
+            margin-bottom: 25px;
+
+            padding: 22px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(13,18,27,.94),
+                    rgba(5,7,11,.96)
+                );
+
+            box-shadow:
+                0 15px 45px
+                rgba(0,0,0,.18);
+        }
+
+
+        .section-heading {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-bottom: 20px;
+
+            flex-wrap: wrap;
+        }
+
+
+        .section-heading h3 {
+
+            color: white;
+
+            font-size: 20px;
+        }
+
+
+        .section-heading p {
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            margin-top: 4px;
+        }
+
+
+        /* =====================================================
+           FORM GRID
+           ===================================================== */
+
+        .form-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 15px;
+        }
+
+
+        .form-grid .full {
+
+            grid-column:
+                1 / -1;
+        }
+
+
+        .form-actions {
+
+            display: flex;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+            margin-top: 5px;
+        }
+
+
+        /* =====================================================
+           TABLE
+           ===================================================== */
+
+        .table-wrap {
+
+            width: 100%;
+
+            overflow-x: auto;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 14px;
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 850px;
+        }
+
+
+        th {
+
+            padding: 13px 12px;
+
+            background:
+                rgba(255,255,255,.035);
+
+            color:
+                var(--gold-light);
+
+            text-align: left;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing: .5px;
+
+            white-space: nowrap;
+        }
+
+
+        td {
+
+            padding: 13px 12px;
+
+            border-top:
+                1px solid
+                rgba(255,255,255,.06);
+
+            color:
+                #dbe3ec;
+
+            font-size: 13px;
+
+            vertical-align: middle;
+        }
+
+
+        tbody tr:hover {
+
+            background:
+                rgba(255,255,255,.025);
+        }
+
+
+        td button {
+
+            margin:
+                2px 3px 2px 0;
+
+            padding:
+                7px 10px;
+
+            border-radius: 8px;
+
+            font-size: 11px;
+
+            font-weight: 800;
+
+            border: none;
+        }
+
+
+        /* =====================================================
+           STATUS
+           ===================================================== */
+
+        .status-badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding:
+                5px 9px;
+
+            border-radius:
+                999px;
+
+            font-size: 10px;
+
+            font-weight: 900;
+
+            text-transform: uppercase;
+        }
+
+
+        .status-pending {
+
+            background:
+                rgba(255,159,67,.12);
+
+            color:
+                #ffb86e;
+        }
+
+
+        .status-won {
+
+            background:
+                rgba(37,211,102,.12);
+
+            color:
+                #68ed99;
+        }
+
+
+        .status-lost {
+
+            background:
+                rgba(255,77,90,.12);
+
+            color:
+                #ff7881;
+        }
+
+
+        .status-void {
+
+            background:
+                rgba(20,121,255,.12);
+
+            color:
+                #69aaff;
+        }
+
+
+        .status-active {
+
+            background:
+                rgba(37,211,102,.12);
+
+            color:
+                #68ed99;
+        }
+
+
+        .status-disabled,
+        .status-expired {
+
+            background:
+                rgba(255,77,90,.12);
+
+            color:
+                #ff7881;
+        }
+
+
+        .status-unused {
+
+            background:
+                rgba(245,185,66,.12);
+
+            color:
+                var(--gold-light);
+        }
+
+
+        /* =====================================================
+           GENERATED CODE
+           ===================================================== */
+
+        .generated-code-box {
+
+            display: none;
+
+            margin-top: 18px;
+
+            padding: 18px;
+
+            border:
+                1px solid
+                rgba(245,185,66,.25);
+
+            border-radius: 14px;
+
+            background:
+                rgba(245,185,66,.06);
+        }
+
+
+        .generated-code-box span {
+
+            display: block;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .generated-code-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+        }
+
+
+        .generated-code {
+
+            flex: 1;
+
+            min-width: 0;
+
+            padding: 13px;
+
+            border-radius: 10px;
+
+            background:
+                rgba(0,0,0,.35);
+
+            border:
+                1px dashed
+                rgba(245,185,66,.35);
+
+            color:
+                var(--gold-light);
+
+            font-size: 17px;
+
+            font-weight: 900;
+
+            letter-spacing: 1px;
+
+            overflow-wrap: anywhere;
+        }
+
+
+        /* =====================================================
+           CHECKBOX
+           ===================================================== */
+
+        .checkbox-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            padding-top: 10px;
+        }
+
+
+        .checkbox-row input {
+
+            width: 17px;
+            height: 17px;
+        }
+
+
+        .checkbox-row label {
+
+            color: #dce5ef;
+
+            font-size: 13px;
+
+            font-weight: 700;
+        }
+
+
+        /* =====================================================
+           EMPTY / INFO
+           ===================================================== */
+
+        .empty-state {
+
+            padding: 25px;
+
+            text-align: center;
+
+            color: var(--muted);
+        }
+
+
+        .info-box {
+
+            padding: 15px;
+
+            border-radius: 12px;
+
+            border:
+                1px solid
+                rgba(20,121,255,.18);
+
+            background:
+                rgba(20,121,255,.06);
+
+            color: #b9d9ff;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            margin-bottom: 18px;
+        }
+
+
+        /* =====================================================
+           MOBILE
+           ===================================================== */
+
+        @media (max-width: 1200px) {
+
+            .stats-grid {
+
+                grid-template-columns:
+                    repeat(4, minmax(0, 1fr));
+            }
+        }
+
+
+        @media (max-width: 760px) {
+
+            .admin-container {
+
+                width:
+                    min(
+                        100% - 20px,
+                        1500px
+                    );
+
+                padding-top: 20px;
+            }
+
+
+            .admin-header-inner {
+
+                align-items:
+                    flex-start;
+
+                flex-direction:
+                    column;
+            }
+
+
+            .header-actions {
+
+                width: 100%;
+
+                justify-content:
+                    flex-start;
+            }
+
+
+            .stats-grid {
+
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .form-grid {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .form-grid .full {
+
+                grid-column:
+                    auto;
+            }
+
+
+            .admin-section {
+
+                padding: 16px;
+            }
+
+
+            .page-heading h2 {
+
+                font-size: 24px;
+            }
+
+
+            .generated-code-row {
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    stretch;
+            }
+        }
+
+
+        @media (max-width: 450px) {
+
+            .stats-grid {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .login-card {
+
+                padding: 25px 20px;
+            }
+
+
+            .header-actions .button {
+
+                flex: 1;
+            }
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-<!-- LOGIN -->
 
-<section class="login-page" id="loginPage">
+<!-- =========================================================
+     LOGIN SCREEN
+     ========================================================= -->
+
+<div id="adminLoginScreen">
 
     <div class="login-card">
 
-        <div class="brand">
-            <div class="brand-logo">FH</div>
-            <h1>FLEX HUB</h1>
-            <p>Administrator Panel</p>
+        <div class="admin-logo">
+            FH
         </div>
+
+        <h1>
+            FLEX HUB
+        </h1>
+
+        <p>
+            Predictions Administration Panel
+        </p>
+
 
         <form id="adminLoginForm">
 
             <div class="form-group">
 
-                <label>Username</label>
+                <label for="adminUsername">
+                    Admin Username
+                </label>
 
                 <input
                     type="text"
                     id="adminUsername"
-                    placeholder="Admin username"
+                    autocomplete="username"
+                    placeholder="Enter admin username"
                     required
                 >
 
             </div>
 
+
             <div class="form-group">
 
-                <label>Password</label>
+                <label for="adminPassword">
+                    Admin Password
+                </label>
 
                 <input
                     type="password"
                     id="adminPassword"
-                    placeholder="Admin password"
+                    autocomplete="current-password"
+                    placeholder="Enter admin password"
                     required
                 >
 
             </div>
 
+
             <button
-                class="primary-btn"
                 type="submit"
+                id="adminLoginButton"
+                class="button primary-button"
+                style="width:100%;"
             >
-                LOGIN TO ADMIN PANEL
+                Login to Admin
             </button>
 
+
             <div
-                class="message"
                 id="loginMessage"
+                class="message"
             ></div>
 
         </form>
 
     </div>
 
-</section>
-
-
-<!-- ADMIN -->
-
-<div class="admin-app" id="adminApp">
-
-<header class="topbar">
-
-    <div class="topbar-brand">
-        FLEX <span>HUB</span> — ADMIN
-    </div>
-
-    <div class="topbar-actions">
-
-        <button
-            class="small-btn"
-            id="openWebsiteButton"
-        >
-            View Website
-        </button>
-
-        <button
-            class="small-btn danger-btn"
-            id="logoutButton"
-        >
-            Sign Out
-        </button>
-
-    </div>
-
-</header>
-
-
-<main class="admin-container">
-
-<div class="page-heading">
-
-    <h2>Prediction Management</h2>
-
-    <p>
-        Manage football editorial content and VIP subscriptions.
-    </p>
-
 </div>
 
 
-<!-- STATS -->
+<!-- =========================================================
+     ADMIN APPLICATION
+     ========================================================= -->
 
-<section class="stats-grid">
+<div id="adminApp">
 
-    <div class="stat-card">
-        <p>Total Predictions</p>
-        <h3 id="totalCount">0</h3>
-    </div>
 
-    <div class="stat-card">
-        <p>Regular</p>
-        <h3 id="regularCount">0</h3>
-    </div>
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
 
-    <div class="stat-card">
-        <p>VIP</p>
-        <h3 id="vipCount">0</h3>
-    </div>
+    <header class="admin-header">
 
-    <div class="stat-card">
-        <p>Pending</p>
-        <h3 id="pendingCount">0</h3>
-    </div>
+        <div class="admin-header-inner">
 
-</section>
+            <div class="brand">
 
+                <div class="brand-icon">
+                    FH
+                </div>
 
-<!-- VIP SUBSCRIPTIONS -->
+                <div class="brand-text">
 
-<section class="panel">
+                    <strong>
+                        FLEX HUB PREDICTIONS
+                    </strong>
 
-    <div class="panel-heading">
+                    <span>
+                        Administration Panel
+                    </span>
 
-        <div>
+                </div>
 
-            <h3>VIP Subscription Codes</h3>
+            </div>
 
-            <p>
-                Generate access codes for premium football editorial content.
-            </p>
 
-        </div>
+            <div class="header-actions">
 
-    </div>
-
-
-    <div class="subscription-generator">
-
-        <div class="form-group">
-
-            <label for="subscriptionPlan">
-                Subscription Plan
-            </label>
-
-            <select id="subscriptionPlan">
-
-                <option value="1_week">
-                    1 Week — 7 Days
-                </option>
-
-                <option value="2_weeks">
-                    2 Weeks — 14 Days
-                </option>
-
-                <option value="1_month">
-                    1 Month — 30 Days
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <button
-            class="primary-btn"
-            id="generateCodeButton"
-            type="button"
-        >
-            GENERATE NEW CODE
-        </button>
-
-    </div>
-
-
-    <div
-        class="generated-code"
-        id="generatedCodeBox"
-    >
-
-        <strong>
-            NEW VIP ACCESS CODE
-        </strong>
-
-        <div
-            class="code-display"
-            id="generatedCode"
-        ></div>
-
-        <br>
-
-        <button
-            class="copy-btn"
-            id="copyCodeButton"
-            type="button"
-        >
-            COPY CODE
-        </button>
-
-    </div>
-
-
-    <div
-        class="message"
-        id="subscriptionMessage"
-    ></div>
-
-</section>
-
-
-<!-- SUBSCRIPTION LIST -->
-
-<section class="panel">
-
-    <div class="panel-heading">
-
-        <div>
-
-            <h3>Subscription History</h3>
-
-            <p>
-                Track generated VIP access codes.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <div class="table-wrapper">
-
-        <table>
-
-            <thead>
-
-                <tr>
-                    <th>Code</th>
-                    <th>Plan</th>
-                    <th>Status</th>
-                    <th>Account</th>
-                    <th>Activated</th>
-                    <th>Expires</th>
-                </tr>
-
-            </thead>
-
-            <tbody id="subscriptionsTableBody">
-
-                <tr>
-                    <td
-                        colspan="6"
-                        class="loading"
-                    >
-                        Loading subscriptions...
-                    </td>
-                </tr>
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</section>
-
-
-<!-- ADD / EDIT PREDICTION -->
-
-<section class="panel">
-
-    <div class="panel-heading">
-
-        <div>
-
-            <h3 id="formTitle">
-                Add New Prediction
-            </h3>
-
-            <p>
-                Create or edit football editorial content.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <form
-        class="prediction-form"
-        id="predictionForm"
-    >
-
-        <input
-            type="hidden"
-            id="predictionId"
-        >
-
-
-        <div class="form-group">
-
-            <label>League</label>
-
-            <select id="league" required>
-
-                <option value="">
-                    Select League
-                </option>
-
-                <option>Premier League</option>
-                <option>La Liga</option>
-                <option>Serie A</option>
-                <option>Bundesliga</option>
-                <option>Ligue 1</option>
-                <option>Champions League</option>
-                <option>Europa League</option>
-                <option>Other</option>
-
-            </select>
-
-        </div>
-
-
-        <div class="form-group">
-
-            <label>Match Date</label>
-
-            <input
-                type="date"
-                id="matchDate"
-                required
-            >
-
-        </div>
-
-
-        <div class="form-group full-width">
-
-            <label>Teams</label>
-
-            <div class="team-row">
-
-                <input
-                    type="text"
-                    id="homeTeam"
-                    placeholder="Home team"
-                    required
+                <button
+                    type="button"
+                    id="refreshAdminButton"
+                    class="button secondary-button"
                 >
+                    Refresh
+                </button>
 
-                <input
-                    type="text"
-                    id="awayTeam"
-                    placeholder="Away team"
-                    required
+
+                <button
+                    type="button"
+                    id="openWebsiteButton"
+                    class="button blue-button"
                 >
+                    Open Website
+                </button>
+
+
+                <button
+                    type="button"
+                    id="logoutButton"
+                    class="button danger-button"
+                >
+                    Logout
+                </button>
 
             </div>
 
         </div>
 
-
-        <div class="form-group">
-
-            <label>Match Time</label>
-
-            <input
-                type="time"
-                id="matchTime"
-                required
-            >
-
-        </div>
+    </header>
 
 
-        <div class="form-group">
+    <!-- =====================================================
+         MAIN
+         ===================================================== -->
 
-            <label>Category</label>
-
-            <select id="category">
-
-                <option value="regular">
-                    Regular
-                </option>
-
-                <option value="vip">
-                    VIP
-                </option>
-
-            </select>
-
-        </div>
+    <main class="admin-container">
 
 
-        <div class="form-group">
+        <div class="page-heading">
 
-            <label>Result Status</label>
-
-            <select id="status">
-
-                <option value="pending">
-                    Pending
-                </option>
-
-                <option value="won">
-                    Won
-                </option>
-
-                <option value="lost">
-                    Lost
-                </option>
-
-                <option value="void">
-                    Void
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <div class="form-group">
-
-            <label>Editorial Prediction</label>
-
-            <input
-                type="text"
-                id="prediction"
-                placeholder="Example: Arsenal to win"
-                required
-            >
-
-        </div>
-
-
-        <div class="form-group full-width">
-
-            <label>Analysis</label>
-
-            <textarea
-                id="analysis"
-                placeholder="Write football analysis..."
-            ></textarea>
-
-        </div>
-
-
-        <div class="form-actions">
-
-            <button
-                class="primary-btn"
-                type="submit"
-                id="savePredictionButton"
-            >
-                ADD PREDICTION
-            </button>
-
-            <button
-                class="secondary-btn"
-                type="button"
-                id="cancelEditButton"
-                style="display:none"
-            >
-                Cancel Edit
-            </button>
-
-        </div>
-
-
-        <div
-            class="message full-width"
-            id="formMessage"
-        ></div>
-
-    </form>
-
-</section>
-
-
-<!-- PREDICTIONS -->
-
-<section class="panel">
-
-    <div class="panel-heading">
-
-        <div>
-
-            <h3>All Predictions</h3>
+            <h2>
+                Dashboard
+            </h2>
 
             <p>
-                Manage Regular and VIP content.
+                Manage predictions, memberships, users,
+                notifications and match results.
             </p>
 
         </div>
 
-    </div>
+
+        <!-- =================================================
+             STATISTICS
+             ================================================= -->
+
+        <section class="stats-grid">
+
+            <div class="stat-card gold">
+
+                <span>
+                    Total Predictions
+                </span>
+
+                <strong id="totalCount">
+                    0
+                </strong>
+
+            </div>
 
 
-    <div class="filters">
+            <div class="stat-card blue">
 
-        <input
-            type="search"
-            id="searchInput"
-            placeholder="Search teams or league..."
-        >
+                <span>
+                    Regular
+                </span>
 
-        <select id="categoryFilter">
+                <strong id="regularCount">
+                    0
+                </strong>
 
-            <option value="all">
-                All Categories
-            </option>
-
-            <option value="regular">
-                Regular
-            </option>
-
-            <option value="vip">
-                VIP
-            </option>
-
-        </select>
+            </div>
 
 
-        <select id="statusFilter">
+            <div class="stat-card gold">
 
-            <option value="all">
-                All Results
-            </option>
+                <span>
+                    VIP
+                </span>
 
-            <option value="pending">
-                Pending
-            </option>
+                <strong id="vipCount">
+                    0
+                </strong>
 
-            <option value="won">
-                Won
-            </option>
-
-            <option value="lost">
-                Lost
-            </option>
-
-            <option value="void">
-                Void
-            </option>
-
-        </select>
-
-    </div>
+            </div>
 
 
-    <div class="table-wrapper">
+            <div class="stat-card">
 
-        <table>
+                <span>
+                    Pending
+                </span>
 
-            <thead>
+                <strong id="pendingCount">
+                    0
+                </strong>
 
-                <tr>
-                    <th>Match</th>
-                    <th>Date</th>
-                    <th>Prediction</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
+            </div>
 
-            </thead>
 
-            <tbody id="predictionsTableBody"></tbody>
+            <div class="stat-card green">
 
-        </table>
+                <span>
+                    Won
+                </span>
 
-    </div>
+                <strong id="wonCount">
+                    0
+                </strong>
 
-</section>
+            </div>
 
-</main>
+
+            <div class="stat-card red">
+
+                <span>
+                    Lost
+                </span>
+
+                <strong id="lostCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Void
+                </span>
+
+                <strong id="voidCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card blue">
+
+                <span>
+                    Win Rate
+                </span>
+
+                <strong id="adminWinRate">
+                    0%
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             REGULAR / VIP PREDICTION FORM
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        Create / Edit Prediction
+                    </h3>
+
+                    <p>
+                        Add regular or VIP football predictions.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="predictionForm">
+
+                <input
+                    type="hidden"
+                    id="predictionId"
+                    value=""
+                >
+
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label for="predictionLeague">
+                            League
+                        </label>
+
+                        <input
+                            type="text"
+                            id="predictionLeague"
+                            placeholder="Premier League"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="predictionCategory">
+                            Category
+                        </label>
+
+                        <select
+                            id="predictionCategory"
+                            required
+                        >
+
+                            <option value="regular">
+                                Regular
+                            </option>
+
+                            <option value="vip">
+                                VIP
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="homeTeam">
+                            Home Team
+                        </label>
+
+                        <input
+                            type="text"
+                            id="homeTeam"
+                            placeholder="Home team"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="awayTeam">
+                            Away Team
+                        </label>
+
+                        <input
+                            type="text"
+                            id="awayTeam"
+                            placeholder="Away team"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="matchDate">
+                            Match Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="matchDate"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="matchTime">
+                            Match Time
+                        </label>
+
+                        <input
+                            type="time"
+                            id="matchTime"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="prediction">
+                            Prediction
+                        </label>
+
+                        <input
+                            type="text"
+                            id="prediction"
+                            placeholder="Example: Home Win"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="predictionStatus">
+                            Status
+                        </label>
+
+                        <select
+                            id="predictionStatus"
+                        >
+
+                            <option value="pending">
+                                Pending
+                            </option>
+
+                            <option value="won">
+                                Won
+                            </option>
+
+                            <option value="lost">
+                                Lost
+                            </option>
+
+                            <option value="void">
+                                Void
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label for="predictionAnalysis">
+                            Analysis
+                        </label>
+
+                        <textarea
+                            id="predictionAnalysis"
+                            placeholder="Write match analysis..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <div class="checkbox-row">
+
+                            <input
+                                type="checkbox"
+                                id="predictionFeatured"
+                            >
+
+                            <label
+                                for="predictionFeatured"
+                            >
+                                Feature this prediction
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                id="savePredictionButton"
+                                class="button primary-button"
+                            >
+                                Save Prediction
+                            </button>
+
+
+                            <button
+                                type="button"
+                                id="cancelEditButton"
+                                class="button secondary-button"
+                                style="display:none;"
+                            >
+                                Cancel Edit
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="predictionMessage"
+                            class="message"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =================================================
+             ALL PREDICTIONS
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        All Predictions
+                    </h3>
+
+                    <p>
+                        Manage regular and VIP predictions.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                League
+                            </th>
+
+                            <th>
+                                Match
+                            </th>
+
+                            <th>
+                                Date / Time
+                            </th>
+
+                            <th>
+                                Prediction
+                            </th>
+
+                            <th>
+                                Category
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Featured
+                            </th>
+
+                            <th>
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="predictionsTableBody">
+
+                        <tr>
+                            <td
+                                colspan="8"
+                                class="empty-state"
+                            >
+                                No predictions found.
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             VIP ACCESS CODES
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VIP Access Codes
+                    </h3>
+
+                    <p>
+                        Generate access codes for VIP members.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="subscriptionForm">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="subscriptionPlan">
+                            VIP Plan
+                        </label>
+
+                        <select
+                            id="subscriptionPlan"
+                            required
+                        >
+
+                            <option value="1_week">
+                                1 Week
+                            </option>
+
+                            <option value="2_weeks">
+                                2 Weeks
+                            </option>
+
+                            <option value="1_month">
+                                1 Month
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Generate
+                        </label>
+
+                        <button
+                            type="submit"
+                            id="generateSubscriptionButton"
+                            class="button primary-button"
+                        >
+                            Generate VIP Code
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="subscriptionMessage"
+                    class="message"
+                ></div>
+
+
+                <div
+                    id="generatedCodeBox"
+                    class="generated-code-box"
+                >
+
+                    <span>
+                        Newly Generated VIP Access Code
+                    </span>
+
+
+                    <div class="generated-code-row">
+
+                        <div
+                            id="generatedCode"
+                            class="generated-code"
+                        ></div>
+
+
+                        <button
+                            type="button"
+                            id="copyCodeButton"
+                            class="button blue-button"
+                        >
+                            Copy Code
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =================================================
+             VIP SUBSCRIPTION HISTORY
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VIP Subscription History
+                    </h3>
+
+                    <p>
+                        View generated and activated VIP codes.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Code
+                            </th>
+
+                            <th>
+                                Plan
+                            </th>
+
+                            <th>
+                                User
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Created
+                            </th>
+
+                            <th>
+                                Expires
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="subscriptionsTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="empty-state"
+                            >
+                                No VIP subscriptions found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             VVIP ACCESS CODE GENERATOR
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VVIP Access Codes
+                    </h3>
+
+                    <p>
+                        Generate exclusive VVIP access codes.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="info-box">
+
+                VVIP access is separate from normal VIP access.
+                Each generated VVIP code can be activated once
+                and expires according to the selected plan.
+
+            </div>
+
+
+            <form id="vvipSubscriptionForm">
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label for="vvipSubscriptionPlan">
+                            VVIP Plan
+                        </label>
+
+                        <select
+                            id="vvipSubscriptionPlan"
+                            required
+                        >
+
+                            <option value="1_week">
+                                1 Week
+                            </option>
+
+                            <option value="2_weeks">
+                                2 Weeks
+                            </option>
+
+                            <option value="1_month">
+                                1 Month
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Generate Code
+                        </label>
+
+                        <button
+                            type="submit"
+                            id="generateVvipSubscriptionButton"
+                            class="button primary-button"
+                        >
+                            Generate VVIP Code
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="vvipSubscriptionMessage"
+                    class="message"
+                ></div>
+
+
+                <div
+                    id="vvipGeneratedCodeBox"
+                    class="generated-code-box"
+                >
+
+                    <span>
+                        Newly Generated VVIP Access Code
+                    </span>
+
+
+                    <div class="generated-code-row">
+
+                        <div
+                            id="vvipGeneratedCode"
+                            class="generated-code"
+                        ></div>
+
+
+                        <button
+                            type="button"
+                            id="copyVvipCodeButton"
+                            class="button blue-button"
+                        >
+                            Copy VVIP Code
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =================================================
+             VVIP PREDICTION FORM
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VVIP Prediction Manager
+                    </h3>
+
+                    <p>
+                        Add and manage predictions displayed
+                        exclusively on the VVIP page.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="vvipPredictionForm">
+
+                <input
+                    type="hidden"
+                    id="vvipPredictionId"
+                    value=""
+                >
+
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label for="vvipPredictionLeague">
+                            League
+                        </label>
+
+                        <input
+                            type="text"
+                            id="vvipPredictionLeague"
+                            placeholder="Champions League"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipPredictionStatus">
+                            Status
+                        </label>
+
+                        <select
+                            id="vvipPredictionStatus"
+                        >
+
+                            <option value="pending">
+                                Pending
+                            </option>
+
+                            <option value="won">
+                                Won
+                            </option>
+
+                            <option value="lost">
+                                Lost
+                            </option>
+
+                            <option value="void">
+                                Void
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipHomeTeam">
+                            Home Team
+                        </label>
+
+                        <input
+                            type="text"
+                            id="vvipHomeTeam"
+                            placeholder="Home team"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipAwayTeam">
+                            Away Team
+                        </label>
+
+                        <input
+                            type="text"
+                            id="vvipAwayTeam"
+                            placeholder="Away team"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipMatchDate">
+                            Match Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="vvipMatchDate"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipMatchTime">
+                            Match Time
+                        </label>
+
+                        <input
+                            type="time"
+                            id="vvipMatchTime"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="vvipPrediction">
+                            Prediction
+                        </label>
+
+                        <input
+                            type="text"
+                            id="vvipPrediction"
+                            placeholder="Enter prediction"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <div class="checkbox-row">
+
+                            <input
+                                type="checkbox"
+                                id="vvipPredictionFeatured"
+                            >
+
+                            <label
+                                for="vvipPredictionFeatured"
+                            >
+                                Feature VVIP prediction
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label for="vvipPredictionAnalysis">
+                            Analysis
+                        </label>
+
+                        <textarea
+                            id="vvipPredictionAnalysis"
+                            placeholder="Write detailed VVIP match analysis..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                id="saveVvipPredictionButton"
+                                class="button primary-button"
+                            >
+                                Save VVIP Prediction
+                            </button>
+
+
+                            <button
+                                type="button"
+                                id="cancelVvipEditButton"
+                                class="button secondary-button"
+                                style="display:none;"
+                            >
+                                Cancel Edit
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="vvipPredictionMessage"
+                            class="message"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =================================================
+             VVIP PREDICTIONS TABLE
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VVIP Predictions
+                    </h3>
+
+                    <p>
+                        These predictions appear on the VVIP page.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                League
+                            </th>
+
+                            <th>
+                                Match
+                            </th>
+
+                            <th>
+                                Date / Time
+                            </th>
+
+                            <th>
+                                Prediction
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Featured
+                            </th>
+
+                            <th>
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="vvipPredictionsTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="empty-state"
+                            >
+                                No VVIP predictions found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+        <!-- =================================================
+             VVIP SUBSCRIPTION HISTORY
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        VVIP Subscription History
+                    </h3>
+
+                    <p>
+                        View generated, activated and expired
+                        VVIP access codes.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Code</th>
+                            <th>Plan</th>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Activated</th>
+                            <th>Expires</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="vvipSubscriptionsTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="empty-state"
+                            >
+                                No VVIP subscriptions found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             REGISTERED USERS
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        Registered Users
+                    </h3>
+
+                    <p>
+                        Manage registered FLEX HUB users.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    gap:10px;
+                    margin-bottom:16px;
+                    flex-wrap:wrap;
+                "
+            >
+
+                <input
+                    type="search"
+                    id="userSearchInput"
+                    placeholder="Search users..."
+                    style="
+                        flex:1;
+                        min-width:220px;
+                        padding:12px 14px;
+                        border-radius:11px;
+                        border:1px solid var(--border);
+                        background:rgba(255,255,255,.045);
+                        color:white;
+                        outline:none;
+                    "
+                >
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>VIP</th>
+                            <th>VVIP</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="usersTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="8"
+                                class="empty-state"
+                            >
+                                No users found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             NOTIFICATIONS
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        Notifications
+                    </h3>
+
+                    <p>
+                        Send announcements to website users.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="notificationForm">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="notificationTitle">
+                            Notification Title
+                        </label>
+
+                        <input
+                            type="text"
+                            id="notificationTitle"
+                            placeholder="New prediction update"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="notificationType">
+                            Type
+                        </label>
+
+                        <select id="notificationType">
+
+                            <option value="general">
+                                General
+                            </option>
+
+                            <option value="prediction">
+                                Prediction
+                            </option>
+
+                            <option value="vip">
+                                VIP
+                            </option>
+
+                            <option value="vvip">
+                                VVIP
+                            </option>
+
+                            <option value="result">
+                                Result
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label for="notificationMessage">
+                            Message
+                        </label>
+
+                        <textarea
+                            id="notificationMessage"
+                            placeholder="Write notification message..."
+                            required
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                id="sendNotificationButton"
+                                class="button primary-button"
+                            >
+                                Send Notification
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="notificationMessageBox"
+                            class="message"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =================================================
+             NOTIFICATION HISTORY
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        Notification History
+                    </h3>
+
+                    <p>
+                        Previously created notifications.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="notificationsTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="5"
+                                class="empty-state"
+                            >
+                                No notifications found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             ACTIVITY LOG
+             ================================================= -->
+
+        <section class="admin-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h3>
+                        Activity Log
+                    </h3>
+
+                    <p>
+                        Recent administrative and user activity.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Details</th>
+                            <th>Date</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="activityLogTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="4"
+                                class="empty-state"
+                            >
+                                No activity logs found.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+        <!-- =================================================
+             MATCH RESULTS
+             ================================================= -->
+
+        <section class="admin-section">
+            <div class="section-heading">
+                <div>
+                    <span class="section-kicker">RESULTS</span>
+                    <h2>Match Results</h2>
+                    <p>Review completed predictions and reset results when necessary.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    id="refreshResultsButton"
+                >
+                    ↻ Refresh Results
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Match</th>
+                            <th>League</th>
+                            <th>Category</th>
+                            <th>Prediction</th>
+                            <th>Result</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="resultsTableBody">
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                No results loaded yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
 
 </div>
 
-
 <script>
+"use strict";
+
+/* =========================================================
+   FLEX HUB PREDICTIONS
+   ADMIN PANEL JAVASCRIPT
+   PART 1
+   ========================================================= */
 
 const API_BASE_URL =
-    "http://localhost:3000/api";
+    "https://flex-hub-prediction.onrender.com/api";
 
 const ADMIN_TOKEN_KEY =
     "flexHubAdminToken";
 
+/* =========================================================
+   STATE
+   ========================================================= */
 
-/* =========================================
-   HELPERS
-========================================= */
+let adminPredictions = [];
+let vvipPredictions = [];
+let adminUsers = [];
+let adminNotifications = [];
+let adminSubscriptions = [];
+let adminVvipSubscriptions = [];
+let adminResults = [];
+let adminActivityLogs = [];
+
+let adminAutoRefreshTimer = null;
+
+/* =========================================================
+   BASIC HELPERS
+   ========================================================= */
 
 function getToken() {
+    return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
 
-    return localStorage.getItem(
+function saveToken(token) {
+    if (token) {
+        localStorage.setItem(
+            ADMIN_TOKEN_KEY,
+            token
+        );
+    }
+}
+
+function clearAdminToken() {
+    localStorage.removeItem(
         ADMIN_TOKEN_KEY
     );
-
 }
-
-
-function headers() {
-
-    return {
-        "Content-Type":"application/json",
-        "Authorization":
-            "Bearer " + getToken()
-    };
-
-}
-
 
 function escapeHTML(value) {
-
     if (
         value === null ||
         value === undefined
@@ -1185,1242 +3055,3017 @@ function escapeHTML(value) {
     }
 
     return String(value)
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
+function formatDate(value) {
+    if (!value) {
+        return "—";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return escapeHTML(value);
+    }
+
+    return date.toLocaleString();
+}
+
+function formatPlan(plan) {
+    const plans = {
+        "1_week": "1 Week",
+        "2_weeks": "2 Weeks",
+        "1_month": "1 Month"
+    };
+
+    return plans[plan] ||
+        plan ||
+        "—";
+}
+
+function formatCategory(category) {
+    if (!category) {
+        return "Regular";
+    }
+
+    return String(category)
+        .replace(/_/g, " ")
+        .replace(
+            /\b\w/g,
+            letter => letter.toUpperCase()
+        );
+}
 
 function statusBadge(status) {
 
-    const names = {
-        pending:"Pending",
-        won:"Won",
-        lost:"Lost",
-        void:"Void"
-    };
+    const safeStatus =
+        String(status || "pending")
+            .toLowerCase();
+
+    const label =
+        safeStatus.charAt(0).toUpperCase() +
+        safeStatus.slice(1);
 
     return `
-        <span class="badge badge-${status}">
-            ${names[status] || status}
+        <span class="status-badge status-${escapeHTML(safeStatus)}">
+            ${escapeHTML(label)}
         </span>
     `;
-
 }
 
+function showMessage(
+    elementId,
+    message,
+    type = "info"
+) {
 
-/* =========================================
-   LOGIN
-========================================= */
+    const element =
+        document.getElementById(
+            elementId
+        );
 
-document
-.getElementById("adminLoginForm")
-.addEventListener(
-    "submit",
-    async event => {
-
-        event.preventDefault();
-
-        const username =
-            document
-            .getElementById("adminUsername")
-            .value
-            .trim();
-
-        const password =
-            document
-            .getElementById("adminPassword")
-            .value;
-
-        try {
-
-            const response =
-                await fetch(
-                    API_BASE_URL +
-                    "/admin/login",
-                    {
-                        method:"POST",
-                        headers:{
-                            "Content-Type":
-                                "application/json"
-                        },
-                        body:JSON.stringify({
-                            username,
-                            password
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Login failed."
-                );
-            }
-
-
-            localStorage.setItem(
-                ADMIN_TOKEN_KEY,
-                data.token
-            );
-
-
-            openAdmin();
-
-        } catch(error) {
-
-            showMessage(
-                document.getElementById(
-                    "loginMessage"
-                ),
-                error.message,
-                "error"
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================
-   OPEN ADMIN
-========================================= */
-
-async function openAdmin() {
-
-    document.getElementById(
-        "loginPage"
-    ).style.display = "none";
-
-    document.getElementById(
-        "adminApp"
-    ).style.display = "block";
-
-
-    await loadPredictions();
-
-    await loadSubscriptions();
-
-}
-
-
-/* =========================================
-   SESSION
-========================================= */
-
-async function checkSession() {
-
-    if (!getToken()) {
+    if (!element) {
         return;
     }
 
+    element.textContent = message;
+
+    element.className =
+        `form-message ${type}`;
+}
+
+function clearMessage(elementId) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent = "";
+
+    element.className =
+        "form-message";
+}
+
+function setButtonLoading(
+    button,
+    loading,
+    normalText
+) {
+
+    if (!button) {
+        return;
+    }
+
+    button.disabled = loading;
+
+    if (loading) {
+
+        button.dataset.originalText =
+            button.textContent;
+
+        button.textContent =
+            "Please wait...";
+
+    } else {
+
+        button.textContent =
+            button.dataset.originalText ||
+            normalText;
+    }
+}
+
+/* =========================================================
+   API REQUEST
+   ========================================================= */
+
+async function apiRequest(
+    path,
+    options = {}
+) {
+
+    const token = getToken();
+
+    const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+    };
+
+    if (token) {
+        headers.Authorization =
+            `Bearer ${token}`;
+    }
+
+    const requestOptions = {
+        ...options,
+        headers
+    };
+
+    let response;
 
     try {
 
-        const response =
-            await fetch(
-                API_BASE_URL +
-                "/admin/me",
-                {
-                    headers:headers()
-                }
-            );
+        response = await fetch(
+            `${API_BASE_URL}${path}`,
+            requestOptions
+        );
 
+    } catch (error) {
 
-        if (!response.ok) {
-            throw new Error();
-        }
+        throw new Error(
+            "Unable to connect to the backend server."
+        );
+    }
 
+    let data = {};
 
-        openAdmin();
+    try {
+
+        data = await response.json();
 
     } catch {
 
-        localStorage.removeItem(
-            ADMIN_TOKEN_KEY
+        data = {};
+    }
+
+    if (!response.ok) {
+
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Your admin session has expired."
+            );
+        }
+
+        throw new Error(
+            data.message ||
+            data.error ||
+            "Something went wrong."
         );
-
     }
 
+    return data;
 }
 
+/* =========================================================
+   LOGIN / SESSION
+   ========================================================= */
 
-/* =========================================
-   MESSAGE
-========================================= */
+function showLoginScreen() {
 
-function showMessage(
-    element,
-    message,
-    type
-) {
-
-    element.textContent =
-        message;
-
-    element.className =
-        "message " + type;
-
-}
-
-
-/* =========================================
-   VIP CODE GENERATOR
-========================================= */
-
-document
-.getElementById("generateCodeButton")
-.addEventListener(
-    "click",
-    async () => {
-
-        const plan =
-            document
-            .getElementById(
-                "subscriptionPlan"
-            )
-            .value;
-
-
-        try {
-
-            const response =
-                await fetch(
-                    API_BASE_URL +
-                    "/admin/vip-subscriptions",
-                    {
-                        method:"POST",
-                        headers:headers(),
-                        body:JSON.stringify({
-                            plan
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to generate code."
-                );
-            }
-
-
-            const code =
-                data.subscription.code;
-
-
-            document.getElementById(
-                "generatedCode"
-            ).textContent = code;
-
-
-            document.getElementById(
-                "generatedCodeBox"
-            ).style.display = "block";
-
-
-            showMessage(
-                document.getElementById(
-                    "subscriptionMessage"
-                ),
-                "New VIP access code generated.",
-                "success"
-            );
-
-
-            await loadSubscriptions();
-
-
-        } catch(error) {
-
-            showMessage(
-                document.getElementById(
-                    "subscriptionMessage"
-                ),
-                error.message,
-                "error"
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================
-   COPY CODE
-========================================= */
-
-document
-.getElementById("copyCodeButton")
-.addEventListener(
-    "click",
-    async () => {
-
-        const code =
-            document.getElementById(
-                "generatedCode"
-            ).textContent;
-
-
-        try {
-
-            await navigator.clipboard.writeText(
-                code
-            );
-
-            document.getElementById(
-                "copyCodeButton"
-            ).textContent =
-                "COPIED!";
-
-            setTimeout(() => {
-
-                document.getElementById(
-                    "copyCodeButton"
-                ).textContent =
-                    "COPY CODE";
-
-            },1500);
-
-        } catch {
-
-            alert(
-                "Copy failed. Please copy the code manually."
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================
-   LOAD SUBSCRIPTIONS
-========================================= */
-
-async function loadSubscriptions() {
-
-    const body =
+    const loginScreen =
         document.getElementById(
-            "subscriptionsTableBody"
+            "adminLoginScreen"
         );
 
+    const adminApp =
+        document.getElementById(
+            "adminApp"
+        );
+
+    if (loginScreen) {
+        loginScreen.classList.remove(
+            "hidden"
+        );
+    }
+
+    if (adminApp) {
+        adminApp.classList.add(
+            "hidden"
+        );
+    }
+}
+
+function showAdminPanel() {
+
+    const loginScreen =
+        document.getElementById(
+            "adminLoginScreen"
+        );
+
+    const adminApp =
+        document.getElementById(
+            "adminApp"
+        );
+
+    if (loginScreen) {
+        loginScreen.classList.add(
+            "hidden"
+        );
+    }
+
+    if (adminApp) {
+        adminApp.classList.remove(
+            "hidden"
+        );
+    }
+}
+
+async function checkSession() {
+
+    const token = getToken();
+
+    if (!token) {
+
+        showLoginScreen();
+
+        return false;
+    }
 
     try {
 
-        const response =
-            await fetch(
-                API_BASE_URL +
-                "/admin/vip-subscriptions",
-                {
-                    headers:headers()
-                }
-            );
+        await apiRequest(
+            "/admin/me"
+        );
 
+        showAdminPanel();
+
+        await openAdmin();
+
+        return true;
+
+    } catch (error) {
+
+        clearAdminToken();
+
+        showLoginScreen();
+
+        return false;
+    }
+}
+
+/* =========================================================
+   OPEN / LOAD ADMIN
+   ========================================================= */
+
+async function openAdmin() {
+
+    showAdminPanel();
+
+    try {
+
+        await Promise.all([
+            loadPredictions(),
+            loadResults(),
+            loadSubscriptions(),
+            loadVvipSubscriptions(),
+            loadVvipPredictions(),
+            loadUsers(),
+            loadNotifications(),
+            loadActivityLogs()
+        ]);
+
+        updateDashboardStats();
+
+    } catch (error) {
+
+        console.error(
+            "Admin loading error:",
+            error
+        );
+
+        if (
+            error.message
+                .toLowerCase()
+                .includes("session") ||
+            error.message
+                .toLowerCase()
+                .includes("expired")
+        ) {
+
+            clearAdminToken();
+
+            showLoginScreen();
+        }
+    }
+}
+
+/* =========================================================
+   AUTO REFRESH
+   ========================================================= */
+
+function startAdminAutoRefresh() {
+
+    if (adminAutoRefreshTimer) {
+
+        clearInterval(
+            adminAutoRefreshTimer
+        );
+    }
+
+    adminAutoRefreshTimer =
+        setInterval(
+            async () => {
+
+                if (!getToken()) {
+                    return;
+                }
+
+                try {
+
+                    await Promise.all([
+                        loadPredictions(),
+                        loadResults(),
+                        loadSubscriptions(),
+                        loadVvipSubscriptions(),
+                        loadVvipPredictions(),
+                        loadUsers(),
+                        loadNotifications(),
+                        loadActivityLogs()
+                    ]);
+
+                    updateDashboardStats();
+
+                } catch (error) {
+
+                    console.error(
+                        "Auto refresh error:",
+                        error
+                    );
+                }
+
+            },
+            60000
+        );
+}
+
+/* =========================================================
+   ADMIN LOGIN
+   ========================================================= */
+
+async function handleAdminLogin(event) {
+
+    event.preventDefault();
+
+    const username =
+        document.getElementById(
+            "adminUsername"
+        ).value.trim();
+
+    const password =
+        document.getElementById(
+            "adminPassword"
+        ).value;
+
+    const button =
+        document.getElementById(
+            "adminLoginButton"
+        );
+
+    clearMessage(
+        "loginMessage"
+    );
+
+    if (!username || !password) {
+
+        showMessage(
+            "loginMessage",
+            "Enter your username and password.",
+            "error"
+        );
+
+        return;
+    }
+
+    setButtonLoading(
+        button,
+        true,
+        "Login"
+    );
+
+    try {
 
         const data =
-            await response.json();
+            await apiRequest(
+                "/admin/login",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                }
+            );
 
+        if (!data.token) {
 
-        if (!response.ok) {
             throw new Error(
-                data.message ||
-                "Unable to load subscriptions."
+                "No admin token was returned."
             );
         }
 
+        saveToken(
+            data.token
+        );
 
-        const subscriptions =
-            data.subscriptions || [];
+        document.getElementById(
+            "adminPassword"
+        ).value = "";
 
+        showMessage(
+            "loginMessage",
+            "Login successful.",
+            "success"
+        );
 
-        if (!subscriptions.length) {
+        await openAdmin();
 
-            body.innerHTML = `
-                <tr>
-                    <td
-                        colspan="6"
-                        class="empty-state"
-                    >
-                        No VIP subscription codes have been generated yet.
-                    </td>
-                </tr>
-            `;
+        startAdminAutoRefresh();
 
-            return;
+    } catch (error) {
 
-        }
+        showMessage(
+            "loginMessage",
+            error.message,
+            "error"
+        );
 
+    } finally {
 
-        body.innerHTML =
-            subscriptions
+        setButtonLoading(
+            button,
+            false,
+            "Login"
+        );
+    }
+}
+
+/* =========================================================
+   LOAD REGULAR / VIP PREDICTIONS
+   ========================================================= */
+
+async function loadPredictions() {
+
+    const data =
+        await apiRequest(
+            "/admin/predictions"
+        );
+
+    adminPredictions =
+        Array.isArray(data)
+            ? data
+            : (
+                data.predictions ||
+                []
+            );
+
+    renderPredictionsTable();
+
+    updateDashboardStats();
+}
+
+/* =========================================================
+   RENDER PREDICTIONS
+   ========================================================= */
+
+function renderPredictionsTable() {
+
+    const tbody =
+        document.getElementById(
+            "predictionsTableBody"
+        );
+
+    if (!tbody) {
+        return;
+    }
+
+    if (!adminPredictions.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="10"
+                    class="empty-state"
+                >
+                    No regular or VIP predictions found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    tbody.innerHTML =
+        adminPredictions
             .map(item => {
 
-                let status =
-                    item.status;
-
-
-                if (
-                    status === "active" &&
-                    item.expires_at
-                ) {
-
-                    if (
-                        new Date(
-                            item.expires_at
-                        ) <= new Date()
-                    ) {
-
-                        status = "expired";
-
-                    }
-
-                }
-
+                const category =
+                    item.category ||
+                    "regular";
 
                 return `
-
                     <tr>
 
                         <td>
-
                             <strong>
                                 ${escapeHTML(
-                                    item.code
+                                    item.league
                                 )}
                             </strong>
-
                         </td>
 
-
                         <td>
-
                             ${escapeHTML(
-                                item.plan
+                                item.home_team
                             )}
 
-                        </td>
-
-
-                        <td>
-
-                            <span class="
-                                badge
-                                badge-${status}
-                            ">
-
-                                ${
-                                    status
-                                    .charAt(0)
-                                    .toUpperCase()
-                                    +
-                                    status
-                                    .slice(1)
-                                }
-
+                            <span class="match-separator">
+                                vs
                             </span>
 
+                            ${escapeHTML(
+                                item.away_team
+                            )}
                         </td>
 
+                        <td>
+                            <span class="category-pill">
+                                ${escapeHTML(
+                                    formatCategory(
+                                        category
+                                    )
+                                )}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>
+                                ${escapeHTML(
+                                    item.prediction
+                                )}
+                            </strong>
+                        </td>
+
+                        <td>
+                            ${statusBadge(
+                                item.status
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.match_date ||
+                                "—"
+                            )}
+
+                            <br>
+
+                            <small>
+                                ${escapeHTML(
+                                    item.match_time ||
+                                    ""
+                                )}
+                            </small>
+                        </td>
+
+                        <td>
+                            ${
+                                item.featured
+                                    ? "⭐ Yes"
+                                    : "No"
+                            }
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.created_at
+                            )}
+                        </td>
 
                         <td>
 
-                            ${
-                                item.username
-                                ? escapeHTML(
-                                    item.username
-                                )
-                                : "—"
-                            }
+                            <div class="table-actions">
 
-                        </td>
+                                <button
+                                    type="button"
+                                    class="table-button edit"
+                                    onclick="editPrediction(${Number(item.id)})"
+                                >
+                                    Edit
+                                </button>
 
+                                <button
+                                    type="button"
+                                    class="table-button status"
+                                    onclick="changePredictionStatus(${Number(item.id)})"
+                                >
+                                    Status
+                                </button>
 
-                        <td>
+                                <button
+                                    type="button"
+                                    class="table-button delete"
+                                    onclick="deletePrediction(${Number(item.id)})"
+                                >
+                                    Delete
+                                </button>
 
-                            ${
-                                item.activated_at
-                                ? new Date(
-                                    item.activated_at
-                                ).toLocaleString()
-                                : "—"
-                            }
-
-                        </td>
-
-
-                        <td>
-
-                            ${
-                                item.expires_at
-                                ? new Date(
-                                    item.expires_at
-                                ).toLocaleString()
-                                : "—"
-                            }
+                            </div>
 
                         </td>
 
                     </tr>
-
                 `;
 
             })
             .join("");
-
-
-    } catch(error) {
-
-        body.innerHTML = `
-            <tr>
-                <td
-                    colspan="6"
-                    class="empty-state"
-                >
-                    ${escapeHTML(
-                        error.message
-                    )}
-                </td>
-            </tr>
-        `;
-
-    }
-
 }
 
+/* =========================================================
+   SAVE REGULAR / VIP PREDICTION
+   ========================================================= */
 
-/* =========================================
-   PREDICTIONS
-========================================= */
+async function savePrediction(event) {
 
-let allPredictions = [];
+    event.preventDefault();
 
+    const id =
+        document.getElementById(
+            "predictionId"
+        ).value.trim();
 
-async function loadPredictions() {
+    const payload = {
+
+        league:
+            document.getElementById(
+                "predictionLeague"
+            ).value.trim(),
+
+        category:
+            document.getElementById(
+                "predictionCategory"
+            ).value,
+
+        home_team:
+            document.getElementById(
+                "homeTeam"
+            ).value.trim(),
+
+        away_team:
+            document.getElementById(
+                "awayTeam"
+            ).value.trim(),
+
+        match_date:
+            document.getElementById(
+                "matchDate"
+            ).value,
+
+        match_time:
+            document.getElementById(
+                "matchTime"
+            ).value,
+
+        prediction:
+            document.getElementById(
+                "prediction"
+            ).value.trim(),
+
+        status:
+            document.getElementById(
+                "predictionStatus"
+            ).value,
+
+        analysis:
+            document.getElementById(
+                "predictionAnalysis"
+            ).value.trim(),
+
+        featured:
+            document.getElementById(
+                "predictionFeatured"
+            ).checked
+    };
+
+    const requiredFields = [
+        payload.league,
+        payload.home_team,
+        payload.away_team,
+        payload.match_date,
+        payload.match_time,
+        payload.prediction
+    ];
+
+    if (
+        requiredFields.some(
+            value => !value
+        )
+    ) {
+
+        showMessage(
+            "predictionMessage",
+            "Please complete all required fields.",
+            "error"
+        );
+
+        return;
+    }
+
+    const button =
+        document.getElementById(
+            "savePredictionButton"
+        );
+
+    setButtonLoading(
+        button,
+        true,
+        "Save Prediction"
+    );
+
+    clearMessage(
+        "predictionMessage"
+    );
 
     try {
 
-        const response =
-            await fetch(
-                API_BASE_URL +
-                "/admin/predictions",
+        if (id) {
+
+            await apiRequest(
+                `/predictions/${id}`,
                 {
-                    headers:headers()
+                    method: "PUT",
+                    body: JSON.stringify(
+                        payload
+                    )
                 }
             );
 
+            showMessage(
+                "predictionMessage",
+                "Prediction updated successfully.",
+                "success"
+            );
 
-        const data =
-            await response.json();
+        } else {
 
+            await apiRequest(
+                "/predictions",
+                {
+                    method: "POST",
+                    body: JSON.stringify(
+                        payload
+                    )
+                }
+            );
 
-        if (!response.ok) {
-            throw new Error(
-                data.message ||
-                "Unable to load predictions."
+            showMessage(
+                "predictionMessage",
+                "Prediction added successfully.",
+                "success"
             );
         }
 
+        resetPredictionForm();
 
-        allPredictions =
-            data.predictions || [];
+        await loadPredictions();
 
+        await loadResults();
 
-        updateStats();
+        updateDashboardStats();
 
-        renderPredictions();
+    } catch (error) {
 
-    } catch(error) {
-
-        document.getElementById(
-            "predictionsTableBody"
-        ).innerHTML = `
-            <tr>
-                <td
-                    colspan="6"
-                    class="empty-state"
-                >
-                    ${escapeHTML(
-                        error.message
-                    )}
-                </td>
-            </tr>
-        `;
-
-    }
-
-}
-
-
-function updateStats() {
-
-    document.getElementById(
-        "totalCount"
-    ).textContent =
-        allPredictions.length;
-
-
-    document.getElementById(
-        "regularCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.category === "regular"
-        ).length;
-
-
-    document.getElementById(
-        "vipCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.category === "vip"
-        ).length;
-
-
-    document.getElementById(
-        "pendingCount"
-    ).textContent =
-        allPredictions.filter(
-            item =>
-                item.status === "pending"
-        ).length;
-
-}
-
-
-function renderPredictions() {
-
-    const search =
-        document
-        .getElementById(
-            "searchInput"
-        )
-        .value
-        .toLowerCase();
-
-
-    const category =
-        document
-        .getElementById(
-            "categoryFilter"
-        )
-        .value;
-
-
-    const resultStatus =
-        document
-        .getElementById(
-            "statusFilter"
-        )
-        .value;
-
-
-    const filtered =
-        allPredictions.filter(
-            item => {
-
-                const text = `
-                    ${item.league}
-                    ${item.home_team}
-                    ${item.away_team}
-                    ${item.prediction}
-                `.toLowerCase();
-
-
-                return (
-                    (!search ||
-                        text.includes(search)) &&
-
-                    (
-                        category === "all" ||
-                        item.category === category
-                    ) &&
-
-                    (
-                        resultStatus === "all" ||
-                        item.status === resultStatus
-                    )
-                );
-
-            }
+        showMessage(
+            "predictionMessage",
+            error.message,
+            "error"
         );
 
+    } finally {
 
-    const body =
-        document.getElementById(
-            "predictionsTableBody"
+        setButtonLoading(
+            button,
+            false,
+            "Save Prediction"
         );
-
-
-    if (!filtered.length) {
-
-        body.innerHTML = `
-            <tr>
-                <td
-                    colspan="6"
-                    class="empty-state"
-                >
-                    No predictions found.
-                </td>
-            </tr>
-        `;
-
-        return;
-
     }
-
-
-    body.innerHTML =
-        filtered
-        .map(item => `
-
-            <tr>
-
-                <td>
-
-                    <div class="match-name">
-
-                        ${escapeHTML(
-                            item.home_team
-                        )}
-
-                        vs
-
-                        ${escapeHTML(
-                            item.away_team
-                        )}
-
-                    </div>
-
-                    <div class="match-league">
-
-                        ${escapeHTML(
-                            item.league
-                        )}
-
-                    </div>
-
-                </td>
-
-
-                <td>
-
-                    ${escapeHTML(
-                        item.match_date
-                    )}
-
-                    <br>
-
-                    <span class="match-league">
-
-                        ${escapeHTML(
-                            item.match_time
-                        )}
-
-                    </span>
-
-                </td>
-
-
-                <td>
-
-                    ${escapeHTML(
-                        item.prediction
-                    )}
-
-                </td>
-
-
-                <td>
-
-                    <span class="
-                        badge
-                        ${
-                            item.category === "vip"
-                            ? "badge-vip"
-                            : "badge-regular"
-                        }
-                    ">
-
-                        ${
-                            item.category === "vip"
-                            ? "VIP"
-                            : "Regular"
-                        }
-
-                    </span>
-
-                </td>
-
-
-                <td>
-
-                    ${statusBadge(
-                        item.status
-                    )}
-
-                </td>
-
-
-                <td>
-
-                    <div class="action-buttons">
-
-                        <button
-                            class="edit-btn"
-                            onclick="editPrediction(${item.id})"
-                        >
-                            Edit
-                        </button>
-
-                        <button
-                            class="delete-btn"
-                            onclick="deletePrediction(${item.id})"
-                        >
-                            Delete
-                        </button>
-
-                    </div>
-
-                </td>
-
-            </tr>
-
-        `)
-        .join("");
-
 }
 
+/* =========================================================
+   EDIT PREDICTION
+   ========================================================= */
 
-document
-.getElementById("searchInput")
-.addEventListener(
-    "input",
-    renderPredictions
-);
-
-document
-.getElementById("categoryFilter")
-.addEventListener(
-    "change",
-    renderPredictions
-);
-
-document
-.getElementById("statusFilter")
-.addEventListener(
-    "change",
-    renderPredictions
-);
-
-
-/* =========================================
-   EDIT
-========================================= */
-
-window.editPrediction =
-function(id) {
+function editPrediction(id) {
 
     const item =
-        allPredictions.find(
+        adminPredictions.find(
             prediction =>
                 Number(prediction.id) ===
                 Number(id)
         );
 
-
     if (!item) {
         return;
     }
-
 
     document.getElementById(
         "predictionId"
     ).value = item.id;
 
+    document.getElementById(
+        "predictionLeague"
+    ).value =
+        item.league || "";
 
     document.getElementById(
-        "league"
-    ).value = item.league;
-
-
-    document.getElementById(
-        "homeTeam"
-    ).value = item.home_team;
-
-
-    document.getElementById(
-        "awayTeam"
-    ).value = item.away_team;
-
-
-    document.getElementById(
-        "matchDate"
-    ).value = item.match_date;
-
-
-    document.getElementById(
-        "matchTime"
-    ).value = item.match_time;
-
-
-    document.getElementById(
-        "prediction"
-    ).value = item.prediction;
-
-
-    document.getElementById(
-        "analysis"
-    ).value = item.analysis || "";
-
-
-    document.getElementById(
-        "category"
+        "predictionCategory"
     ).value =
         item.category || "regular";
 
+    document.getElementById(
+        "homeTeam"
+    ).value =
+        item.home_team || "";
 
     document.getElementById(
-        "status"
+        "awayTeam"
+    ).value =
+        item.away_team || "";
+
+    document.getElementById(
+        "matchDate"
+    ).value =
+        item.match_date || "";
+
+    document.getElementById(
+        "matchTime"
+    ).value =
+        item.match_time || "";
+
+    document.getElementById(
+        "prediction"
+    ).value =
+        item.prediction || "";
+
+    document.getElementById(
+        "predictionStatus"
     ).value =
         item.status || "pending";
 
+    document.getElementById(
+        "predictionAnalysis"
+    ).value =
+        item.analysis || "";
 
     document.getElementById(
-        "formTitle"
-    ).textContent =
-        "Edit Prediction";
+        "predictionFeatured"
+    ).checked =
+        Boolean(item.featured);
 
+    const button =
+        document.getElementById(
+            "savePredictionButton"
+        );
 
-    document.getElementById(
-        "savePredictionButton"
-    ).textContent =
-        "UPDATE PREDICTION";
+    if (button) {
 
-
-    document.getElementById(
-        "cancelEditButton"
-    ).style.display =
-        "block";
-
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-
-};
-
-
-/* =========================================
-   ADD / UPDATE
-========================================= */
-
-document
-.getElementById("predictionForm")
-.addEventListener(
-    "submit",
-    async event => {
-
-        event.preventDefault();
-
-
-        const id =
-            document.getElementById(
-                "predictionId"
-            ).value;
-
-
-        const payload = {
-
-            league:
-                document.getElementById(
-                    "league"
-                ).value,
-
-            home_team:
-                document.getElementById(
-                    "homeTeam"
-                ).value.trim(),
-
-            away_team:
-                document.getElementById(
-                    "awayTeam"
-                ).value.trim(),
-
-            match_date:
-                document.getElementById(
-                    "matchDate"
-                ).value,
-
-            match_time:
-                document.getElementById(
-                    "matchTime"
-                ).value,
-
-            prediction:
-                document.getElementById(
-                    "prediction"
-                ).value.trim(),
-
-            analysis:
-                document.getElementById(
-                    "analysis"
-                ).value.trim(),
-
-            category:
-                document.getElementById(
-                    "category"
-                ).value,
-
-            status:
-                document.getElementById(
-                    "status"
-                ).value
-
-        };
-
-
-        try {
-
-            const response =
-                await fetch(
-                    id
-                    ? API_BASE_URL +
-                      "/predictions/" +
-                      id
-                    : API_BASE_URL +
-                      "/predictions",
-                    {
-                        method:
-                            id
-                            ? "PUT"
-                            : "POST",
-
-                        headers:
-                            headers(),
-
-                        body:
-                            JSON.stringify(
-                                payload
-                            )
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    "Unable to save prediction."
-                );
-
-            }
-
-
-            showMessage(
-                document.getElementById(
-                    "formMessage"
-                ),
-                id
-                ? "Prediction updated successfully."
-                : "Prediction added successfully.",
-                "success"
-            );
-
-
-            resetPredictionForm();
-
-            await loadPredictions();
-
-        } catch(error) {
-
-            showMessage(
-                document.getElementById(
-                    "formMessage"
-                ),
-                error.message,
-                "error"
-            );
-
-        }
-
+        button.textContent =
+            "Update Prediction";
     }
-);
 
+    const form =
+        document.getElementById(
+            "predictionForm"
+        );
 
-/* =========================================
-   RESET FORM
-========================================= */
+    if (form) {
+
+        form.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    showMessage(
+        "predictionMessage",
+        "Editing selected prediction.",
+        "info"
+    );
+}
+
+/* =========================================================
+   RESET PREDICTION FORM
+   ========================================================= */
 
 function resetPredictionForm() {
 
-    document
-    .getElementById(
-        "predictionForm"
-    )
-    .reset();
+    const form =
+        document.getElementById(
+            "predictionForm"
+        );
 
+    if (form) {
+        form.reset();
+    }
 
-    document.getElementById(
-        "predictionId"
-    ).value = "";
+    const id =
+        document.getElementById(
+            "predictionId"
+        );
 
+    if (id) {
+        id.value = "";
+    }
 
-    document.getElementById(
-        "category"
-    ).value = "regular";
+    const category =
+        document.getElementById(
+            "predictionCategory"
+        );
 
+    if (category) {
+        category.value =
+            "regular";
+    }
 
-    document.getElementById(
-        "status"
-    ).value = "pending";
+    const status =
+        document.getElementById(
+            "predictionStatus"
+        );
 
+    if (status) {
+        status.value =
+            "pending";
+    }
 
-    document.getElementById(
-        "formTitle"
-    ).textContent =
-        "Add New Prediction";
+    const button =
+        document.getElementById(
+            "savePredictionButton"
+        );
 
+    if (button) {
 
-    document.getElementById(
-        "savePredictionButton"
-    ).textContent =
-        "ADD PREDICTION";
+        button.textContent =
+            "Save Prediction";
+    }
 
-
-    document.getElementById(
-        "cancelEditButton"
-    ).style.display =
-        "none";
-
+    clearMessage(
+        "predictionMessage"
+    );
 }
 
+/* =========================================================
+   CHANGE PREDICTION STATUS
+   ========================================================= */
 
-document
-.getElementById("cancelEditButton")
-.addEventListener(
-    "click",
-    resetPredictionForm
-);
+async function changePredictionStatus(id) {
 
+    const item =
+        adminPredictions.find(
+            prediction =>
+                Number(prediction.id) ===
+                Number(id)
+        );
 
-/* =========================================
-   DELETE
-========================================= */
-
-window.deletePrediction =
-async function(id) {
-
-    if (
-        !confirm(
-            "Are you sure you want to delete this prediction?"
-        )
-    ) {
+    if (!item) {
         return;
     }
 
+    const newStatus =
+        prompt(
+            "Enter status: pending, won, lost, or void",
+            item.status || "pending"
+        );
+
+    if (newStatus === null) {
+        return;
+    }
+
+    const status =
+        newStatus
+            .trim()
+            .toLowerCase();
+
+    if (
+        ![
+            "pending",
+            "won",
+            "lost",
+            "void"
+        ].includes(status)
+    ) {
+
+        alert(
+            "Invalid status. Use pending, won, lost, or void."
+        );
+
+        return;
+    }
 
     try {
 
-        const response =
-            await fetch(
-                API_BASE_URL +
-                "/predictions/" +
-                id,
-                {
-                    method:"DELETE",
-                    headers:headers()
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-            throw new Error(
-                data.message ||
-                "Unable to delete prediction."
-            );
-        }
-
+        await apiRequest(
+            `/predictions/${id}/status`,
+            {
+                method: "PATCH",
+                body: JSON.stringify({
+                    status
+                })
+            }
+        );
 
         await loadPredictions();
 
+        await loadResults();
 
-    } catch(error) {
+        updateDashboardStats();
 
-        alert(error.message);
+    } catch (error) {
 
+        alert(
+            error.message
+        );
     }
+}
 
-};
+/* =========================================================
+   DELETE PREDICTION
+   ========================================================= */
 
+async function deletePrediction(id) {
 
-/* =========================================
-   BUTTONS
-========================================= */
-
-document
-.getElementById("logoutButton")
-.addEventListener(
-    "click",
-    () => {
-
-        localStorage.removeItem(
-            ADMIN_TOKEN_KEY
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this prediction?"
         );
 
-        location.reload();
-
+    if (!confirmed) {
+        return;
     }
-);
 
+    try {
 
-document
-.getElementById("openWebsiteButton")
-.addEventListener(
-    "click",
-    () => {
-
-        window.open(
-            "index.html",
-            "_blank"
+        await apiRequest(
+            `/predictions/${id}`,
+            {
+                method: "DELETE"
+            }
         );
 
+        await loadPredictions();
+
+        await loadResults();
+
+        updateDashboardStats();
+
+    } catch (error) {
+
+        alert(
+            error.message
+        );
     }
-);
+}
+
+/* =========================================================
+   VIP SUBSCRIPTIONS
+   ========================================================= */
+
+async function loadSubscriptions() {
+
+    const data =
+        await apiRequest(
+            "/admin/vip-subscriptions"
+        );
+
+    adminSubscriptions =
+        Array.isArray(data)
+            ? data
+            : (
+                data.subscriptions ||
+                []
+            );
+
+    renderSubscriptions();
+}
+
+function renderSubscriptions() {
+
+    const tbody =
+        document.getElementById(
+            "subscriptionsTableBody"
+        );
+
+    if (!tbody) {
+        return;
+    }
+
+    if (!adminSubscriptions.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    class="empty-state"
+                >
+                    No VIP subscription codes found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    tbody.innerHTML =
+        adminSubscriptions
+            .map(item => {
+
+                return `
+                    <tr>
+
+                        <td>
+                            <strong>
+                                ${escapeHTML(
+                                    item.code
+                                )}
+                            </strong>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                formatPlan(
+                                    item.plan
+                                )
+                            )}
+                        </td>
+
+                        <td>
+                            ${statusBadge(
+                                item.status
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.user_id ||
+                                "Unused"
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.activated_at
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.expires_at
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.created_at
+                            )}
+                        </td>
+
+                    </tr>
+                `;
+
+            })
+            .join("");
+}
+
+/* =========================================================
+   GENERATE VIP CODE
+   ========================================================= */
+
+async function generateVipSubscription(
+    event
+) {
+
+    event.preventDefault();
+
+    const plan =
+        document.getElementById(
+            "subscriptionPlan"
+        ).value;
+
+    const button =
+        document.getElementById(
+            "generateSubscriptionButton"
+        );
+
+    clearMessage(
+        "subscriptionMessage"
+    );
+
+    setButtonLoading(
+        button,
+        true,
+        "Generate VIP Code"
+    );
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/admin/vip-subscriptions",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        plan
+                    })
+                }
+            );
+
+        const code =
+            data.code ||
+            (
+                data.subscription &&
+                data.subscription.code
+            );
+
+        if (!code) {
+
+            throw new Error(
+                "The server did not return a VIP code."
+            );
+        }
+
+        const generatedBox =
+            document.getElementById(
+                "generatedCodeBox"
+            );
+
+        const generatedCode =
+            document.getElementById(
+                "generatedCode"
+            );
+
+        if (generatedCode) {
+
+            generatedCode.textContent =
+                code;
+        }
+
+        if (generatedBox) {
+
+            generatedBox.classList.remove(
+                "hidden"
+            );
+        }
+
+        showMessage(
+            "subscriptionMessage",
+            "VIP access code generated successfully.",
+            "success"
+        );
+
+        await loadSubscriptions();
+
+    } catch (error) {
+
+        showMessage(
+            "subscriptionMessage",
+            error.message,
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            button,
+            false,
+            "Generate VIP Code"
+        );
+    }
+}
+
+/* =========================================================
+   VVIP SUBSCRIPTIONS
+   ========================================================= */
+
+async function loadVvipSubscriptions() {
+
+    const data =
+        await apiRequest(
+            "/admin/vvip-subscriptions"
+        );
+
+    adminVvipSubscriptions =
+        Array.isArray(data)
+            ? data
+            : (
+                data.subscriptions ||
+                []
+            );
+
+    renderVvipSubscriptions();
+}
+
+function renderVvipSubscriptions() {
+
+    const tbody =
+        document.getElementById(
+            "vvipSubscriptionsTableBody"
+        );
+
+    if (!tbody) {
+        return;
+    }
+
+    if (!adminVvipSubscriptions.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    class="empty-state"
+                >
+                    No VVIP access codes found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    tbody.innerHTML =
+        adminVvipSubscriptions
+            .map(item => {
+
+                return `
+                    <tr>
+
+                        <td>
+                            <strong>
+                                ${escapeHTML(
+                                    item.code
+                                )}
+                            </strong>
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                formatPlan(
+                                    item.plan
+                                )
+                            )}
+                        </td>
+
+                        <td>
+                            ${statusBadge(
+                                item.status
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.user_id ||
+                                "Unused"
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.activated_at
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.expires_at
+                            )}
+                        </td>
+
+                        <td>
+                            ${formatDate(
+                                item.created_at
+                            )}
+                        </td>
+
+                    </tr>
+                `;
+
+            })
+            .join("");
+}
+
+async function generateVvipSubscription(
+    event
+) {
+
+    event.preventDefault();
+
+    const plan =
+        document.getElementById(
+            "vvipSubscriptionPlan"
+        ).value;
+
+    const button =
+        document.getElementById(
+            "generateVvipSubscriptionButton"
+        );
+
+    clearMessage(
+        "vvipSubscriptionMessage"
+    );
+
+    setButtonLoading(
+        button,
+        true,
+        "Generate VVIP Code"
+    );
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/admin/vvip-subscriptions",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        plan
+                    })
+                }
+            );
+
+        const code =
+            data.code ||
+            (
+                data.subscription &&
+                data.subscription.code
+            );
+
+        if (!code) {
+
+            throw new Error(
+                "The server did not return a VVIP code."
+            );
+        }
+
+        const generatedBox =
+            document.getElementById(
+                "vvipGeneratedCodeBox"
+            );
+
+        const generatedCode =
+            document.getElementById(
+                "vvipGeneratedCode"
+            );
+
+        if (generatedCode) {
+
+            generatedCode.textContent =
+                code;
+        }
+
+        if (generatedBox) {
+
+            generatedBox.classList.remove(
+                "hidden"
+            );
+        }
+
+        showMessage(
+            "vvipSubscriptionMessage",
+            "VVIP access code generated successfully.",
+            "success"
+        );
+
+        await loadVvipSubscriptions();
+
+    } catch (error) {
+
+        showMessage(
+            "vvipSubscriptionMessage",
+            error.message,
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            button,
+            false,
+            "Generate VVIP Code"
+        );
+    }
+}
+    /* =========================================================
+           VVIP PREDICTION MANAGEMENT
+           ========================================================= */
+
+        async function loadVvipPredictions() {
+            try {
+                const data = await apiRequest("/admin/vvip-predictions");
+
+                vvipPredictions = Array.isArray(data)
+                    ? data
+                    : (data.predictions || []);
+
+                renderVvipPredictions();
+                updateDashboardStats();
+            } catch (error) {
+                console.error("VVIP predictions error:", error);
+                showMessage(
+                    "vvipPredictionMessage",
+                    error.message || "Unable to load VVIP predictions.",
+                    "error"
+                );
+            }
+        }
 
 
-/* =========================================
-   START
-========================================= */
+        function renderVvipPredictions() {
+            const tbody =
+                document.getElementById("vvipPredictionsTableBody");
 
-checkSession();
+            if (!tbody) return;
 
-</script>
+            if (!vvipPredictions.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            No VVIP predictions available.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = vvipPredictions.map(item => `
+                <tr>
+                    <td>${escapeHTML(item.league || "-")}</td>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(item.home_team || "-")}
+                        </strong>
+                        <span class="vs-text">vs</span>
+                        <strong>
+                            ${escapeHTML(item.away_team || "-")}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.match_date || "-")}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.match_time || "-")}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.prediction || "-")}
+                    </td>
+
+                    <td>
+                        ${statusBadge(item.status || "pending")}
+                    </td>
+
+                    <td>
+                        ${item.featured
+                            ? `<span class="status-badge status-won">Featured</span>`
+                            : `<span class="status-badge status-muted">Normal</span>`
+                        }
+                    </td>
+
+                    <td>
+                        ${formatDate(item.created_at)}
+                    </td>
+
+                    <td>
+                        <div class="table-actions">
+
+                            <button
+                                type="button"
+                                class="small-button"
+                                onclick="editVvipPrediction(${item.id})"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                class="small-button"
+                                onclick="changeVvipPredictionStatus(${item.id}, 'won')"
+                            >
+                                Won
+                            </button>
+
+                            <button
+                                type="button"
+                                class="small-button danger"
+                                onclick="changeVvipPredictionStatus(${item.id}, 'lost')"
+                            >
+                                Lost
+                            </button>
+
+                            <button
+                                type="button"
+                                class="small-button danger"
+                                onclick="deleteVvipPrediction(${item.id})"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+
+        async function saveVvipPrediction(event) {
+            event.preventDefault();
+
+            const id =
+                document.getElementById("vvipPredictionId")?.value.trim();
+
+            const league =
+                document.getElementById("vvipPredictionLeague")?.value.trim();
+
+            const homeTeam =
+                document.getElementById("vvipHomeTeam")?.value.trim();
+
+            const awayTeam =
+                document.getElementById("vvipAwayTeam")?.value.trim();
+
+            const matchDate =
+                document.getElementById("vvipMatchDate")?.value;
+
+            const matchTime =
+                document.getElementById("vvipMatchTime")?.value;
+
+            const prediction =
+                document.getElementById("vvipPrediction")?.value.trim();
+
+            const status =
+                document.getElementById("vvipPredictionStatus")?.value || "pending";
+
+            const analysis =
+                document.getElementById("vvipPredictionAnalysis")?.value.trim();
+
+            const featured =
+                document.getElementById("vvipPredictionFeatured")?.checked || false;
+
+            if (
+                !league ||
+                !homeTeam ||
+                !awayTeam ||
+                !matchDate ||
+                !matchTime ||
+                !prediction
+            ) {
+                showMessage(
+                    "vvipPredictionMessage",
+                    "Please complete all required VVIP prediction fields.",
+                    "error"
+                );
+                return;
+            }
+
+            const button =
+                document.getElementById("saveVvipPredictionButton");
+
+            setButtonLoading(button, true, id ? "Updating..." : "Saving...");
+
+            try {
+                const payload = {
+                    league,
+                    home_team: homeTeam,
+                    away_team: awayTeam,
+                    match_date: matchDate,
+                    match_time: matchTime,
+                    prediction,
+                    analysis,
+                    status,
+                    featured
+                };
+
+                if (id) {
+                    await apiRequest(
+                        `/admin/vvip-predictions/${encodeURIComponent(id)}`,
+                        {
+                            method: "PUT",
+                            body: payload
+                        }
+                    );
+
+                    showMessage(
+                        "vvipPredictionMessage",
+                        "VVIP prediction updated successfully.",
+                        "success"
+                    );
+                } else {
+                    await apiRequest(
+                        "/admin/vvip-predictions",
+                        {
+                            method: "POST",
+                            body: payload
+                        }
+                    );
+
+                    showMessage(
+                        "vvipPredictionMessage",
+                        "VVIP prediction added successfully.",
+                        "success"
+                    );
+                }
+
+                resetVvipPredictionForm();
+                await loadVvipPredictions();
+                await loadResults();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error("Save VVIP prediction error:", error);
+
+                showMessage(
+                    "vvipPredictionMessage",
+                    error.message || "Unable to save VVIP prediction.",
+                    "error"
+                );
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+
+        function editVvipPrediction(id) {
+            const item = vvipPredictions.find(
+                prediction => Number(prediction.id) === Number(id)
+            );
+
+            if (!item) {
+                showMessage(
+                    "vvipPredictionMessage",
+                    "VVIP prediction could not be found.",
+                    "error"
+                );
+                return;
+            }
+
+            document.getElementById("vvipPredictionId").value =
+                item.id || "";
+
+            document.getElementById("vvipPredictionLeague").value =
+                item.league || "";
+
+            document.getElementById("vvipHomeTeam").value =
+                item.home_team || "";
+
+            document.getElementById("vvipAwayTeam").value =
+                item.away_team || "";
+
+            document.getElementById("vvipMatchDate").value =
+                item.match_date || "";
+
+            document.getElementById("vvipMatchTime").value =
+                item.match_time || "";
+
+            document.getElementById("vvipPrediction").value =
+                item.prediction || "";
+
+            document.getElementById("vvipPredictionStatus").value =
+                item.status || "pending";
+
+            document.getElementById("vvipPredictionAnalysis").value =
+                item.analysis || "";
+
+            document.getElementById("vvipPredictionFeatured").checked =
+                Boolean(item.featured);
+
+            const button =
+                document.getElementById("saveVvipPredictionButton");
+
+            if (button) {
+                button.textContent = "Update VVIP Prediction";
+            }
+
+            const cancelButton =
+                document.getElementById("cancelVvipEditButton");
+
+            if (cancelButton) {
+                cancelButton.style.display = "inline-flex";
+            }
+
+            document.getElementById("vvipPredictionForm")
+                ?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+        }
+
+
+        function resetVvipPredictionForm() {
+            const form =
+                document.getElementById("vvipPredictionForm");
+
+            if (form) {
+                form.reset();
+            }
+
+            const id =
+                document.getElementById("vvipPredictionId");
+
+            if (id) {
+                id.value = "";
+            }
+
+            const button =
+                document.getElementById("saveVvipPredictionButton");
+
+            if (button) {
+                button.textContent = "Save VVIP Prediction";
+            }
+
+            const cancelButton =
+                document.getElementById("cancelVvipEditButton");
+
+            if (cancelButton) {
+                cancelButton.style.display = "none";
+            }
+
+            clearMessage("vvipPredictionMessage");
+        }
+
+
+        async function changeVvipPredictionStatus(id, status) {
+            const statusNames = {
+                pending: "Pending",
+                won: "Won",
+                lost: "Lost",
+                void: "Void"
+            };
+
+            const label = statusNames[status] || status;
+
+            if (
+                !window.confirm(
+                    `Change this VVIP prediction status to ${label}?`
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/admin/vvip-predictions/${encodeURIComponent(id)}/status`,
+                    {
+                        method: "PATCH",
+                        body: { status }
+                    }
+                );
+
+                await loadVvipPredictions();
+                await loadResults();
+                await loadActivityLogs();
+
+                showMessage(
+                    "vvipPredictionMessage",
+                    `VVIP prediction marked as ${label}.`,
+                    "success"
+                );
+
+            } catch (error) {
+                console.error(
+                    "Change VVIP prediction status error:",
+                    error
+                );
+
+                showMessage(
+                    "vvipPredictionMessage",
+                    error.message ||
+                    "Unable to change VVIP prediction status.",
+                    "error"
+                );
+            }
+        }
+
+
+        async function deleteVvipPrediction(id) {
+            if (
+                !window.confirm(
+                    "Are you sure you want to delete this VVIP prediction?"
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/admin/vvip-predictions/${encodeURIComponent(id)}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                await loadVvipPredictions();
+                await loadResults();
+                await loadActivityLogs();
+
+                showMessage(
+                    "vvipPredictionMessage",
+                    "VVIP prediction deleted successfully.",
+                    "success"
+                );
+
+            } catch (error) {
+                console.error(
+                    "Delete VVIP prediction error:",
+                    error
+                );
+
+                showMessage(
+                    "vvipPredictionMessage",
+                    error.message ||
+                    "Unable to delete VVIP prediction.",
+                    "error"
+                );
+            }
+        }
+
+
+        /* =========================================================
+           RESULTS
+           ========================================================= */
+
+        async function loadResults() {
+            try {
+                const data =
+                    await apiRequest("/admin/results");
+
+                adminResults = Array.isArray(data)
+                    ? data
+                    : (data.results || []);
+
+                renderResults();
+                updateDashboardStats();
+
+            } catch (error) {
+                console.error("Results error:", error);
+
+                showMessage(
+                    "predictionMessage",
+                    error.message || "Unable to load results.",
+                    "error"
+                );
+            }
+        }
+
+
+        function renderResults() {
+            const tbody =
+                document.getElementById("resultsTableBody");
+
+            if (!tbody) return;
+
+            if (!adminResults.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            No match results available.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = adminResults.map(item => `
+                <tr>
+                    <td>
+                        ${escapeHTML(item.league || "-")}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(item.home_team || "-")}
+                        </strong>
+
+                        <span class="vs-text">vs</span>
+
+                        <strong>
+                            ${escapeHTML(item.away_team || "-")}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.match_date || "-")}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.match_time || "-")}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.prediction || "-")}
+                    </td>
+
+                    <td>
+                        ${statusBadge(item.status || "pending")}
+                    </td>
+
+                    <td>
+                        ${formatCategory(item.category || "regular")}
+                    </td>
+
+                    <td>
+                        <button
+                            type="button"
+                            class="small-button"
+                            onclick="resetPredictionResult(${item.id})"
+                        >
+                            Reset
+                        </button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+
+        async function resetPredictionResult(id) {
+            if (
+                !window.confirm(
+                    "Reset this prediction result back to Pending?"
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/results/${encodeURIComponent(id)}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                await loadPredictions();
+                await loadVvipPredictions();
+                await loadResults();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Reset result error:",
+                    error
+                );
+
+                showMessage(
+                    "predictionMessage",
+                    error.message ||
+                    "Unable to reset prediction result.",
+                    "error"
+                );
+            }
+        }
+
+
+        /* =========================================================
+           REGISTERED USERS
+           ========================================================= */
+
+        async function loadUsers() {
+            try {
+                const data =
+                    await apiRequest("/admin/users");
+
+                adminUsers = Array.isArray(data)
+                    ? data
+                    : (data.users || []);
+
+                renderUsers();
+
+            } catch (error) {
+                console.error("Users error:", error);
+
+                showMessage(
+                    "predictionMessage",
+                    error.message || "Unable to load users.",
+                    "error"
+                );
+            }
+        }
+
+
+        function renderUsers() {
+            const tbody =
+                document.getElementById("usersTableBody");
+
+            if (!tbody) return;
+
+            const searchInput =
+                document.getElementById("userSearchInput");
+
+            const searchTerm =
+                (searchInput?.value || "")
+                    .trim()
+                    .toLowerCase();
+
+            const filteredUsers =
+                adminUsers.filter(user => {
+
+                    if (!searchTerm) {
+                        return true;
+                    }
+
+                    const searchable = [
+                        user.name,
+                        user.username,
+                        user.email
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+
+                    return searchable.includes(searchTerm);
+                });
+
+            if (!filteredUsers.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            No registered users found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredUsers.map(user => {
+                const isActive =
+                    user.is_active !== false;
+
+                return `
+                    <tr>
+                        <td>
+                            ${escapeHTML(user.name || "-")}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(user.username || "-")}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(user.email || "-")}
+                        </td>
+
+                        <td>
+                            ${isActive
+                                ? `<span class="status-badge status-won">Active</span>`
+                                : `<span class="status-badge status-lost">Disabled</span>`
+                            }
+                        </td>
+
+                        <td>
+                            ${formatDate(user.created_at)}
+                        </td>
+
+                        <td>
+                            ${formatDate(user.last_login_at)}
+                        </td>
+
+                        <td>
+                            ${Number(user.vip_active_count || 0)}
+                        </td>
+
+                        <td>
+                            <div class="table-actions">
+
+                                <button
+                                    type="button"
+                                    class="small-button"
+                                    onclick="toggleUserStatus(${user.id})"
+                                >
+                                    ${isActive ? "Disable" : "Activate"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="small-button danger"
+                                    onclick="deleteUser(${user.id})"
+                                >
+                                    Delete
+                                </button>
+
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+
+        async function toggleUserStatus(id) {
+            const user =
+                adminUsers.find(
+                    item => Number(item.id) === Number(id)
+                );
+
+            if (!user) return;
+
+            const currentlyActive =
+                user.is_active !== false;
+
+            const action =
+                currentlyActive
+                    ? "disable"
+                    : "activate";
+
+            if (
+                !window.confirm(
+                    `Are you sure you want to ${action} this user?`
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/admin/users/${encodeURIComponent(id)}/status`,
+                    {
+                        method: "PATCH",
+                        body: {
+                            is_active: !currentlyActive
+                        }
+                    }
+                );
+
+                await loadUsers();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Toggle user status error:",
+                    error
+                );
+
+                showMessage(
+                    "predictionMessage",
+                    error.message ||
+                    "Unable to change user status.",
+                    "error"
+                );
+            }
+        }
+
+
+        async function deleteUser(id) {
+            if (
+                !window.confirm(
+                    "Are you sure you want to permanently delete this user?"
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/admin/users/${encodeURIComponent(id)}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                await loadUsers();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Delete user error:",
+                    error
+                );
+
+                showMessage(
+                    "predictionMessage",
+                    error.message ||
+                    "Unable to delete user.",
+                    "error"
+                );
+            }
+        }
+
+
+        /* =========================================================
+           NOTIFICATIONS
+           ========================================================= */
+
+        async function loadNotifications() {
+            try {
+                const data =
+                    await apiRequest("/admin/notifications");
+
+                adminNotifications = Array.isArray(data)
+                    ? data
+                    : (data.notifications || []);
+
+                renderNotifications();
+
+            } catch (error) {
+                console.error(
+                    "Notifications error:",
+                    error
+                );
+
+                showMessage(
+                    "notificationFormMessage",
+                    error.message ||
+                    "Unable to load notifications.",
+                    "error"
+                );
+            }
+        }
+
+
+        function renderNotifications() {
+            const tbody =
+                document.getElementById("notificationsTableBody");
+
+            if (!tbody) return;
+
+            if (!adminNotifications.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            No notifications found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML =
+                adminNotifications.map(item => `
+                    <tr>
+                        <td>
+                            ${escapeHTML(item.title || "-")}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(item.message || "-")}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(item.type || "info")}
+                        </td>
+
+                        <td>
+                            ${item.is_read
+                                ? `<span class="status-badge status-muted">Read</span>`
+                                : `<span class="status-badge status-won">Unread</span>`
+                            }
+                        </td>
+
+                        <td>
+                            ${formatDate(item.created_at)}
+                        </td>
+
+                        <td>
+                            <button
+                                type="button"
+                                class="small-button danger"
+                                onclick="deleteNotification(${item.id})"
+                            >
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join("");
+        }
+
+
+        async function createNotification(event) {
+            event.preventDefault();
+
+            const title =
+                document.getElementById("notificationTitle")
+                    ?.value.trim();
+
+            const message =
+                document.getElementById("notificationMessage")
+                    ?.value.trim();
+
+            const type =
+                document.getElementById("notificationType")
+                    ?.value || "info";
+
+            if (!title || !message) {
+                showMessage(
+                    "notificationFormMessage",
+                    "Please enter both a title and message.",
+                    "error"
+                );
+                return;
+            }
+
+            const button =
+                document.getElementById("sendNotificationButton");
+
+            setButtonLoading(
+                button,
+                true,
+                "Sending..."
+            );
+
+            try {
+                await apiRequest(
+                    "/admin/notifications",
+                    {
+                        method: "POST",
+                        body: {
+                            title,
+                            message,
+                            type
+                        }
+                    }
+                );
+
+                document.getElementById("notificationForm")
+                    ?.reset();
+
+                showMessage(
+                    "notificationFormMessage",
+                    "Notification sent successfully.",
+                    "success"
+                );
+
+                await loadNotifications();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Create notification error:",
+                    error
+                );
+
+                showMessage(
+                    "notificationFormMessage",
+                    error.message ||
+                    "Unable to send notification.",
+                    "error"
+                );
+            } finally {
+                setButtonLoading(
+                    button,
+                    false
+                );
+            }
+        }
+
+
+        async function deleteNotification(id) {
+            if (
+                !window.confirm(
+                    "Delete this notification?"
+                )
+            ) {
+                return;
+            }
+
+            try {
+                await apiRequest(
+                    `/admin/notifications/${encodeURIComponent(id)}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                await loadNotifications();
+                await loadActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Delete notification error:",
+                    error
+                );
+
+                showMessage(
+                    "notificationFormMessage",
+                    error.message ||
+                    "Unable to delete notification.",
+                    "error"
+                );
+            }
+        }
+
+
+        /* =========================================================
+           ACTIVITY LOG
+           ========================================================= */
+
+        async function loadActivityLogs() {
+            try {
+                const data =
+                    await apiRequest("/admin/activity-logs");
+
+                adminActivityLogs = Array.isArray(data)
+                    ? data
+                    : (data.logs || data.activityLogs || []);
+
+                renderActivityLogs();
+
+            } catch (error) {
+                console.error(
+                    "Activity logs error:",
+                    error
+                );
+            }
+        }
+
+
+        function renderActivityLogs() {
+            const tbody =
+                document.getElementById("activityLogTableBody");
+
+            if (!tbody) return;
+
+            if (!adminActivityLogs.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            No activity recorded yet.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML =
+                adminActivityLogs.map(log => `
+                    <tr>
+                        <td>
+                            ${formatDate(log.created_at)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                log.action ||
+                                log.event ||
+                                "-"
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                log.description ||
+                                log.message ||
+                                "-"
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                log.username ||
+                                log.user_username ||
+                                "Admin"
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                log.ip_address ||
+                                "-"
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                log.entity_type ||
+                                "-"
+                            )}
+                        </td>
+                    </tr>
+                `).join("");
+        }
+
+
+        /* =========================================================
+           DASHBOARD STATISTICS
+           ========================================================= */
+
+        function updateDashboardStats() {
+            const regularPredictions =
+                adminPredictions.filter(
+                    item =>
+                        String(item.category || "regular")
+                            .toLowerCase() === "regular"
+                );
+
+            const vipPredictions =
+                adminPredictions.filter(
+                    item =>
+                        String(item.category || "")
+                            .toLowerCase() === "vip"
+                );
+
+            const allStandardPredictions =
+                [...adminPredictions];
+
+            const pending =
+                allStandardPredictions.filter(
+                    item =>
+                        String(item.status || "pending")
+                            .toLowerCase() === "pending"
+                ).length;
+
+            const won =
+                allStandardPredictions.filter(
+                    item =>
+                        String(item.status || "")
+                            .toLowerCase() === "won"
+                ).length;
+
+            const lost =
+                allStandardPredictions.filter(
+                    item =>
+                        String(item.status || "")
+                            .toLowerCase() === "lost"
+                ).length;
+
+            const voided =
+                allStandardPredictions.filter(
+                    item =>
+                        String(item.status || "")
+                            .toLowerCase() === "void"
+                ).length;
+
+            const completed =
+                won + lost;
+
+            const winRate =
+                completed > 0
+                    ? ((won / completed) * 100).toFixed(1)
+                    : "0.0";
+
+            const totalCount =
+                document.getElementById("totalCount");
+
+            const regularCount =
+                document.getElementById("regularCount");
+
+            const vipCount =
+                document.getElementById("vipCount");
+
+            const pendingCount =
+                document.getElementById("pendingCount");
+
+            const wonCount =
+                document.getElementById("wonCount");
+
+            const lostCount =
+                document.getElementById("lostCount");
+
+            const voidCount =
+                document.getElementById("voidCount");
+
+            const adminWinRate =
+                document.getElementById("adminWinRate");
+
+            if (totalCount) {
+                totalCount.textContent =
+                    allStandardPredictions.length;
+            }
+
+            if (regularCount) {
+                regularCount.textContent =
+                    regularPredictions.length;
+            }
+
+            if (vipCount) {
+                vipCount.textContent =
+                    vipPredictions.length;
+            }
+
+            if (pendingCount) {
+                pendingCount.textContent =
+                    pending;
+            }
+
+            if (wonCount) {
+                wonCount.textContent =
+                    won;
+            }
+
+            if (lostCount) {
+                lostCount.textContent =
+                    lost;
+            }
+
+            if (voidCount) {
+                voidCount.textContent =
+                    voided;
+            }
+
+            if (adminWinRate) {
+                adminWinRate.textContent =
+                    `${winRate}%`;
+            }
+        }
+
+
+        /* =========================================================
+           EVENT LISTENERS
+           ========================================================= */
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const adminLoginForm =
+                document.getElementById("adminLoginForm");
+
+            if (adminLoginForm) {
+                adminLoginForm.addEventListener(
+                    "submit",
+                    handleAdminLogin
+                );
+            }
+
+
+            const logoutButton =
+                document.getElementById("logoutButton");
+
+            if (logoutButton) {
+                logoutButton.addEventListener(
+                    "click",
+                    handleAdminLogout
+                );
+            }
+
+
+            const refreshButton =
+                document.getElementById("refreshAdminButton");
+
+            if (refreshButton) {
+                refreshButton.addEventListener(
+                    "click",
+                    () => refreshAdminData(true)
+                );
+            }
+
+
+            const openWebsiteButton =
+                document.getElementById("openWebsiteButton");
+
+            if (openWebsiteButton) {
+                openWebsiteButton.addEventListener(
+                    "click",
+                    () => {
+                        window.open(
+                            "https://flexhubpredictions.github.io/FLEX-HUB-PREDICTION/",
+                            "_blank"
+                        );
+                    }
+                );
+            }
+
+
+            const predictionForm =
+                document.getElementById("predictionForm");
+
+            if (predictionForm) {
+                predictionForm.addEventListener(
+                    "submit",
+                    savePrediction
+                );
+            }
+
+
+            const cancelEditButton =
+                document.getElementById("cancelEditButton");
+
+            if (cancelEditButton) {
+                cancelEditButton.addEventListener(
+                    "click",
+                    resetPredictionForm
+                );
+            }
+
+
+            const subscriptionForm =
+                document.getElementById("subscriptionForm");
+
+            if (subscriptionForm) {
+                subscriptionForm.addEventListener(
+                    "submit",
+                    generateSubscription
+                );
+            }
+
+
+            const copyCodeButton =
+                document.getElementById("copyCodeButton");
+
+            if (copyCodeButton) {
+                copyCodeButton.addEventListener(
+                    "click",
+                    copyGeneratedCode
+                );
+            }
+
+
+            const vvipSubscriptionForm =
+                document.getElementById(
+                    "vvipSubscriptionForm"
+                );
+
+            if (vvipSubscriptionForm) {
+                vvipSubscriptionForm.addEventListener(
+                    "submit",
+                    generateVvipSubscription
+                );
+            }
+
+
+            const copyVvipCodeButton =
+                document.getElementById(
+                    "copyVvipCodeButton"
+                );
+
+            if (copyVvipCodeButton) {
+                copyVvipCodeButton.addEventListener(
+                    "click",
+                    copyGeneratedVvipCode
+                );
+            }
+
+
+            const vvipPredictionForm =
+                document.getElementById(
+                    "vvipPredictionForm"
+                );
+
+            if (vvipPredictionForm) {
+                vvipPredictionForm.addEventListener(
+                    "submit",
+                    saveVvipPrediction
+                );
+            }
+
+
+            const cancelVvipEditButton =
+                document.getElementById(
+                    "cancelVvipEditButton"
+                );
+
+            if (cancelVvipEditButton) {
+                cancelVvipEditButton.addEventListener(
+                    "click",
+                    resetVvipPredictionForm
+                );
+            }
+
+
+            const userSearchInput =
+                document.getElementById(
+                    "userSearchInput"
+                );
+
+            if (userSearchInput) {
+                userSearchInput.addEventListener(
+                    "input",
+                    renderUsers
+                );
+            }
+
+
+            const notificationForm =
+                document.getElementById(
+                    "notificationForm"
+                );
+
+            if (notificationForm) {
+                notificationForm.addEventListener(
+                    "submit",
+                    createNotification
+                );
+            }
+
+
+            const refreshResultsButton =
+                document.getElementById(
+                    "refreshResultsButton"
+                );
+
+            if (refreshResultsButton) {
+                refreshResultsButton.addEventListener(
+                    "click",
+                    loadResults
+                );
+            }
+
+
+            /*
+             * Start admin session.
+             */
+            checkAdminSession();
+        });
+
+
+        /* =========================================================
+           GLOBAL BUTTON FUNCTIONS
+           ========================================================= */
+
+        window.editPrediction =
+            editPrediction;
+
+        window.deletePrediction =
+            deletePrediction;
+
+        window.changePredictionStatus =
+            changePredictionStatus;
+
+        window.editVvipPrediction =
+            editVvipPrediction;
+
+        window.deleteVvipPrediction =
+            deleteVvipPrediction;
+
+        window.changeVvipPredictionStatus =
+            changeVvipPredictionStatus;
+
+        window.resetPredictionResult =
+            resetPredictionResult;
+
+        window.toggleUserStatus =
+            toggleUserStatus;
+
+        window.deleteUser =
+            deleteUser;
+
+        window.deleteNotification =
+            deleteNotification;
+
+        window.copyGeneratedCode =
+            copyGeneratedCode;
+
+        window.copyGeneratedVvipCode =
+            copyGeneratedVvipCode;
+
+
+        /* =========================================================
+           AUTO REFRESH
+           ========================================================= */
+
+        setInterval(() => {
+
+            const adminApp =
+                document.getElementById("adminApp");
+
+            if (
+                adminApp &&
+                adminApp.style.display !== "none" &&
+                adminToken
+            ) {
+                refreshAdminData(false);
+            }
+
+        }, 60000);
+
+    </script>
 
 </body>
 </html>
