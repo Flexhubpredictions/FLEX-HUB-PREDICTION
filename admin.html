@@ -1409,6 +1409,217 @@
 
             </section>
 
+            <!-- =================================================
+     BOOKING CODES
+     ================================================= -->
+
+<section class="section">
+
+    <div class="section-header">
+
+        <div>
+            <h2>
+                Booking Codes
+            </h2>
+
+            <p>
+                Add and manage booking codes for Regular and VIP users.
+            </p>
+        </div>
+
+        <div class="section-actions">
+
+            <button
+                type="button"
+                id="refreshBookingCodesButton"
+                class="secondary-button"
+            >
+                Refresh Codes
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ADD BOOKING CODE -->
+
+    <form id="bookingCodeForm">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="bookingCodeBookmaker">
+                    Bookmaker
+                </label>
+
+                <input
+                    type="text"
+                    id="bookingCodeBookmaker"
+                    placeholder="e.g. SportyBet"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bookingCodeValue">
+                    Booking Code
+                </label>
+
+                <input
+                    type="text"
+                    id="bookingCodeValue"
+                    placeholder="Enter booking code"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bookingCodeCategory">
+                    Category
+                </label>
+
+                <select
+                    id="bookingCodeCategory"
+                    required
+                >
+
+                    <option value="regular">
+                        Regular
+                    </option>
+
+                    <option value="vip">
+                        VIP
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="bookingCodeStatus">
+                    Status
+                </label>
+
+                <select
+                    id="bookingCodeStatus"
+                    required
+                >
+
+                    <option value="active">
+                        Active
+                    </option>
+
+                    <option value="inactive">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group full-width">
+
+                <label for="bookingCodeDescription">
+                    Description
+                </label>
+
+                <textarea
+                    id="bookingCodeDescription"
+                    placeholder="Optional description, e.g. Today's Premier League selections"
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="submit"
+                id="saveBookingCodeButton"
+                class="primary-button"
+            >
+                Add Booking Code
+            </button>
+
+            <button
+                type="button"
+                id="clearBookingCodeButton"
+                class="secondary-button"
+            >
+                Clear
+            </button>
+
+        </div>
+
+
+        <div
+            id="bookingCodeMessage"
+            class="message"
+        ></div>
+
+    </form>
+
+
+    <!-- BOOKING CODE LIST -->
+
+    <div style="margin-top: 22px;">
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Bookmaker</th>
+                        <th>Booking Code</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="bookingCodesTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="empty-state"
+                        >
+                            No booking codes available.
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
 
             <!-- =================================================
                  MATCH RESULTS
