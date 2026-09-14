@@ -8783,7 +8783,51 @@ document.addEventListener(
     }
 );
 
+// ============================================================
+// REFRESH ALL ADMIN DATA
+// ============================================================
 
+async function refreshAdminData() {
+    try {
+        showLoading(
+            "Refreshing admin data...",
+            "Please wait while the dashboard is updated."
+        );
+
+        await Promise.allSettled([
+            loadPredictions(),
+            loadVipSubscriptions(),
+            loadVvipSubscriptions(),
+            loadVvipPredictions(),
+            loadUsers(),
+            loadNotifications(),
+            loadResults(),
+            loadActivityLogs()
+        ]);
+
+        updateDashboardStatistics();
+
+        showToast(
+            "Admin data refreshed successfully.",
+            "success"
+        );
+
+    } catch (error) {
+        console.error(
+            "Refresh admin data error:",
+            error
+        );
+
+        showToast(
+            "Unable to refresh all admin data.",
+            "error"
+        );
+
+    } finally {
+        hideLoading();
+    }
+}
+    
 /* =========================================================
    START ADMIN PANEL
    ========================================================= */
