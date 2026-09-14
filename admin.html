@@ -4364,7 +4364,7 @@ async function generateVipSubscription(
             "success"
         );
 
-        await loadSubscriptions();
+        await loadSubscriptions()
 
     } catch (error) {
 
@@ -5982,6 +5982,104 @@ async function copyGeneratedVvipCode() {
         }
 
         textarea.remove();
+    }
+}
+    /* =========================================================
+   GENERATE VIP SUBSCRIPTION
+   ========================================================= */
+
+async function generateSubscription(event) {
+    event.preventDefault();
+
+    const plan =
+        document.getElementById("subscriptionPlan")?.value;
+
+    if (!plan) {
+        showMessage(
+            "subscriptionMessage",
+            "Please select a VIP subscription plan.",
+            "error"
+        );
+        return;
+    }
+
+    const button =
+        document.getElementById(
+            "generateSubscriptionButton"
+        );
+
+    setButtonLoading(
+        button,
+        true,
+        "Generating..."
+    );
+
+    try {
+
+        const data = await apiRequest(
+            "/admin/vip-subscriptions",
+            {
+                method: "POST",
+                body: {
+                    plan
+                }
+            }
+        );
+
+        const code =
+            data.code ||
+            data.subscription?.code ||
+            data.subscriptionCode;
+
+        if (!code) {
+            throw new Error(
+                "The server did not return a VIP access code."
+            );
+        }
+
+        const generatedCode =
+            document.getElementById("generatedCode");
+
+        if (generatedCode) {
+            generatedCode.textContent = code;
+        }
+
+        const codeBox =
+            document.getElementById("generatedCodeBox");
+
+        if (codeBox) {
+            codeBox.style.display = "block";
+        }
+
+        showMessage(
+            "subscriptionMessage",
+            "VIP access code generated successfully.",
+            "success"
+        );
+
+        await loadSubscriptions();
+        await loadActivityLogs();
+
+    } catch (error) {
+
+        console.error(
+            "Generate VIP subscription error:",
+            error
+        );
+
+        showMessage(
+            "subscriptionMessage",
+            error.message ||
+            "Unable to generate VIP access code.",
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            button,
+            false
+        );
     }
 }
 
