@@ -33,6 +33,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = getStoredUser();
 
+    /*
+     * Prevent the account gate from flashing
+     * when a logged-in user refreshes the page.
+     */
+    const savedToken = getUserToken();
+
+    const accountGate =
+        document.getElementById(
+            "accountGate"
+        );
+
+    const mainWebsite =
+        document.getElementById(
+            "mainWebsite"
+        );
+
+    if (
+        savedToken &&
+        accountGate &&
+        mainWebsite
+    ) {
+
+        accountGate.style.display = "none";
+
+        mainWebsite.style.display = "";
+    }
+
     setupAccountForms();
     setupNavigation();
     setupSearch();
@@ -44,15 +71,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupWhatsAppLinks();
 
     // VIP page
-    if (document.body.classList.contains("vip-page")) {
+    if (
+        document.body.classList.contains(
+            "vip-page"
+        )
+    ) {
+
         await setupVipPage();
+
         return;
     }
 
     // Main website
     await checkUserSession();
 });
-
 // ======================================================
 // STORAGE
 // ======================================================
@@ -672,128 +704,34 @@ function showAccountGate() {
             "none";
     }
 }
+
 /* =========================================================
-   REGULAR ACCESS PAYMENT GATE
+   REGULAR ACCESS PAYMENT GATE — TEMPORARILY DISABLED
    ========================================================= */
 
 function showRegularPaymentGate(access = null) {
 
-    const accountGate =
-        document.getElementById("accountGate");
+    /*
+     * Regular GHS 50 payment gate is temporarily disabled
+     * while Paystack account activation is being reviewed.
+     *
+     * Logged-in users can access the website directly.
+     */
 
-    const mainWebsite =
-        document.getElementById("mainWebsite");
-
-    if (accountGate) {
-        accountGate.style.display = "none";
-    }
-
-    if (mainWebsite) {
-        mainWebsite.style.display = "none";
-    }
-
-    let paymentGate =
-        document.getElementById("regularPaymentGate");
-
-    if (!paymentGate) {
-
-        paymentGate =
-            document.createElement("div");
-
-        paymentGate.id =
-            "regularPaymentGate";
-
-        paymentGate.innerHTML = `
-            <div class="regular-payment-card">
-
-                <div class="regular-payment-icon">
-                    🔒
-                </div>
-
-                <h2>
-                    Regular Access Required
-                </h2>
-
-                <p>
-                    Your regular prediction access is
-                    currently inactive.
-                </p>
-
-                <div class="regular-payment-price">
-                    GHS 50
-                </div>
-
-                <p class="regular-payment-info">
-                    Pay GHS 50 to unlock all regular
-                    predictions and betting codes for
-                    <strong>30 days</strong>.
-                </p>
-
-                <button
-                    type="button"
-                    id="regularPaymentButton"
-                    class="regular-payment-button"
-                >
-                    Pay GHS 50
-                </button>
-
-                <button
-                    type="button"
-                    id="regularPaymentLogout"
-                    class="regular-payment-logout"
-                >
-                    Logout
-                </button>
-
-                <div
-                    id="regularPaymentMessage"
-                    class="regular-payment-message"
-                ></div>
-
-                <div
-                    id="regularAccessExpiry"
-                    class="regular-access-expiry"
-                ></div>
-
-                <p class="regular-payment-note">
-                    VIP access is separate and is not affected
-                    by this payment.
-                </p>
-
-            </div>
-        `;
-
-        document.body.appendChild(
-            paymentGate
-        );
-
-        setupRegularPaymentGate();
-    }
-
-    paymentGate.style.display = "flex";
-    refreshRegularAccessStatus();
-
-    const expiry =
+    const paymentGate =
         document.getElementById(
-            "regularAccessExpiry"
+            "regularPaymentGate"
         );
 
-    if (
-        expiry &&
-        access &&
-        access.expiresAt
-    ) {
+    if (paymentGate) {
 
-        const expiryDate =
-            new Date(
-                access.expiresAt
-            );
-
-        expiry.textContent =
-            "Your previous access expired on " +
-            expiryDate.toLocaleString();
+        paymentGate.style.display =
+            "none";
     }
+
+    openMainWebsite();
 }
+
 /* =========================================================
    REGULAR PAYMENT GATE SETUP — PAYSTACK
    ========================================================= */
@@ -1280,6 +1218,60 @@ if (!grid && !hasDashboardStats) {
                 ? data
                 : data.predictions || [];
 
+       
+   async function loadPredictions() {
+
+const grid =
+document.querySelector("#predictionsGrid");
+
+const hasDashboardStats =
+document.querySelector("#totalPredictions");
+
+if (!grid && !hasDashboardStats) {
+return;
+}
+
+try {
+
+if (grid) {
+    grid.innerHTML =
+        `<div class="loading-state">
+            <p>Loading predictions...</p>
+        </div>`;
+}
+const data =
+    await apiRequest(
+        "/predictions"
+    );
+allPredictions =
+    Array.isArray(data)
+        ? data
+        : data.predictions || [];
+if (grid) {
+    renderPredictions();
+}
+updatePredictionStats();
+
+} catch (error) {
+
+console.error(
+    "Prediction loading error:",
+    error
+);
+if (grid) {
+    grid.innerHTML =
+        `<div class="empty-state">
+            <h3>Predictions unavailable</h3>
+            <p>${escapeHtml(
+                error.message ||
+                "Unable to load predictions."
+            )}</p>
+        </div>`;
+}
+
+}
+}
+
      if (grid) {
     renderPredictions();
 }
@@ -1316,12 +1308,35 @@ function renderPredictions() {
             "#predictionsGrid"
         );
 
-    if (!grid) {
-        return;
-    }
+  if (!grid) {
+    return;
+}
 
-    let predictions =
-        [...allPredictions];
+const newPredictionsAlert =
+    document.querySelector("#newPredictionsAlert");
+
+const newPredictionsCount =
+    document.querySelector("#newPredictionsCount");
+
+if (newPredictionsAlert && newPredictionsCount) {
+
+  const newCount =
+    allPredictions.filter(
+        prediction =>
+            prediction.featured === true &&
+            prediction.status !== "completed"
+    ).length;
+
+    newPredictionsCount.textContent = newCount;
+
+    newPredictionsAlert.style.display =
+        newCount > 0
+            ? "inline-flex"
+            : "none";
+}
+
+let predictions =
+    [...allPredictions];
     // Home page: show featured predictions only
     if (
         grid.dataset.homeFeaturedOnly === "true"
@@ -3149,6 +3164,7 @@ function escapeHtml(value) {
             "&#039;"
         );
 }
+
 // FORGOT PASSWORD
 // =====================================================
 
@@ -3380,7 +3396,10 @@ function escapeHtml(value) {
 
 async function loadRegularBettingCodes() {
 
-    const container = document.getElementById("bettingCodesGrid");
+    const container =
+        document.getElementById(
+            "bettingCodesGrid"
+        );
 
     if (!container) {
         return;
@@ -3388,19 +3407,23 @@ async function loadRegularBettingCodes() {
 
     try {
 
-        const response = await fetch(
-            "https://flex-hub-prediction.onrender.com/api/betting-codes"
-        );
+        container.innerHTML = `
+            <div class="loading-state">
+                Loading betting codes...
+            </div>
+        `;
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.message || "Unable to load betting codes."
+        const data =
+            await apiRequest(
+                "/betting-codes"
             );
-        }
 
-        const bettingCodes = data.bettingCodes || [];
+        const bettingCodes =
+            Array.isArray(data.bettingCodes)
+                ? data.bettingCodes
+                : Array.isArray(data.codes)
+                    ? data.codes
+                    : [];
 
         if (!bettingCodes.length) {
 
@@ -3413,60 +3436,75 @@ async function loadRegularBettingCodes() {
             return;
         }
 
-        container.innerHTML = bettingCodes.map(code => `
+        container.innerHTML =
+            bettingCodes.map(code => `
 
-            <div class="betting-code-card">
+                <div class="betting-code-card">
 
-                <div class="prediction-card-header">
+                    <div class="prediction-card-header">
 
-                    <strong>
-                        ${escapeHtml(code.bookmaker)}
-                    </strong>
+                        <strong>
+                            ${escapeHtml(
+                                code.bookmaker || ""
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="prediction-card-body">
+
+                        <div>
+                            <strong>
+                                BETTING CODE
+                            </strong>
+                        </div>
+
+                        <div style="
+                            font-size:24px;
+                            font-weight:800;
+                            margin:10px 0;
+                        ">
+                            ${escapeHtml(
+                                code.code || ""
+                            )}
+                        </div>
+
+                        ${
+                            code.description
+                                ? `
+                                    <div
+                                        style="
+                                            margin-bottom:15px;
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            code.description
+                                        )}
+                                    </div>
+                                  `
+                                : ""
+                        }
+
+                        <button
+                            type="button"
+                            class="primary-btn"
+                            style="
+                                margin-top:5px;
+                                cursor:pointer;
+                            "
+                            data-betting-code="${escapeHtml(
+                                code.code || ""
+                            )}"
+                            onclick="copyBettingCode(this)"
+                        >
+                            📋 COPY CODE
+                        </button>
+
+                    </div>
 
                 </div>
 
-                <div class="prediction-card-body">
-
-                    <div>
-                        <strong>BETTING CODE</strong>
-                    </div>
-
-                    <div style="
-                        font-size:24px;
-                        font-weight:800;
-                        margin:10px 0;
-                    ">
-                        ${escapeHtml(code.code)}
-                    </div>
-
-                    ${
-                        code.description
-                            ? `
-                                <div style="margin-bottom:15px;">
-                                    ${escapeHtml(code.description)}
-                                </div>
-                              `
-                            : ""
-                    }
-
-                    <button
-                        type="button"
-                        class="primary-btn"
-                        style="
-                            margin-top:5px;
-                            cursor:pointer;
-                        "
-                        data-betting-code="${escapeHtml(code.code)}"
-                        onclick="copyBettingCode(this)"
-                    >
-                       📋 COPY CODE
-                    </button>
-
-                </div>
-
-            </div>
-
-        `).join("");
+            `).join("");
 
     } catch (error) {
 
@@ -3482,7 +3520,6 @@ async function loadRegularBettingCodes() {
         `;
     }
 }
-
 
 // ============================================================
 // COPY BETTING CODE
@@ -3996,126 +4033,342 @@ document.addEventListener("DOMContentLoaded", () => {
 
         style.id = "flexNotificationStyles";
 
-        style.textContent = `
-            #flexNotificationBell {
-                position: fixed;
-                right: 20px;
-                bottom: 85px;
-                width: 52px;
-                height: 52px;
-                border-radius: 50%;
-                border: none;
-                cursor: pointer;
-                z-index: 9998;
-                font-size: 23px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4px 18px rgba(0,0,0,.25);
-            }
+       style.textContent = `
+    /* =====================================================
+       FLEX HUB NOTIFICATION CENTER
+       ===================================================== */
 
-            #flexNotificationBadge {
-                position: absolute;
-                top: -4px;
-                right: -4px;
-                min-width: 20px;
-                height: 20px;
-                padding: 0 5px;
-                border-radius: 20px;
-                font-size: 11px;
-                font-weight: bold;
-                display: none;
-                align-items: center;
-                justify-content: center;
-            }
+    #flexNotificationBell {
+        position: fixed;
+        right: 20px;
+        bottom: 85px;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        z-index: 9998;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 5px 20px rgba(0,0,0,.35);
+    }
 
-            #flexNotificationPanel {
-                position: fixed;
-                right: 20px;
-                bottom: 148px;
-                width: 350px;
-                max-width: calc(100vw - 30px);
-                max-height: 70vh;
-                overflow-y: auto;
-                z-index: 9999;
-                display: none;
-                border-radius: 14px;
-                padding: 18px;
-                box-shadow: 0 8px 30px rgba(0,0,0,.3);
-            }
+    #flexNotificationBadge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 21px;
+        height: 21px;
+        padding: 0 6px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    /* BRIGHT NOTIFICATION ALERT */
 
-            #flexNotificationPanel.flex-notification-open {
-                display: block;
-            }
+#flexNotificationBadge {
+    background: #ff1744;
+    color: #ffffff;
+    border: 3px solid #07100c;
+    font-size: 13px;
+    font-weight: 900;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 50%;
+    box-shadow:
+        0 0 10px rgba(255, 23, 68, .9),
+        0 0 20px rgba(255, 23, 68, .6);
+    z-index: 10000;
+}
 
-            .flex-notification-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
-            }
+#flexNotificationBell.has-unread {
+    animation: flexNotificationPulse 1.5s infinite;
+}
 
-            .flex-notification-header h3 {
-                margin: 0;
-            }
+@keyframes flexNotificationPulse {
 
-            #flexNotificationClose {
-                border: none;
-                background: transparent;
-                cursor: pointer;
-                font-size: 22px;
-            }
+    0% {
+        transform: scale(1);
+    }
 
-            .flex-notification-item {
-                padding: 13px;
-                margin-bottom: 10px;
-                border-radius: 10px;
-                border: 1px solid rgba(128,128,128,.25);
-                cursor: pointer;
-            }
+    50% {
+        transform: scale(1.08);
+        box-shadow:
+            0 0 12px rgba(255, 23, 68, .7),
+            0 0 25px rgba(255, 23, 68, .4);
+    }
 
-            .flex-notification-item.unread {
-                font-weight: 600;
-            }
+    100% {
+        transform: scale(1);
+    }
 
-            .flex-notification-title {
-                font-size: 15px;
-                margin-bottom: 5px;
-            }
+}
 
-            .flex-notification-message {
-                font-size: 14px;
-                line-height: 1.5;
-            }
 
-            .flex-notification-time {
-                margin-top: 7px;
-                font-size: 11px;
-                opacity: .65;
-            }
+    /* =====================================================
+       NOTIFICATION BOARD
+       ===================================================== */
 
-            .flex-notification-empty {
-                text-align: center;
-                padding: 25px 10px;
-                opacity: .7;
-            }
+    #flexNotificationPanel {
+        position: fixed;
+        right: 20px;
+        bottom: 150px;
 
-            @media (max-width: 600px) {
+        width: 390px;
+        max-width: calc(100vw - 30px);
 
-                #flexNotificationBell {
-                    right: 15px;
-                    bottom: 75px;
-                }
+        max-height: 72vh;
 
-                #flexNotificationPanel {
-                    right: 15px;
-                    bottom: 138px;
-                    width: calc(100vw - 30px);
-                }
+        overflow-y: auto;
 
-            }
-        `;
+        z-index: 9999;
 
+        display: none;
+
+        border-radius: 18px;
+
+        padding: 18px;
+
+        box-shadow:
+            0 12px 40px rgba(0,0,0,.45);
+
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    #flexNotificationPanel.flex-notification-open {
+        display: block;
+    }
+
+
+    /* =====================================================
+       BOARD HEADER
+       ===================================================== */
+
+    .flex-notification-header {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        margin-bottom: 16px;
+
+        padding-bottom: 12px;
+
+        border-bottom:
+            1px solid rgba(128,128,128,.25);
+    }
+
+    .flex-notification-header h3 {
+        margin: 0;
+
+        font-size: 19px;
+
+        font-weight: 800;
+    }
+
+    #flexNotificationClose {
+        width: 34px;
+        height: 34px;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background: rgba(128,128,128,.15);
+
+        cursor: pointer;
+
+        font-size: 22px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION BOARD / CARD
+       ===================================================== */
+
+    .flex-notification-item {
+
+        position: relative;
+
+        padding: 17px;
+
+        margin-bottom: 13px;
+
+        border-radius: 14px;
+
+        border:
+            1px solid rgba(128,128,128,.25);
+
+        cursor: pointer;
+
+        transition:
+            transform .18s ease,
+            box-shadow .18s ease,
+            border-color .18s ease;
+
+        overflow-wrap: anywhere;
+
+        word-break: break-word;
+    }
+
+    .flex-notification-item:hover {
+
+        transform: translateY(-2px);
+
+        box-shadow:
+            0 6px 20px rgba(0,0,0,.18);
+    }
+
+
+    /* UNREAD MESSAGE */
+
+    .flex-notification-item.unread {
+
+        font-weight: 600;
+
+        border-width: 2px;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION TITLE
+       ===================================================== */
+
+    .flex-notification-title {
+
+        font-size: 16px;
+
+        line-height: 1.35;
+
+        font-weight: 800;
+
+        margin-bottom: 9px;
+    }
+
+
+    /* =====================================================
+       NOTIFICATION MESSAGE BOARD
+       ===================================================== */
+
+    .flex-notification-message {
+
+        font-size: 15px;
+
+        line-height: 1.65;
+
+        font-weight: 400;
+
+        white-space: pre-wrap;
+
+        overflow-wrap: anywhere;
+
+        word-break: break-word;
+    }
+
+
+    /* =====================================================
+       DATE / TIME
+       ===================================================== */
+
+    .flex-notification-time {
+
+        margin-top: 12px;
+
+        padding-top: 9px;
+
+        border-top:
+            1px solid rgba(128,128,128,.18);
+
+        font-size: 11px;
+
+        line-height: 1.4;
+
+        opacity: .65;
+    }
+
+
+    /* =====================================================
+       EMPTY / LOADING BOARD
+       ===================================================== */
+
+    .flex-notification-empty {
+
+        text-align: center;
+
+        padding: 30px 15px;
+
+        opacity: .7;
+
+        font-size: 14px;
+    }
+
+
+    /* =====================================================
+       MOBILE
+       ===================================================== */
+
+    @media (max-width: 600px) {
+
+        #flexNotificationBell {
+
+            right: 15px;
+
+            bottom: 75px;
+
+            width: 52px;
+
+            height: 52px;
+        }
+
+        #flexNotificationPanel {
+
+            right: 15px;
+
+            bottom: 138px;
+
+            width: calc(100vw - 30px);
+
+            max-height: 70vh;
+
+            padding: 15px;
+
+            border-radius: 16px;
+        }
+
+        .flex-notification-item {
+
+            padding: 15px;
+
+            border-radius: 13px;
+        }
+
+        .flex-notification-title {
+
+            font-size: 15px;
+        }
+
+        .flex-notification-message {
+
+            font-size: 14px;
+
+            line-height: 1.65;
+        }
+    }
+`;
         document.head.appendChild(style);
     }
 
@@ -4238,24 +4491,41 @@ document.addEventListener("DOMContentLoaded", () => {
             const unreadCount =
                 Number(data.unreadCount || 0);
 
-            if (badge) {
+          const bell =
+    document.getElementById(
+        "flexNotificationBell"
+    );
 
-                if (unreadCount > 0) {
+if (badge) {
 
-                    badge.textContent =
-                        unreadCount > 99
-                            ? "99+"
-                            : unreadCount;
+    if (unreadCount > 0) {
 
-                    badge.style.display = "flex";
+        badge.textContent =
+            unreadCount > 99
+                ? "99+"
+                : unreadCount;
 
-                } else {
+        badge.style.display = "flex";
 
-                    badge.style.display = "none";
+        if (bell) {
+            bell.classList.add(
+                "has-unread"
+            );
+        }
 
-                }
+    } else {
 
-            }
+        badge.style.display = "none";
+
+        if (bell) {
+            bell.classList.remove(
+                "has-unread"
+            );
+        }
+
+    }
+
+}
 
             if (!notifications.length) {
 
@@ -4278,8 +4548,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 >
 
                     <div class="flex-notification-title">
-                        ${notificationEscapeHTML(item.title)}
-                    </div>
+
+    <span>
+        ${notificationEscapeHTML(item.title)}
+    </span>
+
+    ${
+        !item.is_read
+            ? `
+                <span
+                    style="
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        margin-left:8px;
+                        padding:3px 7px;
+                        border-radius:20px;
+                        font-size:9px;
+                        font-weight:800;
+                        letter-spacing:.5px;
+                    "
+                >
+                    NEW
+                </span>
+              `
+            : ""
+    }
+
+</div>
 
                     <div class="flex-notification-message">
                         ${notificationEscapeHTML(item.message)}
