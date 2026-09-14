@@ -1167,7 +1167,6 @@ async function verifyCurrentUserSession(
 
 }
 
-
 /* ============================================================
    CHECK SESSION
    ============================================================ */
@@ -1181,6 +1180,10 @@ async function checkUserSession() {
         getStoredUser();
 
 
+    /* --------------------------------------------------------
+       NO SAVED SESSION
+       -------------------------------------------------------- */
+
     if (!token) {
 
         showAccountGate();
@@ -1190,15 +1193,42 @@ async function checkUserSession() {
     }
 
 
+    /* --------------------------------------------------------
+       SESSION EXISTS
+       Keep login gate hidden while checking.
+       -------------------------------------------------------- */
+
+    const accountGate =
+        getElement("accountGate");
+
+    if (accountGate) {
+
+        accountGate.style.visibility =
+            "hidden";
+
+        accountGate.style.opacity =
+            "0";
+
+    }
+
+
     currentUser =
         storedUser;
 
+
+    /* --------------------------------------------------------
+       VERIFY SESSION WITH BACKEND
+       -------------------------------------------------------- */
 
     const verified =
         await verifyCurrentUserSession(
             false
         );
 
+
+    /* --------------------------------------------------------
+       SESSION VERIFIED
+       -------------------------------------------------------- */
 
     if (verified) {
 
@@ -1208,6 +1238,10 @@ async function checkUserSession() {
 
     }
 
+
+    /* --------------------------------------------------------
+       FALLBACK TO STORED SESSION
+       -------------------------------------------------------- */
 
     const remainingUser =
         getStoredUser();
@@ -1227,6 +1261,22 @@ async function checkUserSession() {
         openMainWebsite();
 
         return;
+
+    }
+
+
+    /* --------------------------------------------------------
+       SESSION INVALID
+       Show login gate again.
+       -------------------------------------------------------- */
+
+    if (accountGate) {
+
+        accountGate.style.visibility =
+            "visible";
+
+        accountGate.style.opacity =
+            "1";
 
     }
 
