@@ -1351,7 +1351,7 @@
      ADMIN APPLICATION
      ========================================================= -->
 
-<div id="adminApp">
+<div id="adminApp" style="display:none;">
 
 
     <!-- =====================================================
@@ -3447,102 +3447,119 @@ function startAdminAutoRefresh() {
    ========================================================= */
 
 async function handleAdminLogin(event) {
-
     event.preventDefault();
 
     const username =
-        document.getElementById(
-            "adminUsername"
-        ).value.trim();
+        document.getElementById("adminUsername")?.value.trim();
 
     const password =
-        document.getElementById(
-            "adminPassword"
-        ).value;
+        document.getElementById("adminPassword")?.value;
 
-    const button =
-        document.getElementById(
-            "adminLoginButton"
-        );
-
-    clearMessage(
-        "loginMessage"
-    );
+    const loginButton =
+        document.getElementById("adminLoginButton");
 
     if (!username || !password) {
-
         showMessage(
             "loginMessage",
-            "Enter your username and password.",
+            "Please enter your username and password.",
             "error"
         );
-
         return;
     }
 
     setButtonLoading(
-        button,
+        loginButton,
         true,
-        "Login"
+        "Signing in..."
     );
 
     try {
 
-        const data =
-            await apiRequest(
-                "/admin/login",
-                {
-                    method: "POST",
-                    body: JSON.stringify({
-                        username,
-                        password
-                    })
+        const data = await apiRequest(
+            "/admin/login",
+            {
+                method: "POST",
+                body: {
+                    username,
+                    password
                 }
-            );
+            }
+        );
 
-        if (!data.token) {
-
+        if (!data || !data.token) {
             throw new Error(
-                "No admin token was returned."
+                "Login succeeded, but no admin token was returned."
             );
         }
 
-        saveToken(
-            data.token
-        );
+        /* Save admin token */
+        adminToken = data.token;
 
-        document.getElementById(
-            "adminPassword"
-        ).value = "";
+        saveToken(data.token);
 
         showMessage(
             "loginMessage",
-            "Login successful.",
+            "Login successful. Opening admin panel...",
             "success"
         );
 
-        await openAdmin();
+        /*
+         * Give the success message a moment to appear,
+         * then switch from login screen to dashboard.
+         */
+        setTimeout(async () => {
 
-        startAdminAutoRefresh();
+            const loginScreen =
+                document.getElementById("adminLoginScreen");
+
+            const adminApp =
+                document.getElementById("adminApp");
+
+            if (loginScreen) {
+                loginScreen.style.display = "none";
+            }
+
+            if (adminApp) {
+                adminApp.style.display = "block";
+            }
+
+            /*
+             * Load the admin dashboard data.
+             */
+            await refreshAdminData(false);
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+        }, 500);
 
     } catch (error) {
 
+        console.error(
+            "Admin login error:",
+            error
+        );
+
+        adminToken = null;
+        clearAdminToken();
+
         showMessage(
             "loginMessage",
-            error.message,
+            error.message ||
+            "Unable to connect to the backend server.",
             "error"
         );
 
     } finally {
 
         setButtonLoading(
-            button,
-            false,
-            "Login"
+            loginButton,
+            false
         );
     }
 }
-
 /* =========================================================
    LOAD REGULAR / VIP PREDICTIONS
    ========================================================= */
