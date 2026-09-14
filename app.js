@@ -4702,85 +4702,96 @@ function setupNavigation() {
    ============================================================ */
 
 function setupMobileMenu() {
+    const menuButton = document.getElementById("menuButton");
+    const mainNav = document.getElementById("mainNav");
 
-    const menuButton =
-        getElement(
-            "menuButton"
-        );
-
-
-    if (!menuButton) {
-
+    if (!menuButton || !mainNav) {
+        console.warn("Mobile menu elements not found.");
         return;
-
     }
 
+    // Open / close menu
+    menuButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
 
-    menuButton.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (
-                event.key ===
-                "Enter" ||
-                event.key ===
-                " "
-            ) {
-
-                event.preventDefault();
-
-                menuButton.click();
-
-            }
-
-        }
-    );
-
-}
-
-
-/* ============================================================
-   CLOSE MOBILE MENU
-   ============================================================ */
-
-function closeMobileMenu() {
-
-    const mainNav =
-        getElement(
-            "mainNav"
-        );
-
-    const menuButton =
-        getElement(
-            "menuButton"
-        );
-
-
-    if (mainNav) {
-
-        mainNav.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    if (menuButton) {
-
-        menuButton.classList.remove(
-            "active"
-        );
-
+        const isOpen = mainNav.classList.toggle("open");
 
         menuButton.setAttribute(
             "aria-expanded",
-            "false"
+            String(isOpen)
         );
 
-    }
+        menuButton.setAttribute(
+            "aria-label",
+            isOpen
+                ? "Close navigation"
+                : "Open navigation"
+        );
+    });
 
+    // Close menu when a navigation link is selected
+    const navLinks = mainNav.querySelectorAll("a");
+
+    navLinks.forEach(function (link) {
+        link.addEventListener("click", function () {
+            mainNav.classList.remove("open");
+
+            menuButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            menuButton.setAttribute(
+                "aria-label",
+                "Open navigation"
+            );
+        });
+    });
+
+    // Close menu when clicking outside it
+    document.addEventListener("click", function (event) {
+
+        if (
+            mainNav.classList.contains("open") &&
+            !mainNav.contains(event.target) &&
+            !menuButton.contains(event.target)
+        ) {
+            mainNav.classList.remove("open");
+
+            menuButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            menuButton.setAttribute(
+                "aria-label",
+                "Open navigation"
+            );
+        }
+    });
+
+    // Close menu with Escape key
+    document.addEventListener("keydown", function (event) {
+
+        if (
+            event.key === "Escape" &&
+            mainNav.classList.contains("open")
+        ) {
+            mainNav.classList.remove("open");
+
+            menuButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            menuButton.setAttribute(
+                "aria-label",
+                "Open navigation"
+            );
+        }
+    });
 }
-
 
 /* ============================================================
    FOOTER
