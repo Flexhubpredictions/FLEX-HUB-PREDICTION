@@ -32,18 +32,63 @@ const FRONTEND_URL =
 // MIDDLEWARE
 // ============================================================
 
+/* =========================================================
+   CORS
+   ========================================================= */
+
+const allowedOrigins = [
+    "https://flexhubpredictions.com",
+    "https://www.flexhubpredictions.com",
+    "https://flexhubpredictions.github.io",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+];
+
 app.use(
     cors({
-        origin: [
-            "http://localhost:5500",
-            "http://127.0.0.1:5500",
-            "http://localhost:3000",
-            "https://flexhubpredictions.github.io",
-            FRONTEND_URL
+        origin: function (origin, callback) {
+
+            // Allow requests with no origin
+            // such as some server-to-server requests.
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            console.log(
+                "CORS blocked origin:",
+                origin
+            );
+
+            return callback(
+                new Error("Not allowed by CORS")
+            );
+        },
+
+        credentials: true,
+
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS"
         ],
-        credentials: true
+
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization"
+        ]
     })
 );
+
+app.options("*", cors());
 
 app.use(express.json());
 
