@@ -1038,7 +1038,119 @@ function openMainWebsite() {
             );
         });
 }
+// ============================================================
+// BOOKING CODES
+// ============================================================
 
+async function loadBookingCodes() {
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/betting-codes`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to load booking codes."
+            );
+        }
+
+        const bookingCodes =
+            Array.isArray(data)
+                ? data
+                : (
+                    data.codes ||
+                    data.bettingCodes ||
+                    []
+                );
+
+        renderBookingCodes(bookingCodes);
+
+        return bookingCodes;
+
+    } catch (error) {
+
+        console.error(
+            "Booking codes error:",
+            error
+        );
+
+        renderBookingCodes([]);
+
+        return [];
+    }
+}
+function renderBookingCodes(codes) {
+
+    const container =
+        document.getElementById(
+            "bookingCodesContainer"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    if (!codes || !codes.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                No booking codes available at the moment.
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = codes.map(code => {
+
+        return `
+            <div class="booking-code-card">
+
+                <div class="booking-code-top">
+
+                    <span class="booking-code-bookmaker">
+                        ${escapeHTML(
+                            code.bookmaker || ""
+                        )}
+                    </span>
+
+                    <span class="booking-code-category">
+                        ${escapeHTML(
+                            String(
+                                code.category || "regular"
+                            ).toUpperCase()
+                        )}
+                    </span>
+
+                </div>
+
+                <div class="booking-code-value">
+                    ${escapeHTML(
+                        code.code || ""
+                    )}
+                </div>
+
+                ${
+                    code.description
+                        ? `
+                            <p class="booking-code-description">
+                                ${escapeHTML(
+                                    code.description
+                                )}
+                            </p>
+                          `
+                        : ""
+                }
+
+            </div>
+        `;
+
+    }).join("");
+}
 /* ============================================================
    USER INTERFACE
    ============================================================ */
