@@ -11,8 +11,7 @@ const API_BASE_URL = "https://flex-hub-prediction.onrender.com/api";
 const STORAGE_KEYS = {
     user: "flexHubUser",
     userToken: "flexHubUserToken",
-    vipToken: "flexHubVipToken",
-    vvipToken: "flexHubVvipToken"
+    vipToken: "flexHubVipToken"
 };
 
 // ======================================================
@@ -34,33 +33,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = getStoredUser();
 
-    /*
-     * Prevent the account gate from flashing
-     * when a logged-in user refreshes the page.
-     */
-    const savedToken = getUserToken();
-
-    const accountGate =
-        document.getElementById(
-            "accountGate"
-        );
-
-    const mainWebsite =
-        document.getElementById(
-            "mainWebsite"
-        );
-
-    if (
-        savedToken &&
-        accountGate &&
-        mainWebsite
-    ) {
-
-        accountGate.style.display = "none";
-
-        mainWebsite.style.display = "";
-    }
-
     setupAccountForms();
     setupNavigation();
     setupSearch();
@@ -72,20 +44,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupWhatsAppLinks();
 
     // VIP page
-  if (document.body.classList.contains("vip-page")) {
-    await setupVipPage();
-    return;
-}
+    if (document.body.classList.contains("vip-page")) {
+        await setupVipPage();
+        return;
+    }
 
-// VVIP page
-if (document.body.classList.contains("vvip-page")) {
-    await setupVvipPage();
-    return;
-}
-
-// Main website
-await checkUserSession();
+    // Main website
+    await checkUserSession();
 });
+
 // ======================================================
 // STORAGE
 // ======================================================
@@ -705,34 +672,128 @@ function showAccountGate() {
             "none";
     }
 }
-
 /* =========================================================
-   REGULAR ACCESS PAYMENT GATE — TEMPORARILY DISABLED
+   REGULAR ACCESS PAYMENT GATE
    ========================================================= */
 
 function showRegularPaymentGate(access = null) {
 
-    /*
-     * Regular GHS 50 payment gate is temporarily disabled
-     * while Paystack account activation is being reviewed.
-     *
-     * Logged-in users can access the website directly.
-     */
+    const accountGate =
+        document.getElementById("accountGate");
 
-    const paymentGate =
-        document.getElementById(
-            "regularPaymentGate"
-        );
+    const mainWebsite =
+        document.getElementById("mainWebsite");
 
-    if (paymentGate) {
-
-        paymentGate.style.display =
-            "none";
+    if (accountGate) {
+        accountGate.style.display = "none";
     }
 
-    openMainWebsite();
-}
+    if (mainWebsite) {
+        mainWebsite.style.display = "none";
+    }
 
+    let paymentGate =
+        document.getElementById("regularPaymentGate");
+
+    if (!paymentGate) {
+
+        paymentGate =
+            document.createElement("div");
+
+        paymentGate.id =
+            "regularPaymentGate";
+
+        paymentGate.innerHTML = `
+            <div class="regular-payment-card">
+
+                <div class="regular-payment-icon">
+                    🔒
+                </div>
+
+                <h2>
+                    Regular Access Required
+                </h2>
+
+                <p>
+                    Your regular prediction access is
+                    currently inactive.
+                </p>
+
+                <div class="regular-payment-price">
+                    GHS 50
+                </div>
+
+                <p class="regular-payment-info">
+                    Pay GHS 50 to unlock all regular
+                    predictions and betting codes for
+                    <strong>30 days</strong>.
+                </p>
+
+                <button
+                    type="button"
+                    id="regularPaymentButton"
+                    class="regular-payment-button"
+                >
+                    Pay GHS 50
+                </button>
+
+                <button
+                    type="button"
+                    id="regularPaymentLogout"
+                    class="regular-payment-logout"
+                >
+                    Logout
+                </button>
+
+                <div
+                    id="regularPaymentMessage"
+                    class="regular-payment-message"
+                ></div>
+
+                <div
+                    id="regularAccessExpiry"
+                    class="regular-access-expiry"
+                ></div>
+
+                <p class="regular-payment-note">
+                    VIP access is separate and is not affected
+                    by this payment.
+                </p>
+
+            </div>
+        `;
+
+        document.body.appendChild(
+            paymentGate
+        );
+
+        setupRegularPaymentGate();
+    }
+
+    paymentGate.style.display = "flex";
+    refreshRegularAccessStatus();
+
+    const expiry =
+        document.getElementById(
+            "regularAccessExpiry"
+        );
+
+    if (
+        expiry &&
+        access &&
+        access.expiresAt
+    ) {
+
+        const expiryDate =
+            new Date(
+                access.expiresAt
+            );
+
+        expiry.textContent =
+            "Your previous access expired on " +
+            expiryDate.toLocaleString();
+    }
+}
 /* =========================================================
    REGULAR PAYMENT GATE SETUP — PAYSTACK
    ========================================================= */
@@ -1219,60 +1280,6 @@ if (!grid && !hasDashboardStats) {
                 ? data
                 : data.predictions || [];
 
-       
-   async function loadPredictions() {
-
-const grid =
-document.querySelector("#predictionsGrid");
-
-const hasDashboardStats =
-document.querySelector("#totalPredictions");
-
-if (!grid && !hasDashboardStats) {
-return;
-}
-
-try {
-
-if (grid) {
-    grid.innerHTML =
-        `<div class="loading-state">
-            <p>Loading predictions...</p>
-        </div>`;
-}
-const data =
-    await apiRequest(
-        "/predictions"
-    );
-allPredictions =
-    Array.isArray(data)
-        ? data
-        : data.predictions || [];
-if (grid) {
-    renderPredictions();
-}
-updatePredictionStats();
-
-} catch (error) {
-
-console.error(
-    "Prediction loading error:",
-    error
-);
-if (grid) {
-    grid.innerHTML =
-        `<div class="empty-state">
-            <h3>Predictions unavailable</h3>
-            <p>${escapeHtml(
-                error.message ||
-                "Unable to load predictions."
-            )}</p>
-        </div>`;
-}
-
-}
-}
-
      if (grid) {
     renderPredictions();
 }
@@ -1309,35 +1316,12 @@ function renderPredictions() {
             "#predictionsGrid"
         );
 
-  if (!grid) {
-    return;
-}
+    if (!grid) {
+        return;
+    }
 
-const newPredictionsAlert =
-    document.querySelector("#newPredictionsAlert");
-
-const newPredictionsCount =
-    document.querySelector("#newPredictionsCount");
-
-if (newPredictionsAlert && newPredictionsCount) {
-
-  const newCount =
-    allPredictions.filter(
-        prediction =>
-            prediction.featured === true &&
-            prediction.status !== "completed"
-    ).length;
-
-    newPredictionsCount.textContent = newCount;
-
-    newPredictionsAlert.style.display =
-        newCount > 0
-            ? "inline-flex"
-            : "none";
-}
-
-let predictions =
-    [...allPredictions];
+    let predictions =
+        [...allPredictions];
     // Home page: show featured predictions only
     if (
         grid.dataset.homeFeaturedOnly === "true"
@@ -1919,6 +1903,7 @@ function renderResults() {
         .map(createPredictionCard)
             .join("");
 }
+
 // ======================================================
 // STATISTICS
 // ======================================================
@@ -1956,6 +1941,7 @@ function updatePredictionStats() {
     const winRate = decided > 0
         ? Math.round((won / decided) * 100)
         : 0;
+
 
     setText(
         "#totalPredictions",
@@ -1996,6 +1982,7 @@ function updatePredictionStats() {
         "#winRate",
         `${winRate}%`
     );
+
 
     updateVipPredictionCount();
 }
@@ -2688,6 +2675,7 @@ window.location.href = "index.html";
         );
     });
 }
+
 // ======================================================
 // MOBILE MENU
 // ======================================================
@@ -3392,10 +3380,7 @@ function escapeHtml(value) {
 
 async function loadRegularBettingCodes() {
 
-    const container =
-        document.getElementById(
-            "bettingCodesGrid"
-        );
+    const container = document.getElementById("bettingCodesGrid");
 
     if (!container) {
         return;
@@ -3403,23 +3388,19 @@ async function loadRegularBettingCodes() {
 
     try {
 
-        container.innerHTML = `
-            <div class="loading-state">
-                Loading betting codes...
-            </div>
-        `;
+        const response = await fetch(
+            "https://flex-hub-prediction.onrender.com/api/betting-codes"
+        );
 
-        const data =
-            await apiRequest(
-                "/betting-codes"
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to load betting codes."
             );
+        }
 
-        const bettingCodes =
-            Array.isArray(data.bettingCodes)
-                ? data.bettingCodes
-                : Array.isArray(data.codes)
-                    ? data.codes
-                    : [];
+        const bettingCodes = data.bettingCodes || [];
 
         if (!bettingCodes.length) {
 
@@ -3432,75 +3413,60 @@ async function loadRegularBettingCodes() {
             return;
         }
 
-        container.innerHTML =
-            bettingCodes.map(code => `
+        container.innerHTML = bettingCodes.map(code => `
 
-                <div class="betting-code-card">
+            <div class="betting-code-card">
 
-                    <div class="prediction-card-header">
+                <div class="prediction-card-header">
 
-                        <strong>
-                            ${escapeHtml(
-                                code.bookmaker || ""
-                            )}
-                        </strong>
-
-                    </div>
-
-                    <div class="prediction-card-body">
-
-                        <div>
-                            <strong>
-                                BETTING CODE
-                            </strong>
-                        </div>
-
-                        <div style="
-                            font-size:24px;
-                            font-weight:800;
-                            margin:10px 0;
-                        ">
-                            ${escapeHtml(
-                                code.code || ""
-                            )}
-                        </div>
-
-                        ${
-                            code.description
-                                ? `
-                                    <div
-                                        style="
-                                            margin-bottom:15px;
-                                        "
-                                    >
-                                        ${escapeHtml(
-                                            code.description
-                                        )}
-                                    </div>
-                                  `
-                                : ""
-                        }
-
-                        <button
-                            type="button"
-                            class="primary-btn"
-                            style="
-                                margin-top:5px;
-                                cursor:pointer;
-                            "
-                            data-betting-code="${escapeHtml(
-                                code.code || ""
-                            )}"
-                            onclick="copyBettingCode(this)"
-                        >
-                            📋 COPY CODE
-                        </button>
-
-                    </div>
+                    <strong>
+                        ${escapeHtml(code.bookmaker)}
+                    </strong>
 
                 </div>
 
-            `).join("");
+                <div class="prediction-card-body">
+
+                    <div>
+                        <strong>BETTING CODE</strong>
+                    </div>
+
+                    <div style="
+                        font-size:24px;
+                        font-weight:800;
+                        margin:10px 0;
+                    ">
+                        ${escapeHtml(code.code)}
+                    </div>
+
+                    ${
+                        code.description
+                            ? `
+                                <div style="margin-bottom:15px;">
+                                    ${escapeHtml(code.description)}
+                                </div>
+                              `
+                            : ""
+                    }
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        style="
+                            margin-top:5px;
+                            cursor:pointer;
+                        "
+                        data-betting-code="${escapeHtml(code.code)}"
+                        onclick="copyBettingCode(this)"
+                    >
+                       📋 COPY CODE
+                    </button>
+
+                </div>
+
+            </div>
+
+        `).join("");
 
     } catch (error) {
 
@@ -3516,6 +3482,7 @@ async function loadRegularBettingCodes() {
         `;
     }
 }
+
 
 // ============================================================
 // COPY BETTING CODE
@@ -3555,6 +3522,7 @@ async function copyBettingCode(button) {
         }, 2000);
     }
 }
+
 
 // ============================================================
 // END BETTING CODES
@@ -3718,6 +3686,7 @@ async function loadVipBettingCodes() {
     }
 }
 
+
 // ============================================================
 // END VIP BETTING CODES
 // ============================================================
@@ -3802,10 +3771,12 @@ teamBadgeObserver.observe(document.body, {
     subtree: true
 });
 
+
 // Load badges already on the page
 setTimeout(() => {
     loadTeamBadges();
 }, 1000);
+
 
 // ============================================================
 // END REAL TEAM BADGES
@@ -4025,335 +3996,129 @@ document.addEventListener("DOMContentLoaded", () => {
 
         style.id = "flexNotificationStyles";
 
-       style.textContent = `
-    /* =====================================================
-       FLEX HUB NOTIFICATION CENTER
-       ===================================================== */
-
-    #flexNotificationBell {
-        position: fixed;
-        right: 20px;
-        bottom: 85px;
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        z-index: 9998;
-        font-size: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 5px 20px rgba(0,0,0,.35);
-    }
-
-    #flexNotificationBadge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        min-width: 21px;
-        height: 21px;
-        padding: 0 6px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 800;
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-    /* BRIGHT NOTIFICATION ALERT */
-
-#flexNotificationBadge {
-    background: #ff1744;
-    color: #ffffff;
-    border: 3px solid #07100c;
-    font-size: 13px;
-    font-weight: 900;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 7px;
-    border-radius: 50%;
-    box-shadow:
-        0 0 10px rgba(255, 23, 68, .9),
-        0 0 20px rgba(255, 23, 68, .6);
-    z-index: 10000;
-}
-
-#flexNotificationBell.has-unread {
-    animation: flexNotificationPulse 1.5s infinite;
-}
+        style.textContent = `
+            #flexNotificationBell {
+                position: fixed;
+                right: 20px;
+                bottom: 85px;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                z-index: 9998;
+                font-size: 23px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 18px rgba(0,0,0,.25);
+            }
+
+            #flexNotificationBadge {
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                min-width: 20px;
+                height: 20px;
+                padding: 0 5px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: bold;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #flexNotificationPanel {
+                position: fixed;
+                right: 20px;
+                bottom: 148px;
+                width: 350px;
+                max-width: calc(100vw - 30px);
+                max-height: 70vh;
+                overflow-y: auto;
+                z-index: 9999;
+                display: none;
+                border-radius: 14px;
+                padding: 18px;
+                box-shadow: 0 8px 30px rgba(0,0,0,.3);
+            }
+
+            #flexNotificationPanel.flex-notification-open {
+                display: block;
+            }
+
+            .flex-notification-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 14px;
+            }
+
+            .flex-notification-header h3 {
+                margin: 0;
+            }
+
+            #flexNotificationClose {
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                font-size: 22px;
+            }
+
+            .flex-notification-item {
+                padding: 13px;
+                margin-bottom: 10px;
+                border-radius: 10px;
+                border: 1px solid rgba(128,128,128,.25);
+                cursor: pointer;
+            }
+
+            .flex-notification-item.unread {
+                font-weight: 600;
+            }
+
+            .flex-notification-title {
+                font-size: 15px;
+                margin-bottom: 5px;
+            }
+
+            .flex-notification-message {
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .flex-notification-time {
+                margin-top: 7px;
+                font-size: 11px;
+                opacity: .65;
+            }
+
+            .flex-notification-empty {
+                text-align: center;
+                padding: 25px 10px;
+                opacity: .7;
+            }
 
-@keyframes flexNotificationPulse {
+            @media (max-width: 600px) {
 
-    0% {
-        transform: scale(1);
-    }
+                #flexNotificationBell {
+                    right: 15px;
+                    bottom: 75px;
+                }
 
-    50% {
-        transform: scale(1.08);
-        box-shadow:
-            0 0 12px rgba(255, 23, 68, .7),
-            0 0 25px rgba(255, 23, 68, .4);
-    }
+                #flexNotificationPanel {
+                    right: 15px;
+                    bottom: 138px;
+                    width: calc(100vw - 30px);
+                }
 
-    100% {
-        transform: scale(1);
-    }
+            }
+        `;
 
-}
-
-    /* =====================================================
-       NOTIFICATION BOARD
-       ===================================================== */
-
-    #flexNotificationPanel {
-        position: fixed;
-        right: 20px;
-        bottom: 150px;
-
-        width: 390px;
-        max-width: calc(100vw - 30px);
-
-        max-height: 72vh;
-
-        overflow-y: auto;
-
-        z-index: 9999;
-
-        display: none;
-
-        border-radius: 18px;
-
-        padding: 18px;
-
-        box-shadow:
-            0 12px 40px rgba(0,0,0,.45);
-
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-    }
-
-    #flexNotificationPanel.flex-notification-open {
-        display: block;
-    }
-
-    /* =====================================================
-       BOARD HEADER
-       ===================================================== */
-
-    .flex-notification-header {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        margin-bottom: 16px;
-
-        padding-bottom: 12px;
-
-        border-bottom:
-            1px solid rgba(128,128,128,.25);
-    }
-
-    .flex-notification-header h3 {
-        margin: 0;
-
-        font-size: 19px;
-
-        font-weight: 800;
-    }
-
-    #flexNotificationClose {
-        width: 34px;
-        height: 34px;
-
-        border: none;
-
-        border-radius: 50%;
-
-        background: rgba(128,128,128,.15);
-
-        cursor: pointer;
-
-        font-size: 22px;
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: center;
-    }
-
-    /* =====================================================
-       NOTIFICATION BOARD / CARD
-       ===================================================== */
-
-    .flex-notification-item {
-
-        position: relative;
-
-        padding: 17px;
-
-        margin-bottom: 13px;
-
-        border-radius: 14px;
-
-        border:
-            1px solid rgba(128,128,128,.25);
-
-        cursor: pointer;
-
-        transition:
-            transform .18s ease,
-            box-shadow .18s ease,
-            border-color .18s ease;
-
-        overflow-wrap: anywhere;
-
-        word-break: break-word;
-    }
-
-    .flex-notification-item:hover {
-
-        transform: translateY(-2px);
-
-        box-shadow:
-            0 6px 20px rgba(0,0,0,.18);
-    }
-
-    /* UNREAD MESSAGE */
-
-    .flex-notification-item.unread {
-
-        font-weight: 600;
-
-        border-width: 2px;
-    }
-
-    /* =====================================================
-       NOTIFICATION TITLE
-       ===================================================== */
-
-    .flex-notification-title {
-
-        font-size: 16px;
-
-        line-height: 1.35;
-
-        font-weight: 800;
-
-        margin-bottom: 9px;
-    }
-
-    /* =====================================================
-       NOTIFICATION MESSAGE BOARD
-       ===================================================== */
-
-    .flex-notification-message {
-
-        font-size: 15px;
-
-        line-height: 1.65;
-
-        font-weight: 400;
-
-        white-space: pre-wrap;
-
-        overflow-wrap: anywhere;
-
-        word-break: break-word;
-    }
-
-    /* =====================================================
-       DATE / TIME
-       ===================================================== */
-
-    .flex-notification-time {
-
-        margin-top: 12px;
-
-        padding-top: 9px;
-
-        border-top:
-            1px solid rgba(128,128,128,.18);
-
-        font-size: 11px;
-
-        line-height: 1.4;
-
-        opacity: .65;
-    }
-
-    /* =====================================================
-       EMPTY / LOADING BOARD
-       ===================================================== */
-
-    .flex-notification-empty {
-
-        text-align: center;
-
-        padding: 30px 15px;
-
-        opacity: .7;
-
-        font-size: 14px;
-    }
-
-    /* =====================================================
-       MOBILE
-       ===================================================== */
-
-    @media (max-width: 600px) {
-
-        #flexNotificationBell {
-
-            right: 15px;
-
-            bottom: 75px;
-
-            width: 52px;
-
-            height: 52px;
-        }
-
-        #flexNotificationPanel {
-
-            right: 15px;
-
-            bottom: 138px;
-
-            width: calc(100vw - 30px);
-
-            max-height: 70vh;
-
-            padding: 15px;
-
-            border-radius: 16px;
-        }
-
-        .flex-notification-item {
-
-            padding: 15px;
-
-            border-radius: 13px;
-        }
-
-        .flex-notification-title {
-
-            font-size: 15px;
-        }
-
-        .flex-notification-message {
-
-            font-size: 14px;
-
-            line-height: 1.65;
-        }
-    }
-`;
         document.head.appendChild(style);
     }
+
 
     function createNotificationUI() {
 
@@ -4425,6 +4190,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
+
     async function loadUserNotifications() {
 
         const list = document.getElementById(
@@ -4472,41 +4238,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const unreadCount =
                 Number(data.unreadCount || 0);
 
-          const bell =
-    document.getElementById(
-        "flexNotificationBell"
-    );
+            if (badge) {
 
-if (badge) {
+                if (unreadCount > 0) {
 
-    if (unreadCount > 0) {
+                    badge.textContent =
+                        unreadCount > 99
+                            ? "99+"
+                            : unreadCount;
 
-        badge.textContent =
-            unreadCount > 99
-                ? "99+"
-                : unreadCount;
+                    badge.style.display = "flex";
 
-        badge.style.display = "flex";
+                } else {
 
-        if (bell) {
-            bell.classList.add(
-                "has-unread"
-            );
-        }
+                    badge.style.display = "none";
 
-    } else {
+                }
 
-        badge.style.display = "none";
-
-        if (bell) {
-            bell.classList.remove(
-                "has-unread"
-            );
-        }
-
-    }
-
-}
+            }
 
             if (!notifications.length) {
 
@@ -4529,34 +4278,8 @@ if (badge) {
                 >
 
                     <div class="flex-notification-title">
-
-    <span>
-        ${notificationEscapeHTML(item.title)}
-    </span>
-
-    ${
-        !item.is_read
-            ? `
-                <span
-                    style="
-                        display:inline-flex;
-                        align-items:center;
-                        justify-content:center;
-                        margin-left:8px;
-                        padding:3px 7px;
-                        border-radius:20px;
-                        font-size:9px;
-                        font-weight:800;
-                        letter-spacing:.5px;
-                    "
-                >
-                    NEW
-                </span>
-              `
-            : ""
-    }
-
-</div>
+                        ${notificationEscapeHTML(item.title)}
+                    </div>
 
                     <div class="flex-notification-message">
                         ${notificationEscapeHTML(item.message)}
@@ -4612,6 +4335,7 @@ if (badge) {
         }
     }
 
+
     async function markNotificationRead(id) {
 
         try {
@@ -4644,6 +4368,7 @@ if (badge) {
         }
     }
 
+
     function startNotificationCenter() {
 
         const token = localStorage.getItem(
@@ -4664,6 +4389,7 @@ if (badge) {
         );
     }
 
+
     if (document.readyState === "loading") {
 
         document.addEventListener(
@@ -4678,624 +4404,3 @@ if (badge) {
     }
 
 })();
-
-// ======================================================
-// VVIP PAGE
-// ======================================================
-
-async function setupVvipPage() {
-
-    const userToken = getUserToken();
-
-    // VVIP requires a normal FLEX HUB account
-    if (!userToken) {
-
-        window.location.href = "index.html";
-
-        return;
-    }
-
-    const sessionValid =
-        await verifyUserForVvipPage();
-
-    if (!sessionValid) {
-        return;
-    }
-
-    setupVvipAccessForm();
-    setupVvipLogout();
-
-    await checkVvipStatus();
-}
-
-
-// ======================================================
-// VERIFY USER FOR VVIP PAGE
-// ======================================================
-
-async function verifyUserForVvipPage() {
-
-    try {
-
-        const data =
-            await apiRequest("/user/me");
-
-        if (!data.user) {
-
-            throw new Error(
-                "Invalid user session."
-            );
-        }
-
-        saveUser(data.user);
-
-        updateUserUI();
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "VVIP user verification failed:",
-            error
-        );
-
-        clearUserSession();
-
-        window.location.href =
-            "index.html";
-
-        return false;
-    }
-}
-
-
-// ======================================================
-// VVIP ACCESS FORM
-// ======================================================
-
-function setupVvipAccessForm() {
-
-    const form =
-        document.querySelector(
-            "#vvipAccessForm"
-        );
-
-    if (!form) {
-        return;
-    }
-
-    if (
-        form.dataset.listenerAttached ===
-        "true"
-    ) {
-        return;
-    }
-
-    form.dataset.listenerAttached =
-        "true";
-
-    form.addEventListener(
-        "submit",
-        handleVvipAccess
-    );
-}
-
-
-// ======================================================
-// ACTIVATE VVIP ACCESS
-// ======================================================
-
-async function handleVvipAccess(event) {
-
-    event.preventDefault();
-
-    const codeInput =
-        document.querySelector(
-            "#vvipAccessCode"
-        );
-
-    const message =
-        document.querySelector(
-            "#vvipMessage"
-        );
-
-    const code =
-        codeInput?.value.trim();
-
-    if (!code) {
-
-        showElementMessage(
-            message,
-            "Please enter your VVIP access code.",
-            "error"
-        );
-
-        return;
-    }
-
-    const userToken =
-        getUserToken();
-
-    if (!userToken) {
-
-        showElementMessage(
-            message,
-            "Please login to your account first.",
-            "error"
-        );
-
-        return;
-    }
-
-    try {
-
-        setButtonLoading(
-            event.submitter,
-            true,
-            "Activating..."
-        );
-
-        const response =
-            await fetch(
-                `${API_BASE_URL}/vvip/access`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Authorization":
-                            `Bearer ${userToken}`
-                    },
-
-                    body: JSON.stringify({
-                        accessCode: code
-                    })
-                }
-            );
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = {};
-        }
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message ||
-                "Unable to activate VVIP access."
-            );
-        }
-
-        if (!data.token) {
-
-            throw new Error(
-                "The server did not return a VVIP session."
-            );
-        }
-
-        localStorage.setItem(
-            STORAGE_KEYS.vvipToken,
-            data.token
-        );
-
-        if (codeInput) {
-            codeInput.value = "";
-        }
-
-        showElementMessage(
-            message,
-            "VVIP access activated successfully!",
-            "success"
-        );
-
-        await checkVvipStatus();
-
-    } catch (error) {
-
-        console.error(
-            "VVIP activation error:",
-            error
-        );
-
-        showElementMessage(
-            message,
-            error.message ||
-            "Unable to activate VVIP access.",
-            "error"
-        );
-
-    } finally {
-
-        setButtonLoading(
-            event.submitter,
-            false
-        );
-    }
-}
-
-
-// ======================================================
-// CHECK VVIP STATUS
-// ======================================================
-
-async function checkVvipStatus() {
-
-    const userToken =
-        getUserToken();
-
-    if (!userToken) {
-
-        updateVvipStatusUI(null);
-
-        return;
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_BASE_URL}/vvip/status`,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Authorization":
-                            `Bearer ${userToken}`
-                    }
-                }
-            );
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = {};
-        }
-
-        if (!response.ok) {
-
-            console.error(
-                "VVIP status request failed:",
-                data.message
-            );
-
-            updateVvipStatusUI(null);
-
-            return;
-        }
-
-        updateVvipStatusUI(data);
-
-        if (data.active === true) {
-
-            await loadVvipPredictions();
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "VVIP status error:",
-            error
-        );
-
-        updateVvipStatusUI(null);
-    }
-}
-
-
-// ======================================================
-// VVIP STATUS UI
-// ======================================================
-
-function updateVvipStatusUI(data) {
-
-    const statusElement =
-        document.querySelector(
-            "#vvipStatus"
-        );
-
-    const planElement =
-        document.querySelector(
-            "#vvipPlan"
-        );
-
-    const expiryElement =
-        document.querySelector(
-            "#vvipExpiry"
-        );
-
-    if (!data || !data.active) {
-
-        if (statusElement) {
-
-            statusElement.textContent =
-                "Locked";
-
-            statusElement.classList.remove(
-                "active"
-            );
-
-            statusElement.classList.add(
-                "locked"
-            );
-        }
-
-        if (planElement) {
-
-            planElement.textContent =
-                "No active VVIP plan";
-        }
-
-        if (expiryElement) {
-
-            expiryElement.textContent =
-                "—";
-        }
-
-        return;
-    }
-
-    if (statusElement) {
-
-        statusElement.textContent =
-            "VVIP Active";
-
-        statusElement.classList.remove(
-            "locked"
-        );
-
-        statusElement.classList.add(
-            "active"
-        );
-    }
-
-    if (planElement) {
-
-        planElement.textContent =
-            formatVvipPlan(data.plan);
-    }
-
-    if (expiryElement) {
-
-        expiryElement.textContent =
-            formatExpiry(data.expiresAt);
-    }
-}
-
-
-// ======================================================
-// VVIP PLAN FORMAT
-// ======================================================
-
-function formatVvipPlan(plan) {
-
-    const plans = {
-        "1_week": "1 Week VVIP",
-        "2_weeks": "2 Weeks VVIP",
-        "1_month": "1 Month VVIP"
-    };
-
-    return (
-        plans[plan] ||
-        capitalize(
-            String(
-                plan || "VVIP"
-            ).replaceAll(
-                "_",
-                " "
-            )
-        )
-    );
-}
-
-
-// ======================================================
-// LOAD VVIP PREDICTIONS
-// ======================================================
-
-async function loadVvipPredictions() {
-
-    const grid =
-        document.querySelector(
-            "#vvipPredictionsGrid"
-        );
-
-    if (!grid) {
-        return;
-    }
-
-    const vvipToken =
-        localStorage.getItem(
-            STORAGE_KEYS.vvipToken
-        );
-
-    if (!vvipToken) {
-
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    VVIP access required
-                </h3>
-
-                <p>
-                    Activate your VVIP subscription
-                    to view this section.
-                </p>
-
-            </div>
-        `;
-
-        return;
-    }
-
-    try {
-
-        grid.innerHTML = `
-            <div class="loading-state">
-                <p>Loading VVIP content...</p>
-            </div>
-        `;
-
-        const response =
-            await fetch(
-                `${API_BASE_URL}/vvip/predictions`,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Authorization":
-                            `Bearer ${vvipToken}`
-                    }
-                }
-            );
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = {};
-        }
-
-        if (!response.ok) {
-
-            if (response.status === 401) {
-
-                localStorage.removeItem(
-                    STORAGE_KEYS.vvipToken
-                );
-            }
-
-            throw new Error(
-                data.message ||
-                "Unable to load VVIP content."
-            );
-        }
-
-        const predictions =
-            Array.isArray(data)
-                ? data
-                : data.predictions || [];
-
-        if (!predictions.length) {
-
-            grid.innerHTML = `
-                <div class="empty-state">
-
-                    <h3>
-                        No VVIP predictions yet
-                    </h3>
-
-                    <p>
-                        New VVIP match previews
-                        will appear here.
-                    </p>
-
-                </div>
-            `;
-
-            return;
-        }
-
-        grid.innerHTML =
-            predictions
-                .map(createPredictionCard)
-                .join("");
-
-    } catch (error) {
-
-        console.error(
-            "VVIP prediction error:",
-            error
-        );
-
-        grid.innerHTML = `
-            <div class="empty-state">
-
-                <h3>
-                    VVIP content unavailable
-                </h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message ||
-                        "Unable to load VVIP predictions."
-                    )}
-                </p>
-
-            </div>
-        `;
-    }
-}
-
-
-// ======================================================
-// VVIP LOGOUT
-// ======================================================
-
-function setupVvipLogout() {
-
-    const buttons =
-        document.querySelectorAll(
-            "[data-vvip-logout], #vvipLogoutButton"
-        );
-
-    buttons.forEach(button => {
-
-        if (
-            button.dataset.vvipLogoutAttached ===
-            "true"
-        ) {
-            return;
-        }
-
-        button.dataset.vvipLogoutAttached =
-            "true";
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                localStorage.removeItem(
-                    STORAGE_KEYS.vvipToken
-                );
-
-                window.location.href =
-                    "index.html";
-            }
-        );
-    });
-}
-
-// ======================================================
-// END VVIP SYSTEM
-// ======================================================
