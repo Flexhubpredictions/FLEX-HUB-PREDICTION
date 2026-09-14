@@ -1,3 +1,8 @@
+// ============================================================
+// FLEX HUB PREDICTIONS - SERVER.JS
+// PART 1 / 3
+// ============================================================
+
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -8,2061 +13,3000 @@ const crypto = require("crypto");
 dotenv.config();
 
 const db = require("./database");
+
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET =
+    process.env.JWT_SECRET || "CHANGE_THIS_SECRET_BEFORE_HOSTING";
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "FLEX";
+const ADMIN_PASSWORD =
+    process.env.ADMIN_PASSWORD || "CHANGE_ADMIN_PASSWORD";
+
+const FRONTEND_URL =
+    process.env.FRONTEND_URL ||
+    "https://flexhubpredictions.github.io/FLEX-HUB-PREDICTION/";
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5500",
+            "http://127.0.0.1:5500",
+            "http://localhost:3000",
+            "https://flexhubpredictions.github.io",
+            FRONTEND_URL
+        ],
+        credentials: true
+    })
+);
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+});
+
+// ============================================================
+// BASIC STATUS
+// ============================================================
+
+app.get("/api/status", (req, res) => {
+    res.json({
+        success: true,
+        message: "FLEX HUB PREDICTIONS backend is running.",
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function createUserToken(user) {
+    return jwt.sign(
+        {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            type: "user"
+        },
+        JWT_SECRET,
+        {
+            expiresIn: "30d"
+        }
+    );
+}
+
+function createVipToken(user, subscriptionId) {
+    return jwt.sign(
+        {
+            id: user.id,
+            username: user.username,
+            type: "vip",
+            subscriptionId
+        },
+        JWT_SECRET,
+        {
+            expiresIn: "30d"
+        }
+    );
+}
+
+function createVvipToken(user, subscriptionId) {
+    return jwt.sign(
+        {
+            id: user.id,
+            username: user.username,
+            type: "vvip",
+            subscriptionId
+        },
+        JWT_SECRET,
+        {
+            expiresIn: "30d"
+        }
+    );
+}
+
+function getBearerToken(req) {
+    const header = req.headers.authorization || "";
+
+    if (!header.startsWith("Bearer ")) {
+        return null;
+    }
+
+    return header.substring(7);
+}
+
+function generateCode(prefix = "FLEX") {
+    return `${prefix}-${crypto
+        .randomBytes(5)
+        .toString("hex")
+        .toUpperCase()}`;
+}
+
+// ============================================================
+// ACTIVITY LOG
+// ============================================================
+
 async function logActivity(user, action, details = "") {
     try {
         await db.query(
             `INSERT INTO activity_logs
-             (user_id, name, username, action, details)
-             VALUES ($1, $2, $3, $4, $5)`,
+            (user_id, name, username, action, details)
+            VALUES ($1, $2, $3, $4, $5)`,
             [
                 user?.id || null,
-                user?.name || null,
-                user?.username || null,
+                user?.name || "",
+                user?.username || "",
                 action,
                 details
             ]
         );
     } catch (error) {
-        console.error("Activity log error:", error);
+        console.error("Activity log error:", error.message);
     }
 }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-const HOST = "0.0.0.0";
-
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "FLEX";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "CHANGE_ADMIN_PASSWORD";
-const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_THIS_SECRET_BEFORE_HOSTING";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5500";
-
-const allowedOrigins = [
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://localhost:3000",
-  "https://flexhubpredictions.github.io",
-  "https://flexhubpredictions.com",
-  "https://www.flexhubpredictions.com",
-  FRONTEND_URL
-].filter(Boolean);
-
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Origin not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "FLEX HUB PREDICTIONS backend is running." });
-});
-
-app.get("/api/status", (req, res) => {
-  res.json({ success: true, message: "FLEX HUB PREDICTIONS API is online.", serverTime: new Date().toISOString() });
-});
-
-// ==================== PASSWORD RESET ====================
-
-function hashResetToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-app.post("/api/forgot-password", async (req, res) => {
-  try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
-
-    // Always return the same message so we do not reveal
-    // whether an email address has an account.
-    const genericMessage =
-      "If an account with that email exists, a password reset link has been sent.";
-
-    if (!email) {
-      return res.json({ success: true, message: genericMessage });
-    }
-
-    const { rows } = await db.query(
-      "SELECT id, name, email FROM users WHERE LOWER(email) = $1 LIMIT 1",
-      [email]
-    );
-
-    if (!rows.length) {
-      return res.json({ success: true, message: genericMessage });
-    }
-
-    const user = rows[0];
-
-    // Invalidate any previous unused reset tokens for this user.
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND used_at IS NULL",
-      [user.id]
-    );
-
-    // Create a secure random token.
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashResetToken(rawToken);
-
-    // Token is valid for 30 minutes.
-    await db.query(
-      `INSERT INTO password_reset_tokens
-        (user_id, token_hash, expires_at)
-       VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '30 minutes')`,
-      [user.id, tokenHash]
-    );
-
-    const resetBaseUrl =
-      process.env.PASSWORD_RESET_URL ||
-      "https://flexhubpredictions.com/reset-password.html";
-
-    const resetUrl =
-      `${resetBaseUrl}?token=${encodeURIComponent(rawToken)}`;
-
-    const emailFrom =
-      process.env.EMAIL_FROM ||
-      "FLEX HUB PREDICTIONS <noreply@flexhubpredictions.com>";
-
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY is not configured.");
-      return res.json({ success: true, message: genericMessage });
-    }
-
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: emailFrom,
-        to: [user.email],
-        subject: "Reset your FLEX HUB PREDICTIONS password",
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
-            <h2>FLEX HUB PREDICTIONS</h2>
-            <p>Hello ${String(user.name || "there").replace(/[<>&"]/g, "")},</p>
-            <p>We received a request to reset your password.</p>
-            <p>
-              <a href="${resetUrl}"
-                 style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">
-                Reset Password
-              </a>
-            </p>
-            <p>This link will expire in 30 minutes.</p>
-            <p>If you did not request this, you can safely ignore this email.</p>
-          </div>
-        `
-      })
-    });
-
-    if (!resendResponse.ok) {
-      const resendError = await resendResponse.text();
-      console.error("Resend email error:", resendError);
-    }
-
-    return res.json({ success: true, message: genericMessage });
-  } catch (error) {
-    console.error("Forgot password error:", error);
-    return res.json({
-      success: true,
-      message:
-        "If an account with that email exists, a password reset link has been sent."
-    });
-  }
-});
-
-app.post("/api/reset-password", async (req, res) => {
-  try {
-    const token = String(req.body?.token || "").trim();
-    const newPassword = String(req.body?.password || "");
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or missing reset token."
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters."
-      });
-    }
-
-    const tokenHash = hashResetToken(token);
-
-    const { rows } = await db.query(
-      `SELECT id, user_id
-       FROM password_reset_tokens
-       WHERE token_hash = $1
-         AND used_at IS NULL
-         AND expires_at > CURRENT_TIMESTAMP
-       LIMIT 1`,
-      [tokenHash]
-    );
-
-    if (!rows.length) {
-      return res.status(400).json({
-        success: false,
-        message: "This password reset link is invalid or has expired."
-      });
-    }
-
-    const resetToken = rows[0];
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-
-    await db.query(
-      "UPDATE users SET password = $1 WHERE id = $2",
-      [hashedPassword, resetToken.user_id]
-    );
-
-    await db.query(
-      "UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1",
-      [resetToken.id]
-    );
-
-    return res.json({
-      success: true,
-      message: "Password reset successfully. You can now log in with your new password."
-    });
-  } catch (error) {
-    console.error("Reset password error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Unable to reset password right now."
-    });
-  }
-});
-
-// ==================== END PASSWORD RESET ====================
-function createToken(payload, expiresIn = "7d") {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
-}
-
-function getTokenFromRequest(req) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-  return authHeader.split(" ")[1];
-}
+// ============================================================
+// USER AUTHENTICATION
+// ============================================================
 
 async function requireUser(req, res, next) {
-  try {
-    const token = getTokenFromRequest(req);
-
-    if (!token) {
-      return res.status(401).json({
-        message: "Please login first."
-      });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.type !== "user") {
-      return res.status(401).json({
-        message: "Invalid user token."
-      });
-    }
-
-    const result = await db.query(
-      "SELECT id, is_active FROM users WHERE id = $1",
-      [decoded.id]
-    );
-
-    const user = result.rows[0];
-
-    if (!user) {
-      return res.status(401).json({
-        message: "User account not found."
-      });
-    }
-
-    if (user.is_active === false) {
-      return res.status(403).json({
-        message: "Your account has been disabled by the administrator."
-      });
-    }
-
-    req.user = decoded;
-    next();
-
-  } catch {
-    return res.status(401).json({
-      message: "Your session has expired. Please login again."
-    });
-  }
-}
-/*
-=========================================================
-REGULAR ACCESS PROTECTION
-=========================================================
-*/
-
-async function requireRegularAccess(req, res, next) {
-  try {
-
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({
-        message: "Please login first."
-      });
-    }
-
-    const result = await db.query(
-      `SELECT
-         id,
-         name,
-         username,
-         email,
-         is_active,
-         regular_access_expires_at
-       FROM users
-       WHERE id = $1
-       LIMIT 1`,
-      [userId]
-    );
-
-    const user = result.rows[0];
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User account not found."
-      });
-    }
-
-    if (user.is_active === false) {
-      return res.status(403).json({
-        message: "Your account has been disabled by the administrator."
-      });
-    }
-
-    if (
-      !user.regular_access_expires_at ||
-      new Date(user.regular_access_expires_at) <= new Date()
-    ) {
-      return res.status(402).json({
-        message: "Regular access has expired. Please make a GHS 50 payment to continue.",
-        code: "REGULAR_ACCESS_REQUIRED",
-        accessActive: false,
-        expiresAt: user.regular_access_expires_at || null
-      });
-    }
-
-    req.regularAccess = {
-      active: true,
-      expiresAt: user.regular_access_expires_at
-    };
-
-    next();
-
-  } catch (error) {
-
-    console.error("Regular access check error:", error);
-
-    return res.status(500).json({
-      message: "Unable to verify your regular access."
-    });
-  }
-}
-app.get("/api/regular-access/status", requireUser, async (req, res) => {
-  try {
-
-    const result = await db.query(
-      `SELECT
-         regular_access_expires_at
-       FROM users
-       WHERE id = $1
-       LIMIT 1`,
-      [req.user.id]
-    );
-
-    const user = result.rows[0];
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User account not found."
-      });
-    }
-
-    const expiresAt = user.regular_access_expires_at;
-
-    const active =
-      !!expiresAt &&
-      new Date(expiresAt) > new Date();
-
-    let remainingMilliseconds = 0;
-    let remainingDays = 0;
-
-    if (active) {
-      remainingMilliseconds =
-        new Date(expiresAt).getTime() - Date.now();
-
-      remainingDays = Math.max(
-        0,
-        Math.ceil(
-          remainingMilliseconds /
-          (1000 * 60 * 60 * 24)
-        )
-      );
-    }
-
-    res.json({
-      active,
-      expiresAt: expiresAt || null,
-      remainingDays
-    });
-
-  } catch (error) {
-
-    console.error("Regular access status error:", error);
-
-    res.status(500).json({
-      message: "Unable to load regular access status."
-    });
-  }
-});
-
-app.post("/api/logout", requireUser, async (req, res) => {
-  try {
-    const result = await db.query(
-      "SELECT id, name, username FROM users WHERE id = $1",
-      [req.user.id]
-    );
-
-    const user = result.rows[0];
-
-    if (user) {
-      await logActivity(user, "SIGN_OUT", "User signed out");
-    }
-
-    res.json({ message: "Logout recorded." });
-  } catch (error) {
-    console.error("Logout activity error:", error);
-    res.status(500).json({ message: "Logout failed." });
-  }
-});
-app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
     try {
-        const result = await db.query(`
-            SELECT
-                id,
-                name,
-                username,
-                action,
-                details,
-                created_at
-            FROM activity_logs
-            ORDER BY created_at DESC
-            LIMIT 200
-        `);
+        const token = getBearerToken(req);
 
-        res.json({
-            activityLogs: result.rows
-        });
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required."
+            });
+        }
 
-    } catch (error) {
-        console.error("Activity logs error:", error);
+        const decoded = jwt.verify(token, JWT_SECRET);
 
-        res.status(500).json({
-            message: "Unable to load activity logs."
-        });
-    }
-});
-function requireAdmin(req, res, next) {
-  try {
-    const token = getTokenFromRequest(req);
-    if (!token) return res.status(401).json({ message: "Admin login required." });
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.type !== "admin") return res.status(401).json({ message: "Invalid admin token." });
-    req.admin = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ message: "Admin session expired. Please login again." });
-  }
-}
-// ==================== ADMIN USER MANAGEMENT ====================
-
-app.get("/api/admin/users", requireAdmin, async (req, res) => {
-    try {
-        const result = await db.query(`
-            SELECT
-                id,
-                name,
-                username,
-                email,
-                is_active,
-                created_at
-            FROM users
-            ORDER BY created_at DESC
-        `);
-
-        res.json({
-            users: result.rows
-        });
-    } catch (error) {
-        console.error("Admin users error:", error);
-
-        res.status(500).json({
-            message: "Unable to load users."
-        });
-    }
-});
-app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { is_active } = req.body;
-
-        if (typeof is_active !== "boolean") {
-            return res.status(400).json({
-                message: "is_active must be true or false."
+        if (decoded.type !== "user") {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid user token."
             });
         }
 
         const result = await db.query(
-            `
-            UPDATE users
-            SET is_active = $1
-            WHERE id = $2
-            RETURNING id, name, username, email, is_active, created_at
-            `,
-            [is_active, id]
+            `SELECT id, name, username, email, status, created_at
+             FROM users
+             WHERE id = $1
+             LIMIT 1`,
+            [decoded.id]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "User not found."
+            return res.status(401).json({
+                success: false,
+                message: "User account not found."
             });
         }
 
-        res.json({
-            message: is_active
-                ? "User activated successfully."
-                : "User deactivated successfully.",
-            user: result.rows[0]
-        });
+        const user = result.rows[0];
 
+        if (user.status && user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been disabled."
+            });
+        }
+
+        req.user = user;
+
+        next();
     } catch (error) {
-        console.error("Admin user status update error:", error);
-
-        res.status(500).json({
-            message: "Unable to update user status."
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token."
         });
     }
-});
-
-
-app.patch("/api/admin/users/:id/status", requireAdmin, async (req, res) => {
-    try {
-        const userId = Number(req.params.id);
-
-        if (!Number.isInteger(userId)) {
-            return res.status(400).json({
-                message: "Invalid user ID."
-            });
-        }
-
-        const { is_active } = req.body;
-
-        if (typeof is_active !== "boolean") {
-            return res.status(400).json({
-                message: "is_active must be true or false."
-            });
-        }
-
-        const result = await db.query(`
-            UPDATE users
-            SET is_active = $1
-            WHERE id = $2
-            RETURNING id, name, username, email, is_active
-        `, [is_active, userId]);
-
-        if (!result.rows.length) {
-            return res.status(404).json({
-                message: "User not found."
-            });
-        }
-
-        await logActivity(
-            result.rows[0],
-            is_active ? "ACCOUNT_ENABLED" : "ACCOUNT_DISABLED",
-            is_active ? "Account enabled by admin" : "Account disabled by admin"
-        );
-
-        res.json({
-            message: is_active
-                ? "Account enabled successfully."
-                : "Account disabled successfully.",
-            user: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error("Update user status error:", error);
-
-        res.status(500).json({
-            message: "Unable to update user status."
-        });
-    }
-});
-
-
-app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
-    try {
-        const userId = Number(req.params.id);
-
-        if (!Number.isInteger(userId)) {
-            return res.status(400).json({
-                message: "Invalid user ID."
-            });
-        }
-
-        const result = await db.query(`
-            DELETE FROM users
-            WHERE id = $1
-            RETURNING id, name, username, email
-        `, [userId]);
-
-        if (!result.rows.length) {
-            return res.status(404).json({
-                message: "User not found."
-            });
-        }
-
-        res.json({
-            message: "User deleted successfully.",
-            user: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error("Delete user error:", error);
-
-        res.status(500).json({
-            message: "Unable to delete user."
-        });
-    }
-});
-
-
-// ==================== ADMIN NOTIFICATIONS ====================
-
-app.get("/api/admin/notifications", requireAdmin, async (req, res) => {
-    try {
-        const result = await db.query(`
-            SELECT
-                id,
-                title,
-                message,
-                target,
-                created_at
-            FROM notifications
-            ORDER BY created_at DESC
-        `);
-
-        res.json({
-            notifications: result.rows
-        });
-    } catch (error) {
-        console.error("Admin notifications error:", error);
-
-        res.status(500).json({
-            message: "Unable to load notifications."
-        });
-    }
-});
-
-
-app.post("/api/admin/notifications", requireAdmin, async (req, res) => {
-    try {
-        const title = String(req.body.title || "").trim();
-        const message = String(req.body.message || "").trim();
-        const target = String(req.body.target || "all").trim();
-
-        if (!title || !message) {
-            return res.status(400).json({
-                message: "Title and message are required."
-            });
-        }
-
-        if (!["all", "vip"].includes(target)) {
-            return res.status(400).json({
-                message: "Invalid notification target."
-            });
-        }
-
-        const result = await db.query(`
-            INSERT INTO notifications
-                (title, message, target)
-            VALUES
-                ($1, $2, $3)
-            RETURNING id, title, message, target, created_at
-        `, [title, message, target]);
-
-        res.status(201).json({
-            message: "Notification created successfully.",
-            notification: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error("Create notification error:", error);
-
-        res.status(500).json({
-            message: "Unable to create notification."
-        });
-    }
-});
-
-
-app.delete("/api/admin/notifications/:id", requireAdmin, async (req, res) => {
-    try {
-        const notificationId = Number(req.params.id);
-
-        if (!Number.isInteger(notificationId)) {
-            return res.status(400).json({
-                message: "Invalid notification ID."
-            });
-        }
-
-        const result = await db.query(`
-            DELETE FROM notifications
-            WHERE id = $1
-            RETURNING id
-        `, [notificationId]);
-
-        if (!result.rows.length) {
-            return res.status(404).json({
-                message: "Notification not found."
-            });
-        }
-
-        res.json({
-            message: "Notification deleted successfully."
-        });
-
-    } catch (error) {
-        console.error("Delete notification error:", error);
-
-        res.status(500).json({
-            message: "Unable to delete notification."
-        });
-    }
-});
-// ==================== USER NOTIFICATIONS ====================
-
-app.get("/api/notifications", requireUser, async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        const vipResult = await db.query(`
-            SELECT id
-            FROM vip_subscriptions
-            WHERE user_id = $1
-              AND status = 'active'
-              AND expires_at > CURRENT_TIMESTAMP
-            LIMIT 1
-        `, [userId]);
-
-        const isVip = vipResult.rows.length > 0;
-
-        const result = await db.query(`
-            SELECT
-                n.id,
-                n.title,
-                n.message,
-                n.target,
-                n.created_at,
-                CASE
-                    WHEN nr.id IS NULL THEN FALSE
-                    ELSE TRUE
-                END AS is_read
-            FROM notifications n
-            LEFT JOIN notification_reads nr
-                ON nr.notification_id = n.id
-                AND nr.user_id = $1
-            WHERE n.target = 'all'
-               OR (n.target = 'vip' AND $2 = TRUE)
-            ORDER BY n.created_at DESC
-            LIMIT 100
-        `, [userId, isVip]);
-
-        const unreadCount = result.rows.filter(
-            item => !item.is_read
-        ).length;
-
-        res.json({
-            notifications: result.rows,
-            unreadCount
-        });
-
-    } catch (error) {
-        console.error("User notifications error:", error);
-
-        res.status(500).json({
-            message: "Unable to load notifications."
-        });
-    }
-});
-
-
-app.post("/api/notifications/:id/read", requireUser, async (req, res) => {
-    try {
-        const notificationId = Number(req.params.id);
-        const userId = req.user.id;
-
-        if (!Number.isInteger(notificationId)) {
-            return res.status(400).json({
-                message: "Invalid notification ID."
-            });
-        }
-
-        await db.query(`
-            INSERT INTO notification_reads
-                (notification_id, user_id)
-            VALUES
-                ($1, $2)
-            ON CONFLICT (notification_id, user_id)
-            DO NOTHING
-        `, [notificationId, userId]);
-
-        res.json({
-            message: "Notification marked as read."
-        });
-
-    } catch (error) {
-        console.error("Mark notification read error:", error);
-
-        res.status(500).json({
-            message: "Unable to mark notification as read."
-        });
-    }
-});
-
-async function requireVip(req, res, next) {
-  try {
-    const token = getTokenFromRequest(req);
-    if (!token) return res.status(401).json({ message: "VIP access required." });
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-   if (decoded.type !== "vip") {
-  return res.status(401).json({
-    message: "Invalid VIP token."
-  });
 }
 
-const userResult = await db.query(
-  "SELECT id, is_active FROM users WHERE id = $1",
-  [decoded.id]
-);
+// ============================================================
+// ADMIN AUTHENTICATION
+// ============================================================
 
-const user = userResult.rows[0];
-
-if (!user) {
-  return res.status(401).json({
-    message: "User account not found."
-  });
+function createAdminToken() {
+    return jwt.sign(
+        {
+            username: ADMIN_USERNAME,
+            type: "admin"
+        },
+        JWT_SECRET,
+        {
+            expiresIn: "12h"
+        }
+    );
 }
 
-if (user.is_active === false) {
-  return res.status(403).json({
-    message: "Your account has been disabled by the administrator."
-  });
-}
+function requireAdmin(req, res, next) {
+    try {
+        const token = getBearerToken(req);
 
-const { rows } = await db.query(
-  "SELECT * FROM vip_subscriptions WHERE id = $1",
-  [decoded.subscriptionId]
-);
-    const subscription = rows[0];
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "Admin authentication required."
+            });
+        }
 
-    if (!subscription) {
-  return res.status(401).json({
-    message: "VIP subscription not found."
-  });
-}
+        const decoded = jwt.verify(token, JWT_SECRET);
 
-if (String(subscription.user_id) !== String(decoded.id)) {
-  return res.status(401).json({
-    message: "Invalid VIP subscription."
-  });
-}
+        if (decoded.type !== "admin") {
+            return res.status(403).json({
+                success: false,
+                message: "Admin access required."
+            });
+        }
 
-    if (subscription.status !== "active") {
-      return res.status(401).json({ message: "VIP subscription is not active." });
+        req.admin = decoded;
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired admin token."
+        });
     }
-
-    if (subscription.expires_at && new Date(subscription.expires_at) <= new Date()) {
-      await db.query(
-        "UPDATE vip_subscriptions SET status = 'expired' WHERE id = $1",
-        [subscription.id]
-      );
-      return res.status(401).json({ message: "Your VIP access has expired." });
-    }
-
-    req.vip = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ message: "VIP session expired." });
-  }
 }
+
+// ============================================================
+// REGISTER
+// ============================================================
 
 app.post("/api/register", async (req, res) => {
-  try {
-    const { name, username, email, password } = req.body;
-    if (!name || !username || !email || !password) {
-      return res.status(400).json({ message: "Please complete all registration fields." });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must contain at least 6 characters." });
-    }
-    const cleanName = name.trim();
-    const cleanUsername = username.trim();
-    const cleanEmail = email.trim().toLowerCase();
+    try {
+        const {
+            name,
+            username,
+            email,
+            password
+        } = req.body;
 
-    const usernameResult = await db.query(
-      "SELECT id FROM users WHERE username = $1",
-      [cleanUsername]
-    );
-    if (usernameResult.rows[0]) {
-      return res.status(409).json({ message: "Username is already taken." });
-    }
+        if (!name || !username || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required."
+            });
+        }
 
-    const emailResult = await db.query(
-      "SELECT id FROM users WHERE email = $1",
-      [cleanEmail]
-    );
-    if (emailResult.rows[0]) {
-      return res.status(409).json({ message: "Email is already registered." });
-    }
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters."
+            });
+        }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const insertResult = await db.query(
-      `INSERT INTO users (name, username, email, password)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, username, email, created_at`,
-      [cleanName, cleanUsername, cleanEmail, hashedPassword]
-    );
-
-    const user = insertResult.rows[0];
-    await logActivity(user, "ACCOUNT_CREATED", "New account created");
-    const token = createToken({ id: user.id, username: user.username, type: "user" });
-
-    res.status(201).json({ message: "Account created successfully.", user, token });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ message: "Unable to create account." });
-  }
-});
-
-app.post("/api/login", async (req, res) => {
-  try {
-    const { identifier, password } = req.body;
-    if (!identifier || !password) {
-      return res.status(400).json({ message: "Enter your username/email and password." });
-    }
-
-    const cleanIdentifier = identifier.trim();
-    const result = await db.query(
-      `SELECT * FROM users
-       WHERE username = $1 OR email = $2`,
-      [cleanIdentifier, cleanIdentifier.toLowerCase()]
-    );
-    const user = result.rows[0];
-
-   if (!user) return res.status(401).json({ message: "Invalid login details." });
-
-if (user.is_active === false) {
-  return res.status(403).json({
-    message: "Your account has been disabled by the administrator."
-  });
-}
-
-    const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches) return res.status(401).json({ message: "Invalid login details." });
-    await logActivity(user, "LOGIN", "User logged in");
-
-    const token = createToken({ id: user.id, username: user.username, type: "user" });
-
-    res.json({
-      message: "Login successful.",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        created_at: user.created_at
-      }
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Unable to login." });
-  }
-});
-
-app.get("/api/user/me", requireUser, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT id, name, username, email, created_at
-       FROM users WHERE id = $1`,
-      [req.user.id]
-    );
-    const user = result.rows[0];
-    if (!user) return res.status(404).json({ message: "User account not found." });
-    res.json({ user });
-  } catch (error) {
-    console.error("Current user error:", error);
-    res.status(500).json({ message: "Unable to load user account." });
-  }
-});
-
-app.post("/api/admin/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ message: "Enter admin username and password." });
-    }
-    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      return res.status(401).json({ message: "Invalid admin credentials." });
-    }
-
-    const token = createToken({ username: ADMIN_USERNAME, type: "admin" }, "2h");
-    res.json({
-      message: "Admin login successful.",
-      token,
-      admin: { username: ADMIN_USERNAME }
-    });
-  } catch (error) {
-    console.error("Admin login error:", error);
-    res.status(500).json({ message: "Unable to login as admin." });
-  }
-});
-
-app.get("/api/admin/me", requireAdmin, (req, res) => {
-  res.json({ admin: { username: req.admin.username } });
-});
-
-app.post("/api/admin/vip-subscriptions", requireAdmin, async (req, res) => {
-  try {
-    const { plan } = req.body;
-    const plans = { "1_week": 7, "2_weeks": 14, "1_month": 30 };
-    if (!plans[plan]) return res.status(400).json({ message: "Invalid VIP plan." });
-
-    let code;
-    do {
-      code = "FLEX-" + crypto.randomBytes(5).toString("hex").toUpperCase();
-      const check = await db.query("SELECT id FROM vip_subscriptions WHERE code = $1", [code]);
-      if (check.rows.length === 0) break;
-    } while (true);
-
-    const durationDays = plans[plan];
-    const result = await db.query(
-      `INSERT INTO vip_subscriptions (code, plan, duration_days, status)
-       VALUES ($1, $2, $3, 'unused')
-       RETURNING id`,
-      [code, plan, durationDays]
-    );
-
-    res.status(201).json({
-      message: "VIP code generated successfully.",
-      subscription: {
-        id: result.rows[0].id,
-        code,
-        plan,
-        durationDays,
-        status: "unused"
-      }
-    });
-  } catch (error) {
-    console.error("VIP generation error:", error);
-    res.status(500).json({ message: "Unable to generate VIP code." });
-  }
-});
-
-app.get("/api/admin/vip-subscriptions", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT vs.id, vs.code, vs.plan, vs.duration_days, vs.status,
-              vs.activated_at, vs.expires_at, vs.created_at, u.username
-       FROM vip_subscriptions vs
-       LEFT JOIN users u ON vs.user_id = u.id
-       ORDER BY vs.id DESC`
-    );
-    res.json({ subscriptions: result.rows });
-  } catch (error) {
-    console.error("VIP subscription history error:", error);
-    res.status(500).json({ message: "Unable to load VIP subscriptions." });
-  }
-});
-
-app.post("/api/vip/access", requireUser, async (req, res) => {
-  try {
-    const { accessCode } = req.body;
-
-    if (!accessCode) {
-      return res.status(400).json({
-        message: "Enter your VIP access code."
-      });
-    }
-
-    const result = await db.query(
-      "SELECT * FROM vip_subscriptions WHERE code = $1",
-      [accessCode.trim().toUpperCase()]
-    );
-
-    const subscription = result.rows[0];
-
-    if (!subscription) {
-      return res.status(404).json({
-        message: "Invalid VIP access code."
-      });
-    }
-
-    // If this VIP subscription is already active for this same account,
-    // restore VIP access by issuing a fresh VIP session token.
-    if (subscription.status === "active") {
-      if (subscription.user_id !== req.user.id) {
-        return res.status(400).json({
-          message: "This VIP code is already assigned to another account."
-        });
-      }
-
-      if (
-        subscription.expires_at &&
-        new Date(subscription.expires_at) <= new Date()
-      ) {
-        await db.query(
-          "UPDATE vip_subscriptions SET status = 'expired' WHERE id = $1",
-          [subscription.id]
+        const existing = await db.query(
+            `SELECT id
+             FROM users
+             WHERE LOWER(username) = LOWER($1)
+                OR LOWER(email) = LOWER($2)
+             LIMIT 1`,
+            [username.trim(), email.trim()]
         );
 
-        return res.status(400).json({
-          message: "This VIP subscription has expired."
+        if (existing.rows.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Username or email already exists."
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        const result = await db.query(
+            `INSERT INTO users
+            (name, username, email, password, status)
+            VALUES ($1, $2, $3, $4, 'active')
+            RETURNING id, name, username, email, status, created_at`,
+            [
+                name.trim(),
+                username.trim(),
+                email.trim().toLowerCase(),
+                passwordHash
+            ]
+        );
+
+        const user = result.rows[0];
+
+        await logActivity(
+            user,
+            "Account Created",
+            "New user account registered."
+        );
+
+        const token = createUserToken(user);
+
+        res.status(201).json({
+            success: true,
+            message: "Account created successfully.",
+            token,
+            user
         });
-      }
+    } catch (error) {
+        console.error("Register error:", error);
 
-      const remainingMilliseconds =
-        new Date(subscription.expires_at).getTime() - Date.now();
+        res.status(500).json({
+            success: false,
+            message: "Unable to create account."
+        });
+    }
+});
 
-      const remainingDays = Math.max(
-        1,
-        Math.ceil(remainingMilliseconds / (24 * 60 * 60 * 1000))
-      );
+// ============================================================
+// LOGIN
+// ============================================================
 
-      const vipToken = createToken(
-        {
-          id: req.user.id,
-          subscriptionId: subscription.id,
-          type: "vip"
-        },
-        `${remainingDays}d`
-      );
+app.post("/api/login", async (req, res) => {
+    try {
+        const {
+            identifier,
+            password
+        } = req.body;
 
-      return res.json({
-        message: "VIP access restored.",
-        token: vipToken,
-        subscription: {
-          id: subscription.id,
-          plan: subscription.plan,
-          durationDays: subscription.duration_days,
-          activatedAt: subscription.activated_at,
-          expiresAt: subscription.expires_at,
-          status: "active"
+        if (!identifier || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Username/email and password are required."
+            });
         }
-      });
-    }
 
-    // An expired subscription cannot be reused.
-    if (subscription.status === "expired") {
-      return res.status(400).json({
-        message: "This VIP subscription has expired."
-      });
-    }
-
-    // Only unused subscriptions can be activated for the first time.
-    if (subscription.status !== "unused") {
-      return res.status(400).json({
-        message: "This VIP code is not available."
-      });
-    }
-
-    const activatedAt = new Date();
-
-    const expiresAt = new Date(
-      activatedAt.getTime() +
-      subscription.duration_days * 24 * 60 * 60 * 1000
-    );
-
-    await db.query(
-      `UPDATE vip_subscriptions
-       SET status = 'active',
-           user_id = $1,
-           activated_at = $2,
-           expires_at = $3
-       WHERE id = $4`,
-      [
-        req.user.id,
-        activatedAt.toISOString(),
-        expiresAt.toISOString(),
-        subscription.id
-      ]
-    );
-
-    const vipToken = createToken(
-      {
-        id: req.user.id,
-        subscriptionId: subscription.id,
-        type: "vip"
-      },
-      `${subscription.duration_days}d`
-    );
-
-    return res.json({
-      message: "VIP access activated.",
-      token: vipToken,
-      subscription: {
-        id: subscription.id,
-        plan: subscription.plan,
-        durationDays: subscription.duration_days,
-        activatedAt: activatedAt.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        status: "active"
-      }
-    });
-  } catch (error) {
-    console.error("VIP access error:", error);
-
-    return res.status(500).json({
-      message: "Unable to activate VIP access."
-    });
-  }
-});
-app.get("/api/vip/status", requireUser, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT id, plan, duration_days, status, activated_at, expires_at
-       FROM vip_subscriptions
-       WHERE user_id = $1
-       ORDER BY id DESC LIMIT 1`,
-      [req.user.id]
-    );
-    const subscription = result.rows[0];
-
-    if (!subscription) {
-      return res.json({
-        active: false, status: "locked", plan: null, expiresAt: null, remainingDays: 0
-      });
-    }
-
-    if (
-      subscription.status === "active" &&
-      subscription.expires_at &&
-      new Date(subscription.expires_at) <= new Date()
-    ) {
-      await db.query(
-        "UPDATE vip_subscriptions SET status = 'expired' WHERE id = $1",
-        [subscription.id]
-      );
-      subscription.status = "expired";
-    }
-    let remainingDays = 0;
-    if (subscription.status === "active" && subscription.expires_at) {
-      remainingDays = Math.max(
-        0,
-        Math.ceil(
-          (new Date(subscription.expires_at).getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
-        )
-      );
-    }
-
-    res.json({
-      active: subscription.status === "active",
-      status: subscription.status,
-      plan: subscription.plan,
-      expiresAt: subscription.expires_at,
-      remainingDays
-    });
-  } catch (error) {
-    console.error("VIP status error:", error);
-    res.status(500).json({ message: "Unable to load VIP status." });
-  }
-});
-
-app.get(
-  "/api/predictions",
-  requireUser,
-  async (req, res) => {
-  try {
-
-    let result;
-
-    if (req.query.results === "true") {
-
-      result = await db.query(
-        `
-        SELECT
-          id,
-          id AS result_id,
-          'active' AS result_source,
-          league,
-          home_team,
-          away_team,
-          match_date,
-          match_time,
-          prediction,
-          analysis,
-          category,
-          status,
-          featured,
-          created_at
-        FROM predictions
-        WHERE category = 'regular'
-          AND status != 'pending'
-
-        UNION ALL
-
-        SELECT
-          id,
-          prediction_id AS result_id,
-          'archived' AS result_source,
-          league,
-          home_team,
-          away_team,
-          match_date,
-          match_time,
-          prediction,
-          analysis,
-          category,
-          status,
-          featured,
-          created_at
-        FROM prediction_results
-        WHERE category = 'regular'
-
-        ORDER BY match_date DESC, match_time DESC
-        `
-      );
-
-    } else {
-
-      result = await db.query(
-        `SELECT * FROM predictions
-         WHERE category = 'regular'
-         ORDER BY match_date ASC, match_time ASC`
-      );
-
-    }
-
-    res.json({
-      predictions: result.rows
-    });
-
-  } catch (error) {
-
-    console.error("Regular predictions error:", error);
-
-    res.status(500).json({
-      message: "Unable to load predictions."
-    });
-
-  }
-});
-app.get(
-  "/api/predictions/:id",
-  requireUser,
-  async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT * FROM predictions
-       WHERE id = $1 AND category = 'regular'`,
-      [req.params.id]
-    );
-    const prediction = result.rows[0];
-    if (!prediction) return res.status(404).json({ message: "Prediction not found." });
-    res.json({ prediction });
-  } catch (error) {
-    console.error("Single prediction error:", error);
-    res.status(500).json({ message: "Unable to load prediction." });
-  }
-});
-
-// =========================================================
-// ADMIN — GET ARCHIVED MATCH RESULTS
-// =========================================================
-
-app.get("/api/admin/results", requireAdmin, async (req, res) => {
-  try {
-
-    const result = await db.query(
-      `SELECT
-          id,
-          league,
-          home_team,
-          away_team,
-          match_date,
-          match_time,
-          prediction,
-          analysis,
-          category,
-          status
-       FROM prediction_results
-       ORDER BY match_date DESC, match_time DESC`
-    );
-
-    res.json({
-      results: result.rows
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Load admin results error:",
-      error
-    );
-
-    res.status(500).json({
-      message: "Unable to load match results."
-    });
-
-  }
-});
-app.delete("/api/results/:id", requireAdmin, async (req, res) => {
-  try {
-
-    const result = await db.query(
-      `DELETE FROM prediction_results
-       WHERE id = $1
-       RETURNING id`,
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Result not found."
-      });
-    }
-
-    res.json({
-      message: "Result deleted successfully."
-    });
-
-  } catch (error) {
-
-    console.error("Delete result error:", error);
-
-    res.status(500).json({
-      message: "Unable to delete result."
-    });
-
-  }
-});
-
-app.get("/api/vip/predictions", requireVip, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT * FROM predictions
-       WHERE category = 'vip'
-       ORDER BY match_date ASC, match_time ASC`
-    );
-    res.json({ predictions: result.rows });
-  } catch (error) {
-    console.error("VIP predictions error:", error);
-    res.status(500).json({ message: "Unable to load VIP predictions." });
-  }
-});
-
-app.get("/api/admin/predictions", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT * FROM predictions
-       ORDER BY match_date DESC, match_time DESC`
-    );
-    res.json({ predictions: result.rows });
-  } catch (error) {
-    console.error("Admin predictions error:", error);
-    res.status(500).json({ message: "Unable to load predictions." });
-  }
-});
-
-app.get("/api/admin/vip-predictions", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT * FROM predictions
-       WHERE category = 'vip'
-       ORDER BY match_date DESC, match_time DESC`
-    );
-    res.json({ predictions: result.rows });
-  } catch (error) {
-    console.error("Admin VIP predictions error:", error);
-    res.status(500).json({ message: "Unable to load VIP predictions." });
-  }
-});
-
-app.post("/api/predictions", requireAdmin, async (req, res) => {
-  try {
-    const {
-  league, home_team, away_team, match_date, match_time,
-  prediction, analysis, category, status, featured
-} = req.body;
-
-    if (!league || !home_team || !away_team || !match_date || !match_time || !prediction) {
-      return res.status(400).json({ message: "Please complete all required prediction fields." });
-    }
-
-    const finalCategory = ["regular", "vip"].includes(category) ? category : "regular";
-    const finalStatus = ["pending", "won", "lost", "void"].includes(status) ? status : "pending";
-
-    const result = await db.query(
-      `INSERT INTO predictions
-       (league, home_team, away_team, match_date, match_time, prediction, analysis, category, status, featured)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [
-        league.trim(), home_team.trim(), away_team.trim(),
-        match_date, match_time, prediction.trim(),
-        analysis ? analysis.trim() : "", finalCategory, finalStatus, featured === true
-      ]
-    );
-
-    res.status(201).json({
-      message: "Prediction added successfully.",
-      prediction: result.rows[0]
-    });
-  } catch (error) {
-    console.error("Create prediction error:", error);
-    res.status(500).json({ message: "Unable to create prediction." });
-  }
-});
-app.put("/api/predictions/:id", requireAdmin, async (req, res) => {
-  try {
-    const {
-      league, home_team, away_team, match_date, match_time,
-      prediction, analysis, category, status, featured
-    } = req.body;
-
-    if (!league || !home_team || !away_team || !match_date || !match_time || !prediction) {
-      return res.status(400).json({ message: "Please complete all required fields." });
-    }
-
-    const finalCategory = ["regular", "vip"].includes(category) ? category : "regular";
-    const finalStatus = ["pending", "won", "lost", "void"].includes(status) ? status : "pending";
-
-    const result = await db.query(
-      `UPDATE predictions SET
-         league = $1, home_team = $2, away_team = $3, match_date = $4,
-         match_time = $5, prediction = $6, analysis = $7,
-         category = $8, status = $9, featured = $10
-       WHERE id = $11
-       RETURNING *`,
-      [
-        league.trim(), home_team.trim(), away_team.trim(),
-        match_date, match_time, prediction.trim(),
-        analysis ? analysis.trim() : "", finalCategory, finalStatus, featured === true, req.params.id
-      ]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Prediction not found." });
-    }
-
-    res.json({
-      message: "Prediction updated successfully.",
-      prediction: result.rows[0]
-    });
-  } catch (error) {
-    console.error("Update prediction error:", error);
-    res.status(500).json({ message: "Unable to update prediction." });
-  }
-});
-
-app.delete("/api/predictions/:id", requireAdmin, async (req, res) => {
-  try {
-
-    const predictionResult = await db.query(
-      `SELECT * FROM predictions
-       WHERE id = $1`,
-      [req.params.id]
-    );
-
-    if (predictionResult.rows.length === 0) {
-      return res.status(404).json({
-        message: "Prediction not found."
-      });
-    }
-
-    const prediction = predictionResult.rows[0];
-
-    // Keep completed regular predictions in Results history
-    if (
-      prediction.category === "regular" &&
-      prediction.status !== "pending"
-    ) {
-
-      await db.query(
-        `INSERT INTO prediction_results
-         (
-           prediction_id,
-           league,
-           home_team,
-           away_team,
-           match_date,
-           match_time,
-           prediction,
-           analysis,
-           category,
-           status,
-           featured
-         )
-         VALUES
-         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [
-          prediction.id,
-          prediction.league,
-          prediction.home_team,
-          prediction.away_team,
-          prediction.match_date,
-          prediction.match_time,
-          prediction.prediction,
-          prediction.analysis,
-          prediction.category,
-          prediction.status,
-          prediction.featured
-        ]
-      );
-    }
-
-    // Remove the prediction from the active predictions list
-    await db.query(
-      "DELETE FROM predictions WHERE id = $1",
-      [req.params.id]
-    );
-
-    res.json({
-      message: "Prediction deleted successfully and result preserved."
-    });
-
-  } catch (error) {
-
-    console.error("Delete prediction error:", error);
-
-    res.status(500).json({
-      message: "Unable to delete prediction."
-    });
-
-  }
-});
-
-app.patch("/api/predictions/:id/status", requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    if (!["pending", "won", "lost", "void"].includes(status)) {
-      return res.status(400).json({ message: "Invalid result status." });
-    }
-
-    const result = await db.query(
-      "UPDATE predictions SET status = $1 WHERE id = $2 RETURNING id",
-      [status, req.params.id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Prediction not found." });
-    }
-    res.json({ message: "Prediction status updated." });
-  } catch (error) {
-    console.error("Update status error:", error);
-    res.status(500).json({ message: "Unable to update prediction status." });
-  }
-});
-
-// ==================== BETTING CODES ====================
-
-app.post("/api/admin/betting-codes", requireAdmin, async (req, res) => {
-  try {
-    const {
-      bookmaker,
-      code,
-      description,
-      category
-    } = req.body;
-
-    if (!bookmaker || !code) {
-      return res.status(400).json({
-        message: "Bookmaker and betting code are required."
-      });
-    }
-
-    const cleanBookmaker = String(bookmaker).trim();
-    const cleanCode = String(code).trim();
-    const cleanDescription = String(description || "").trim();
-    const cleanCategory =
-      category === "vip" ? "vip" : "regular";
-
-    const result = await db.query(
-      `INSERT INTO betting_codes
-       (bookmaker, code, description, category, status)
-       VALUES ($1, $2, $3, $4, 'active')
-       RETURNING *`,
-      [
-        cleanBookmaker,
-        cleanCode,
-        cleanDescription || null,
-        cleanCategory
-      ]
-    );
-
-    res.status(201).json({
-      message: "Betting code added successfully.",
-      bettingCode: result.rows[0]
-    });
-  } catch (error) {
-    console.error("Add betting code error:", error);
-    res.status(500).json({
-      message: "Unable to add betting code."
-    });
-  }
-});
-
-
-app.get("/api/admin/betting-codes", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT *
-       FROM betting_codes
-       ORDER BY id DESC`
-    );
-
-    res.json({
-      bettingCodes: result.rows
-    });
-  } catch (error) {
-    console.error("Admin betting codes error:", error);
-    res.status(500).json({
-      message: "Unable to load betting codes."
-    });
-  }
-});
-
-
-app.delete("/api/admin/betting-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    const result = await db.query(
-      `DELETE FROM betting_codes
-       WHERE id = $1
-       RETURNING id`,
-      [req.params.id]
-    );
-
-    if (!result.rows.length) {
-      return res.status(404).json({
-        message: "Betting code not found."
-      });
-    }
-
-    res.json({
-      message: "Betting code deleted successfully."
-    });
-  } catch (error) {
-    console.error("Delete betting code error:", error);
-    res.status(500).json({
-      message: "Unable to delete betting code."
-    });
-  }
-});
-
-
-app.get(
-  "/api/betting-codes",
-  requireUser,
-  async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT id, bookmaker, code, description, category, status, created_at
-       FROM betting_codes
-       WHERE category = 'regular'
-         AND status = 'active'
-       ORDER BY id DESC`
-    );
-
-    res.json({
-      bettingCodes: result.rows
-    });
-  } catch (error) {
-    console.error("Public regular betting codes error:", error);
-
-    res.status(500).json({
-      message: "Unable to load betting codes."
-    });
-  }
-});
-
-
-app.get("/api/vip/betting-codes", requireVip, async (req, res) => {
-  try {
-    const result = await db.query(
-      `SELECT id, bookmaker, code, description, category, status, created_at
-       FROM betting_codes
-       WHERE category = 'vip'
-         AND status = 'active'
-       ORDER BY id DESC`
-    );
-
-    res.json({
-      bettingCodes: result.rows
-    });
-  } catch (error) {
-    console.error("VIP betting codes error:", error);
-
-    res.status(500).json({
-      message: "Unable to load VIP betting codes."
-    });
-  }
-});
-// ==================== END BETTING CODES ====================
-// ==================== PAYSTACK PAYMENTS ====================
-
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-
-app.post("/api/payments/initialize", requireUser, async (req, res) => {
-  try {
-    if (!PAYSTACK_SECRET_KEY) {
-      return res.status(500).json({
-        message: "Paystack is not configured on the server."
-      });
-    }
-
-    const userResult = await db.query(
-      `SELECT id, name, username, email
-       FROM users
-       WHERE id = $1
-       LIMIT 1`,
-      [req.user.id]
-    );
-
-    const user = userResult.rows[0];
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User account not found."
-      });
-    }
-
-    const response = await fetch(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: user.email,
-          amount: 5000,
-          currency: "GHS",
-          callback_url:
-            process.env.PAYSTACK_CALLBACK_URL ||
-            "https://flexhubpredictions.com/payment-success.html",
-          metadata: {
-            user_id: user.id,
-            username: user.username,
-            payment_type: "regular_access"
-          }
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.status) {
-      console.error("Paystack initialization error:", data);
-
-      return res.status(400).json({
-        message:
-          data.message ||
-          "Unable to initialize Paystack payment."
-      });
-    }
-
-    res.json({
-      success: true,
-      authorization_url: data.data.authorization_url,
-      access_code: data.data.access_code,
-      reference: data.data.reference
-    });
-
-  } catch (error) {
-    console.error("Paystack initialize error:", error);
-
-    res.status(500).json({
-      message: "Unable to start payment."
-    });
-  }
-});
-
-
-app.get("/api/payments/verify/:reference", requireUser, async (req, res) => {
-  try {
-    if (!PAYSTACK_SECRET_KEY) {
-      return res.status(500).json({
-        message: "Paystack is not configured on the server."
-      });
-    }
-
-    const reference = String(req.params.reference || "").trim();
-
-    if (!reference) {
-      return res.status(400).json({
-        message: "Payment reference is required."
-      });
-    }
-
-    const response = await fetch(
-      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json"
+        const result = await db.query(
+            `SELECT *
+             FROM users
+             WHERE LOWER(username) = LOWER($1)
+                OR LOWER(email) = LOWER($1)
+             LIMIT 1`,
+            [identifier.trim()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid login details."
+            });
         }
-      }
-    );
 
-    const data = await response.json();
+        const user = result.rows[0];
 
-    if (!response.ok || !data.status || !data.data) {
-      return res.status(400).json({
-        message: data.message || "Unable to verify payment."
-      });
+        if (user.status && user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been disabled."
+            });
+        }
+
+        const validPassword = await bcrypt.compare(
+            password,
+            user.password
+        );
+
+        if (!validPassword) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid login details."
+            });
+        }
+
+        const token = createUserToken(user);
+
+        await logActivity(
+            user,
+            "Login",
+            "User logged into the website."
+        );
+
+        res.json({
+            success: true,
+            message: "Login successful.",
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+                status: user.status,
+                created_at: user.created_at
+            }
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to login."
+        });
     }
+});
 
-    const payment = data.data;
+// ============================================================
+// CURRENT USER
+// ============================================================
 
-    if (payment.status !== "success") {
-      return res.status(400).json({
-        message: "Payment has not been completed."
-      });
-    }
+app.get("/api/user/me", requireUser, async (req, res) => {
+    res.json({
+        success: true,
+        user: req.user
+    });
+});
 
-    if (payment.currency !== "GHS") {
-      return res.status(400).json({
-        message: "Invalid payment currency."
-      });
-    }
+// ============================================================
+// LOGOUT
+// ============================================================
 
-    if (Number(payment.amount) !== 5000) {
-      return res.status(400).json({
-        message: "Invalid payment amount."
-      });
-    }
-
-    const metadata = payment.metadata || {};
-
-    if (
-      String(metadata.payment_type || "") !==
-      "regular_access"
-    ) {
-      return res.status(400).json({
-        message: "Invalid payment type."
-      });
-    }
-
-    if (
-      Number(metadata.user_id) !==
-      Number(req.user.id)
-    ) {
-      return res.status(403).json({
-        message: "This payment does not belong to your account."
-      });
-    }
-
-    const userResult = await db.query(
-      `SELECT id, regular_access_expires_at
-       FROM users
-       WHERE id = $1
-       LIMIT 1`,
-      [req.user.id]
-    );
-
-    const user = userResult.rows[0];
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User account not found."
-      });
-    }
-
-    const now = new Date();
-
-    let startDate = now;
-
-    if (
-      user.regular_access_expires_at &&
-      new Date(user.regular_access_expires_at) > now
-    ) {
-      startDate = new Date(user.regular_access_expires_at);
-    }
-
-    const expiresAt = new Date(
-      startDate.getTime() +
-      30 * 24 * 60 * 60 * 1000
-    );
-
-    await db.query(
-      `UPDATE users
-       SET regular_access_expires_at = $1
-       WHERE id = $2`,
-      [expiresAt.toISOString(), req.user.id]
-    );
-
+app.post("/api/logout", requireUser, async (req, res) => {
     await logActivity(
-      user,
-      "REGULAR_ACCESS_PAYMENT",
-      `Paystack payment successful. Reference: ${reference}. Access expires: ${expiresAt.toISOString()}`
+        req.user,
+        "Logout",
+        "User logged out."
     );
 
     res.json({
-      success: true,
-      message: "Payment successful. Regular access activated.",
-      reference,
-      accessActive: true,
-      expiresAt: expiresAt.toISOString()
+        success: true,
+        message: "Logged out successfully."
     });
-
-  } catch (error) {
-    console.error("Paystack verification error:", error);
-
-    res.status(500).json({
-      message: "Unable to verify payment."
-    });
-  }
 });
 
-// ==================== END PAYSTACK PAYMENTS ====================
+// ============================================================
+// REGULAR ACCESS
+// ============================================================
+
+app.get(
+    "/api/regular-access/status",
+    requireUser,
+    async (req, res) => {
+        res.json({
+            success: true,
+            active: true,
+            user: req.user
+        });
+    }
+);
+
+// ============================================================
+// FORGOT PASSWORD
+// ============================================================
+
+app.post("/api/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required."
+            });
+        }
+
+        const result = await db.query(
+            `SELECT id, name, email
+             FROM users
+             WHERE LOWER(email) = LOWER($1)
+             LIMIT 1`,
+            [email.trim()]
+        );
+
+        // Always return a neutral response.
+        if (result.rows.length === 0) {
+            return res.json({
+                success: true,
+                message:
+                    "If the email exists, password reset instructions will be sent."
+            });
+        }
+
+        const user = result.rows[0];
+
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        const expiresAt = new Date(
+            Date.now() + 30 * 60 * 1000
+        );
+
+        await db.query(
+            `UPDATE users
+             SET reset_token = $1,
+                 reset_token_expires = $2
+             WHERE id = $3`,
+            [
+                resetToken,
+                expiresAt,
+                user.id
+            ]
+        );
+
+        console.log(
+            `Password reset token for ${user.email}: ${resetToken}`
+        );
+
+        res.json({
+            success: true,
+            message:
+                "If the email exists, password reset instructions will be sent."
+        });
+    } catch (error) {
+        console.error("Forgot password error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to process password reset."
+        });
+    }
+});
+
+// ============================================================
+// RESET PASSWORD
+// ============================================================
+
+app.post("/api/reset-password", async (req, res) => {
+    try {
+        const {
+            token,
+            password
+        } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Reset token and password are required."
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters."
+            });
+        }
+
+        const result = await db.query(
+            `SELECT id
+             FROM users
+             WHERE reset_token = $1
+               AND reset_token_expires > CURRENT_TIMESTAMP
+             LIMIT 1`,
+            [token]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired reset token."
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(
+            password,
+            12
+        );
+
+        await db.query(
+            `UPDATE users
+             SET password = $1,
+                 reset_token = NULL,
+                 reset_token_expires = NULL
+             WHERE id = $2`,
+            [
+                passwordHash,
+                result.rows[0].id
+            ]
+        );
+
+        res.json({
+            success: true,
+            message: "Password reset successfully."
+        });
+    } catch (error) {
+        console.error("Reset password error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to reset password."
+        });
+    }
+});
+
+// ============================================================
+// ADMIN LOGIN
+// ============================================================
+
+app.post("/api/admin/login", async (req, res) => {
+    try {
+        const {
+            username,
+            password
+        } = req.body;
+
+        if (
+            username !== ADMIN_USERNAME ||
+            password !== ADMIN_PASSWORD
+        ) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid admin credentials."
+            });
+        }
+
+        const token = createAdminToken();
+
+        res.json({
+            success: true,
+            message: "Admin login successful.",
+            token,
+            admin: {
+                username: ADMIN_USERNAME
+            }
+        });
+    } catch (error) {
+        console.error("Admin login error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Admin login failed."
+        });
+    }
+});
+
+// ============================================================
+// ADMIN ME
+// ============================================================
+
+app.get("/api/admin/me", requireAdmin, (req, res) => {
+    res.json({
+        success: true,
+        admin: {
+            username: ADMIN_USERNAME
+        }
+    });
+});
+
+// ============================================================
+// END OF PART 1
+// ============================================================
+// ============================================================
+// FLEX HUB PREDICTIONS - SERVER.JS
+// PART 2 / 3
+// ============================================================
+
+// ============================================================
+// VIP HELPERS
+// ============================================================
+
+async function getActiveVipSubscription(userId) {
+    const result = await db.query(
+        `SELECT *
+         FROM vip_subscriptions
+         WHERE user_id = $1
+           AND status = 'active'
+           AND expires_at > CURRENT_TIMESTAMP
+         ORDER BY expires_at DESC
+         LIMIT 1`,
+        [userId]
+    );
+
+    return result.rows[0] || null;
+}
+
+// ============================================================
+// VVIP HELPERS
+// ============================================================
+
+async function getActiveVvipSubscription(userId) {
+    const result = await db.query(
+        `SELECT *
+         FROM vvip_subscriptions
+         WHERE user_id = $1
+           AND status = 'active'
+           AND expires_at > CURRENT_TIMESTAMP
+         ORDER BY expires_at DESC
+         LIMIT 1`,
+        [userId]
+    );
+
+    return result.rows[0] || null;
+}
+
+// ============================================================
+// VIP TOKEN AUTHENTICATION
+// ============================================================
+
+async function requireVip(req, res, next) {
+    try {
+        const token = getBearerToken(req);
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "VIP access required."
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.type !== "vip") {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid VIP token."
+            });
+        }
+
+        const userResult = await db.query(
+            `SELECT id, name, username, email, status
+             FROM users
+             WHERE id = $1
+             LIMIT 1`,
+            [decoded.id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "User account not found."
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        if (user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been disabled."
+            });
+        }
+
+        const subscriptionResult = await db.query(
+            `SELECT *
+             FROM vip_subscriptions
+             WHERE id = $1
+               AND user_id = $2
+             LIMIT 1`,
+            [
+                decoded.subscriptionId,
+                user.id
+            ]
+        );
+
+        if (subscriptionResult.rows.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "VIP subscription not found."
+            });
+        }
+
+        const subscription = subscriptionResult.rows[0];
+
+        if (
+            subscription.status !== "active" ||
+            new Date(subscription.expires_at) <= new Date()
+        ) {
+            await db.query(
+                `UPDATE vip_subscriptions
+                 SET status = 'expired'
+                 WHERE id = $1`,
+                [subscription.id]
+            );
+
+            return res.status(403).json({
+                success: false,
+                message: "Your VIP access has expired."
+            });
+        }
+
+        req.user = user;
+        req.vipSubscription = subscription;
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired VIP token."
+        });
+    }
+}
+
+// ============================================================
+// VVIP TOKEN AUTHENTICATION
+// ============================================================
+
+async function requireVvip(req, res, next) {
+    try {
+        const token = getBearerToken(req);
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "VVIP access required."
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.type !== "vvip") {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid VVIP token."
+            });
+        }
+
+        const userResult = await db.query(
+            `SELECT id, name, username, email, status
+             FROM users
+             WHERE id = $1
+             LIMIT 1`,
+            [decoded.id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "User account not found."
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        if (user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been disabled."
+            });
+        }
+
+        const subscriptionResult = await db.query(
+            `SELECT *
+             FROM vvip_subscriptions
+             WHERE id = $1
+               AND user_id = $2
+             LIMIT 1`,
+            [
+                decoded.subscriptionId,
+                user.id
+            ]
+        );
+
+        if (subscriptionResult.rows.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "VVIP subscription not found."
+            });
+        }
+
+        const subscription = subscriptionResult.rows[0];
+
+        if (
+            subscription.status !== "active" ||
+            new Date(subscription.expires_at) <= new Date()
+        ) {
+            await db.query(
+                `UPDATE vvip_subscriptions
+                 SET status = 'expired'
+                 WHERE id = $1`,
+                [subscription.id]
+            );
+
+            return res.status(403).json({
+                success: false,
+                message: "Your VVIP access has expired."
+            });
+        }
+
+        req.user = user;
+        req.vvipSubscription = subscription;
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired VVIP token."
+        });
+    }
+}
+
+// ============================================================
+// ADMIN - CREATE VIP SUBSCRIPTION CODE
+// ============================================================
+
+app.post(
+    "/api/admin/vip-subscriptions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const { plan } = req.body;
+
+            const plans = {
+                "1_week": 7,
+                "2_weeks": 14,
+                "1_month": 30
+            };
+
+            if (!plans[plan]) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid VIP plan."
+                });
+            }
+
+            const code = generateCode("VIP");
+
+            const result = await db.query(
+                `INSERT INTO vip_subscriptions
+                (code, plan, duration_days, status)
+                VALUES ($1, $2, $3, 'unused')
+                RETURNING *`,
+                [
+                    code,
+                    plan,
+                    plans[plan]
+                ]
+            );
+
+            res.status(201).json({
+                success: true,
+                message: "VIP access code generated.",
+                subscription: result.rows[0]
+            });
+        } catch (error) {
+            console.error(
+                "VIP subscription generation error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to generate VIP code."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - VIP SUBSCRIPTION HISTORY
+// ============================================================
+
+app.get(
+    "/api/admin/vip-subscriptions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM vip_subscriptions
+                 ORDER BY created_at DESC`
+            );
+
+            res.json({
+                success: true,
+                subscriptions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VIP subscriptions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VIP ACCESS
+// ============================================================
+
+app.post(
+    "/api/vip/access",
+    requireUser,
+    async (req, res) => {
+        try {
+            const accessCode = String(
+                req.body.accessCode || ""
+            )
+                .trim()
+                .toUpperCase();
+
+            if (!accessCode) {
+                return res.status(400).json({
+                    success: false,
+                    message: "VIP access code is required."
+                });
+            }
+
+            const result = await db.query(
+                `SELECT *
+                 FROM vip_subscriptions
+                 WHERE code = $1
+                 LIMIT 1`,
+                [accessCode]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Invalid VIP access code."
+                });
+            }
+
+            const subscription = result.rows[0];
+
+            if (
+                subscription.status === "active" &&
+                subscription.user_id === req.user.id
+            ) {
+                const token = createVipToken(
+                    req.user,
+                    subscription.id
+                );
+
+                return res.json({
+                    success: true,
+                    message: "VIP access restored.",
+                    token,
+                    subscription
+                });
+            }
+
+            if (subscription.status !== "unused") {
+                return res.status(409).json({
+                    success: false,
+                    message: "This VIP code has already been used."
+                });
+            }
+
+            const expiresAt = new Date(
+                Date.now() +
+                Number(subscription.duration_days) *
+                24 *
+                60 *
+                60 *
+                1000
+            );
+
+            const updated = await db.query(
+                `UPDATE vip_subscriptions
+                 SET status = 'active',
+                     user_id = $1,
+                     activated_at = CURRENT_TIMESTAMP,
+                     expires_at = $2
+                 WHERE id = $3
+                   AND status = 'unused'
+                 RETURNING *`,
+                [
+                    req.user.id,
+                    expiresAt,
+                    subscription.id
+                ]
+            );
+
+            if (updated.rows.length === 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "This VIP code is no longer available."
+                });
+            }
+
+            const activeSubscription =
+                updated.rows[0];
+
+            await logActivity(
+                req.user,
+                "VIP Access Activated",
+                `VIP plan: ${activeSubscription.plan}`
+            );
+
+            const token = createVipToken(
+                req.user,
+                activeSubscription.id
+            );
+
+            res.json({
+                success: true,
+                message: "VIP access activated successfully.",
+                token,
+                subscription: activeSubscription
+            });
+        } catch (error) {
+            console.error("VIP access error:", error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to activate VIP access."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VIP STATUS
+// ============================================================
+
+app.get(
+    "/api/vip/status",
+    requireUser,
+    async (req, res) => {
+        try {
+            const subscription =
+                await getActiveVipSubscription(
+                    req.user.id
+                );
+
+            if (!subscription) {
+                return res.json({
+                    success: true,
+                    active: false,
+                    status: "inactive"
+                });
+            }
+
+            const remainingMs =
+                new Date(subscription.expires_at) -
+                new Date();
+
+            const remainingDays = Math.max(
+                0,
+                Math.ceil(
+                    remainingMs /
+                    (24 * 60 * 60 * 1000)
+                )
+            );
+
+            res.json({
+                success: true,
+                active: true,
+                status: subscription.status,
+                plan: subscription.plan,
+                expiresAt: subscription.expires_at,
+                remainingDays
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to check VIP status."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - CREATE VVIP SUBSCRIPTION CODE
+// ============================================================
+
+app.post(
+    "/api/admin/vvip-subscriptions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const { plan } = req.body;
+
+            const plans = {
+                "1_week": 7,
+                "2_weeks": 14,
+                "1_month": 30
+            };
+
+            if (!plans[plan]) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid VVIP plan."
+                });
+            }
+
+            const code = generateCode("VVIP");
+
+            const result = await db.query(
+                `INSERT INTO vvip_subscriptions
+                (code, plan, duration_days, status)
+                VALUES ($1, $2, $3, 'unused')
+                RETURNING *`,
+                [
+                    code,
+                    plan,
+                    plans[plan]
+                ]
+            );
+
+            res.status(201).json({
+                success: true,
+                message: "VVIP access code generated.",
+                subscription: result.rows[0]
+            });
+        } catch (error) {
+            console.error(
+                "VVIP subscription generation error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to generate VVIP code."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - VVIP SUBSCRIPTION HISTORY
+// ============================================================
+
+app.get(
+    "/api/admin/vvip-subscriptions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM vvip_subscriptions
+                 ORDER BY created_at DESC`
+            );
+
+            res.json({
+                success: true,
+                subscriptions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VVIP subscriptions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VVIP ACCESS
+// ============================================================
+
+app.post(
+    "/api/vvip/access",
+    requireUser,
+    async (req, res) => {
+        try {
+            const accessCode = String(
+                req.body.accessCode || ""
+            )
+                .trim()
+                .toUpperCase();
+
+            if (!accessCode) {
+                return res.status(400).json({
+                    success: false,
+                    message: "VVIP access code is required."
+                });
+            }
+
+            const result = await db.query(
+                `SELECT *
+                 FROM vvip_subscriptions
+                 WHERE code = $1
+                 LIMIT 1`,
+                [accessCode]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Invalid VVIP access code."
+                });
+            }
+
+            const subscription = result.rows[0];
+
+            if (
+                subscription.status === "active" &&
+                subscription.user_id === req.user.id
+            ) {
+                const token = createVvipToken(
+                    req.user,
+                    subscription.id
+                );
+
+                return res.json({
+                    success: true,
+                    message: "VVIP access restored.",
+                    token,
+                    subscription
+                });
+            }
+
+            if (subscription.status !== "unused") {
+                return res.status(409).json({
+                    success: false,
+                    message: "This VVIP code has already been used."
+                });
+            }
+
+            const expiresAt = new Date(
+                Date.now() +
+                Number(subscription.duration_days) *
+                24 *
+                60 *
+                60 *
+                1000
+            );
+
+            const updated = await db.query(
+                `UPDATE vvip_subscriptions
+                 SET status = 'active',
+                     user_id = $1,
+                     activated_at = CURRENT_TIMESTAMP,
+                     expires_at = $2
+                 WHERE id = $3
+                   AND status = 'unused'
+                 RETURNING *`,
+                [
+                    req.user.id,
+                    expiresAt,
+                    subscription.id
+                ]
+            );
+
+            if (updated.rows.length === 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "This VVIP code is no longer available."
+                });
+            }
+
+            const activeSubscription =
+                updated.rows[0];
+
+            await logActivity(
+                req.user,
+                "VVIP Access Activated",
+                `VVIP plan: ${activeSubscription.plan}`
+            );
+
+            const token = createVvipToken(
+                req.user,
+                activeSubscription.id
+            );
+
+            res.json({
+                success: true,
+                message: "VVIP access activated successfully.",
+                token,
+                subscription: activeSubscription
+            });
+        } catch (error) {
+            console.error("VVIP access error:", error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to activate VVIP access."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VVIP STATUS
+// ============================================================
+
+app.get(
+    "/api/vvip/status",
+    requireUser,
+    async (req, res) => {
+        try {
+            const subscription =
+                await getActiveVvipSubscription(
+                    req.user.id
+                );
+
+            if (!subscription) {
+                return res.json({
+                    success: true,
+                    active: false,
+                    status: "inactive"
+                });
+            }
+
+            const remainingMs =
+                new Date(subscription.expires_at) -
+                new Date();
+
+            const remainingDays = Math.max(
+                0,
+                Math.ceil(
+                    remainingMs /
+                    (24 * 60 * 60 * 1000)
+                )
+            );
+
+            res.json({
+                success: true,
+                active: true,
+                status: subscription.status,
+                plan: subscription.plan,
+                expiresAt: subscription.expires_at,
+                remainingDays
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to check VVIP status."
+            });
+        }
+    }
+);
+
+// ============================================================
+// REGULAR PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/predictions",
+    requireUser,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 WHERE category = 'regular'
+                    OR category IS NULL
+                 ORDER BY match_date ASC, match_time ASC, id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// SINGLE PREDICTION
+// ============================================================
+
+app.get(
+    "/api/predictions/:id",
+    requireUser,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 WHERE id = $1
+                 LIMIT 1`,
+                [req.params.id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VIP PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/vip/predictions",
+    requireVip,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 WHERE category = 'vip'
+                 ORDER BY match_date ASC, match_time ASC, id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VIP predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// VVIP PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/vvip/predictions",
+    requireVvip,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM vvip_predictions
+                 ORDER BY match_date ASC,
+                          match_time ASC,
+                          id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VVIP predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - ALL PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/admin/predictions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 ORDER BY match_date DESC,
+                          match_time DESC,
+                          id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load admin predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - VIP PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/admin/vip-predictions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 WHERE category = 'vip'
+                 ORDER BY match_date DESC,
+                          match_time DESC,
+                          id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VIP predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - VVIP PREDICTIONS
+// ============================================================
+
+app.get(
+    "/api/admin/vvip-predictions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM vvip_predictions
+                 ORDER BY match_date DESC,
+                          match_time DESC,
+                          id DESC`
+            );
+
+            res.json({
+                success: true,
+                predictions: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load VVIP predictions."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - CREATE REGULAR / VIP PREDICTION
+// ============================================================
+
+app.post(
+    "/api/predictions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                league,
+                category,
+                homeTeam,
+                awayTeam,
+                matchDate,
+                matchTime,
+                prediction,
+                analysis,
+                status,
+                featured
+            } = req.body;
+
+            if (
+                !league ||
+                !homeTeam ||
+                !awayTeam ||
+                !matchDate ||
+                !matchTime ||
+                !prediction
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "League, teams, date, time and prediction are required."
+                });
+            }
+
+            const safeCategory =
+                category === "vip"
+                    ? "vip"
+                    : "regular";
+
+            const safeStatus = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ].includes(status)
+                ? status
+                : "pending";
+
+            const result = await db.query(
+                `INSERT INTO predictions
+                (
+                    league,
+                    category,
+                    home_team,
+                    away_team,
+                    match_date,
+                    match_time,
+                    prediction,
+                    analysis,
+                    status,
+                    featured
+                )
+                VALUES
+                ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                RETURNING *`,
+                [
+                    league,
+                    safeCategory,
+                    homeTeam,
+                    awayTeam,
+                    matchDate,
+                    matchTime,
+                    prediction,
+                    analysis || "",
+                    safeStatus,
+                    Boolean(featured)
+                ]
+            );
+
+            res.status(201).json({
+                success: true,
+                message: "Prediction created successfully.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to create prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - CREATE VVIP PREDICTION
+// ============================================================
+
+app.post(
+    "/api/admin/vvip-predictions",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                league,
+                homeTeam,
+                awayTeam,
+                matchDate,
+                matchTime,
+                prediction,
+                analysis,
+                status,
+                featured
+            } = req.body;
+
+            if (
+                !league ||
+                !homeTeam ||
+                !awayTeam ||
+                !matchDate ||
+                !matchTime ||
+                !prediction
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "League, teams, date, time and prediction are required."
+                });
+            }
+
+            const safeStatus = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ].includes(status)
+                ? status
+                : "pending";
+
+            const result = await db.query(
+                `INSERT INTO vvip_predictions
+                (
+                    league,
+                    home_team,
+                    away_team,
+                    match_date,
+                    match_time,
+                    prediction,
+                    analysis,
+                    status,
+                    featured
+                )
+                VALUES
+                ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                RETURNING *`,
+                [
+                    league,
+                    homeTeam,
+                    awayTeam,
+                    matchDate,
+                    matchTime,
+                    prediction,
+                    analysis || "",
+                    safeStatus,
+                    Boolean(featured)
+                ]
+            );
+
+            res.status(201).json({
+                success: true,
+                message:
+                    "VVIP prediction created successfully.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to create VVIP prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// END OF PART 2
+// ============================================================
+// ============================================================
+// FLEX HUB PREDICTIONS - SERVER.JS
+// PART 3 / 3
+// ============================================================
+
+// ============================================================
+// ADMIN - UPDATE REGULAR / VIP PREDICTION
+// ============================================================
+
+app.put(
+    "/api/predictions/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                league,
+                category,
+                homeTeam,
+                awayTeam,
+                matchDate,
+                matchTime,
+                prediction,
+                analysis,
+                status,
+                featured
+            } = req.body;
+
+            const safeCategory =
+                category === "vip"
+                    ? "vip"
+                    : "regular";
+
+            const safeStatus = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ].includes(status)
+                ? status
+                : "pending";
+
+            const result = await db.query(
+                `UPDATE predictions
+                 SET league = $1,
+                     category = $2,
+                     home_team = $3,
+                     away_team = $4,
+                     match_date = $5,
+                     match_time = $6,
+                     prediction = $7,
+                     analysis = $8,
+                     status = $9,
+                     featured = $10
+                 WHERE id = $11
+                 RETURNING *`,
+                [
+                    league,
+                    safeCategory,
+                    homeTeam,
+                    awayTeam,
+                    matchDate,
+                    matchTime,
+                    prediction,
+                    analysis || "",
+                    safeStatus,
+                    Boolean(featured),
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Prediction updated successfully.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to update prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - DELETE REGULAR / VIP PREDICTION
+// ============================================================
+
+app.delete(
+    "/api/predictions/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `DELETE FROM predictions
+                 WHERE id = $1
+                 RETURNING *`,
+                [req.params.id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Prediction deleted successfully."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to delete prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - UPDATE PREDICTION STATUS
+// ============================================================
+
+app.patch(
+    "/api/predictions/:id/status",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                status
+            } = req.body;
+
+            const allowedStatuses = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ];
+
+            if (!allowedStatuses.includes(status)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid prediction status."
+                });
+            }
+
+            const result = await db.query(
+                `UPDATE predictions
+                 SET status = $1
+                 WHERE id = $2
+                 RETURNING *`,
+                [
+                    status,
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Prediction status updated.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to update prediction status."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - UPDATE VVIP PREDICTION
+// ============================================================
+
+app.put(
+    "/api/admin/vvip-predictions/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                league,
+                homeTeam,
+                awayTeam,
+                matchDate,
+                matchTime,
+                prediction,
+                analysis,
+                status,
+                featured
+            } = req.body;
+
+            const safeStatus = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ].includes(status)
+                ? status
+                : "pending";
+
+            const result = await db.query(
+                `UPDATE vvip_predictions
+                 SET league = $1,
+                     home_team = $2,
+                     away_team = $3,
+                     match_date = $4,
+                     match_time = $5,
+                     prediction = $6,
+                     analysis = $7,
+                     status = $8,
+                     featured = $9
+                 WHERE id = $10
+                 RETURNING *`,
+                [
+                    league,
+                    homeTeam,
+                    awayTeam,
+                    matchDate,
+                    matchTime,
+                    prediction,
+                    analysis || "",
+                    safeStatus,
+                    Boolean(featured),
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "VVIP prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message:
+                    "VVIP prediction updated successfully.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to update VVIP prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - DELETE VVIP PREDICTION
+// ============================================================
+
+app.delete(
+    "/api/admin/vvip-predictions/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `DELETE FROM vvip_predictions
+                 WHERE id = $1
+                 RETURNING *`,
+                [req.params.id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "VVIP prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message:
+                    "VVIP prediction deleted successfully."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to delete VVIP prediction."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - UPDATE VVIP PREDICTION STATUS
+// ============================================================
+
+app.patch(
+    "/api/admin/vvip-predictions/:id/status",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                status
+            } = req.body;
+
+            const allowedStatuses = [
+                "pending",
+                "won",
+                "lost",
+                "void"
+            ];
+
+            if (!allowedStatuses.includes(status)) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Invalid VVIP prediction status."
+                });
+            }
+
+            const result = await db.query(
+                `UPDATE vvip_predictions
+                 SET status = $1
+                 WHERE id = $2
+                 RETURNING *`,
+                [
+                    status,
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "VVIP prediction not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message:
+                    "VVIP prediction status updated.",
+                prediction: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to update VVIP status."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - RESULTS
+// ============================================================
+
+app.get(
+    "/api/admin/results",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM predictions
+                 WHERE status IN ('won', 'lost', 'void')
+                 ORDER BY match_date DESC,
+                          match_time DESC,
+                          id DESC`
+            );
+
+            res.json({
+                success: true,
+                results: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load results."
+            });
+        }
+    }
+);
+
+// ============================================================
+// DELETE RESULT
+// ============================================================
+
+app.delete(
+    "/api/results/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `UPDATE predictions
+                 SET status = 'pending'
+                 WHERE id = $1
+                 RETURNING *`,
+                [req.params.id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Result not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Result reset successfully."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to reset result."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - REGISTERED USERS
+// ============================================================
+
+app.get(
+    "/api/admin/users",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const search =
+                String(req.query.search || "")
+                    .trim();
+
+            let result;
+
+            if (search) {
+                result = await db.query(
+                    `SELECT
+                        id,
+                        name,
+                        username,
+                        email,
+                        status,
+                        created_at
+                     FROM users
+                     WHERE name ILIKE $1
+                        OR username ILIKE $1
+                        OR email ILIKE $1
+                     ORDER BY created_at DESC`,
+                    [`%${search}%`]
+                );
+            } else {
+                result = await db.query(
+                    `SELECT
+                        id,
+                        name,
+                        username,
+                        email,
+                        status,
+                        created_at
+                     FROM users
+                     ORDER BY created_at DESC`
+                );
+            }
+
+            res.json({
+                success: true,
+                users: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to load users."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - UPDATE USER
+// ============================================================
+
+app.patch(
+    "/api/admin/users/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                status
+            } = req.body;
+
+            const allowedStatuses = [
+                "active",
+                "disabled"
+            ];
+
+            if (!allowedStatuses.includes(status)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid user status."
+                });
+            }
+
+            const result = await db.query(
+                `UPDATE users
+                 SET status = $1
+                 WHERE id = $2
+                 RETURNING id, name, username, email, status, created_at`,
+                [
+                    status,
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found."
+                });
+            }
+
+            const user = result.rows[0];
+
+            await logActivity(
+                user,
+                status === "active"
+                    ? "Account Enabled"
+                    : "Account Disabled",
+                `Admin changed account status to ${status}.`
+            );
+
+            res.json({
+                success: true,
+                message: "User updated successfully.",
+                user
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message: "Unable to update user."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - USER STATUS
+// ============================================================
+
+app.patch(
+    "/api/admin/users/:id/status",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                status
+            } = req.body;
+
+            if (
+                !["active", "disabled"]
+                    .includes(status)
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid user status."
+                });
+            }
+
+            const result = await db.query(
+                `UPDATE users
+                 SET status = $1
+                 WHERE id = $2
+                 RETURNING id, name, username, email, status, created_at`,
+                [
+                    status,
+                    req.params.id
+                ]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "User status updated.",
+                user: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to update user status."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - DELETE USER
+// ============================================================
+
+app.delete(
+    "/api/admin/users/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const userResult = await db.query(
+                `SELECT id, name, username, email
+                 FROM users
+                 WHERE id = $1
+                 LIMIT 1`,
+                [req.params.id]
+            );
+
+            if (userResult.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found."
+                });
+            }
+
+            const user = userResult.rows[0];
+
+            await db.query(
+                `DELETE FROM users
+                 WHERE id = $1`,
+                [req.params.id]
+            );
+
+            res.json({
+                success: true,
+                message: "User deleted successfully."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to delete user. The account may have linked records."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - ACTIVITY LOGS
+// ============================================================
+
+app.get(
+    "/api/admin/activity-logs",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM activity_logs
+                 ORDER BY created_at DESC
+                 LIMIT 500`
+            );
+
+            res.json({
+                success: true,
+                logs: result.rows,
+                activityLogs: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to load activity logs."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - NOTIFICATIONS
+// ============================================================
+
+app.get(
+    "/api/admin/notifications",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM notifications
+                 ORDER BY created_at DESC`
+            );
+
+            res.json({
+                success: true,
+                notifications: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to load notifications."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - CREATE NOTIFICATION
+// ============================================================
+
+app.post(
+    "/api/admin/notifications",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const {
+                title,
+                message
+            } = req.body;
+
+            if (!title || !message) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Title and message are required."
+                });
+            }
+
+            const result = await db.query(
+                `INSERT INTO notifications
+                (title, message)
+                VALUES ($1, $2)
+                RETURNING *`,
+                [
+                    title.trim(),
+                    message.trim()
+                ]
+            );
+
+            res.status(201).json({
+                success: true,
+                message:
+                    "Notification created successfully.",
+                notification: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to create notification."
+            });
+        }
+    }
+);
+
+// ============================================================
+// ADMIN - DELETE NOTIFICATION
+// ============================================================
+
+app.delete(
+    "/api/admin/notifications/:id",
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `DELETE FROM notifications
+                 WHERE id = $1
+                 RETURNING *`,
+                [req.params.id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Notification not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message:
+                    "Notification deleted successfully."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to delete notification."
+            });
+        }
+    }
+);
+
+// ============================================================
+// USER NOTIFICATIONS
+// ============================================================
+
+app.get(
+    "/api/notifications",
+    requireUser,
+    async (req, res) => {
+        try {
+            const result = await db.query(
+                `SELECT *
+                 FROM notifications
+                 ORDER BY created_at DESC`
+            );
+
+            res.json({
+                success: true,
+                notifications: result.rows
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to load notifications."
+            });
+        }
+    }
+);
+
+// ============================================================
+// MARK NOTIFICATION AS READ
+// ============================================================
+
+app.post(
+    "/api/notifications/:id/read",
+    requireUser,
+    async (req, res) => {
+        try {
+            await db.query(
+                `UPDATE notifications
+                 SET is_read = TRUE
+                 WHERE id = $1`,
+                [req.params.id]
+            );
+
+            res.json({
+                success: true,
+                message:
+                    "Notification marked as read."
+            });
+        } catch (error) {
+            console.error(error);
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to update notification."
+            });
+        }
+    }
+);
+
+// ============================================================
+// PAYMENTS - INITIALIZE
+// ============================================================
+
+app.post(
+    "/api/payments/initialize",
+    requireUser,
+    async (req, res) => {
+        try {
+            const {
+                amount,
+                email
+            } = req.body;
+
+            if (!amount || !email) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Amount and email are required."
+                });
+            }
+
+            if (!process.env.PAYSTACK_SECRET_KEY) {
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Payment service is not configured."
+                });
+            }
+
+            const reference =
+                `FLEX-${Date.now()}-${crypto
+                    .randomBytes(4)
+                    .toString("hex")
+                    .toUpperCase()}`;
+
+            const response = await fetch(
+                "https://api.paystack.co/transaction/initialize",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization:
+                            `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        email,
+                        amount: Math.round(
+                            Number(amount) * 100
+                        ),
+                        reference,
+                        callback_url:
+                            `${FRONTEND_URL}vip.html`
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.status) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        data.message ||
+                        "Unable to initialize payment."
+                });
+            }
+
+            res.json({
+                success: true,
+                reference,
+                authorizationUrl:
+                    data.data.authorization_url,
+                accessCode:
+                    data.data.access_code
+            });
+        } catch (error) {
+            console.error(
+                "Payment initialization error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to initialize payment."
+            });
+        }
+    }
+);
+
+// ============================================================
+// PAYMENTS - VERIFY
+// ============================================================
+
+app.get(
+    "/api/payments/verify/:reference",
+    requireUser,
+    async (req, res) => {
+        try {
+            if (!process.env.PAYSTACK_SECRET_KEY) {
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Payment service is not configured."
+                });
+            }
+
+            const response = await fetch(
+                `https://api.paystack.co/transaction/verify/${encodeURIComponent(
+                    req.params.reference
+                )}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization:
+                            `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.status) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        data.message ||
+                        "Unable to verify payment."
+                });
+            }
+
+            res.json({
+                success: true,
+                payment: data.data
+            });
+        } catch (error) {
+            console.error(
+                "Payment verification error:",
+                error
+            );
+
+            res.status(500).json({
+                success: false,
+                message:
+                    "Unable to verify payment."
+            });
+        }
+    }
+);
+
+// ============================================================
+// 404 HANDLER
+// ============================================================
+
 app.use((req, res) => {
-  res.status(404).json({ message: "API route not found." });
+    res.status(404).json({
+        success: false,
+        message: "API endpoint not found.",
+        path: req.originalUrl
+    });
 });
+
+// ============================================================
+// ERROR HANDLER
+// ============================================================
 
 app.use((error, req, res, next) => {
-  console.error("Server error:", error);
-  res.status(500).json({ message: "Internal server error." });
+    console.error(
+        "Unhandled server error:",
+        error
+    );
+
+    res.status(500).json({
+        success: false,
+        message:
+            "An unexpected server error occurred."
+    });
 });
 
+// ============================================================
+// START SERVER
+// ============================================================
+
 async function startServer() {
-  try {
-    await db.init();
-    app.listen(PORT, HOST, () => {
-      console.log("==========================================");
-      console.log("     FLEX HUB PREDICTIONS BACKEND");
-      console.log("==========================================");
-      console.log(`Server running on ${HOST}:${PORT}`);
-      console.log("PostgreSQL database connected.");
-      console.log("==========================================");
-    });
-  } catch (error) {
-    console.error("Database startup error:", error);
-    process.exit(1);
-  }
+    try {
+        await db.init();
+
+        app.listen(
+            PORT,
+            "0.0.0.0",
+            () => {
+                console.log("");
+                console.log(
+                    "=========================================="
+                );
+                console.log(
+                    "     FLEX HUB PREDICTIONS"
+                );
+                console.log(
+                    "=========================================="
+                );
+                console.log(
+                    `Backend server running on port ${PORT}`
+                );
+                console.log(
+                    `API: http://localhost:${PORT}/api/status`
+                );
+                console.log(
+                    "Database connected successfully."
+                );
+                console.log(
+                    "=========================================="
+                );
+                console.log("");
+            }
+        );
+    } catch (error) {
+        console.error(
+            "Failed to start server:",
+            error
+        );
+
+        process.exit(1);
+    }
 }
 
 startServer();
+
+// ============================================================
+// END OF SERVER.JS
+// ============================================================
