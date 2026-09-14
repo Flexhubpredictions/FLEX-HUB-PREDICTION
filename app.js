@@ -263,12 +263,11 @@ async function apiRequest(
             options.body;
 
     }
-
-    const response =
-        await fetch(
-       `${API_BASE_URL}${endpoint}`
-            requestOptions
-        );
+const response =
+    await fetch(
+        `${API_BASE_URL}${endpoint}`,
+        requestOptions
+    );
 
     let data = null;
 
