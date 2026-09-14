@@ -11,7 +11,8 @@ const API_BASE_URL = "https://flex-hub-prediction.onrender.com/api";
 const STORAGE_KEYS = {
     user: "flexHubUser",
     userToken: "flexHubUserToken",
-    vipToken: "flexHubVipToken"
+    vipToken: "flexHubVipToken",
+    vvipToken: "flexHubVvipToken"
 };
 
 // ======================================================
@@ -71,19 +72,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupWhatsAppLinks();
 
     // VIP page
-    if (
-        document.body.classList.contains(
-            "vip-page"
-        )
-    ) {
+  if (document.body.classList.contains("vip-page")) {
+    await setupVipPage();
+    return;
+}
 
-        await setupVipPage();
+// VVIP page
+if (document.body.classList.contains("vvip-page")) {
+    await setupVvipPage();
+    return;
+}
 
-        return;
-    }
-
-    // Main website
-    await checkUserSession();
+// Main website
+await checkUserSession();
 });
 // ======================================================
 // STORAGE
@@ -4677,3 +4678,624 @@ if (badge) {
     }
 
 })();
+
+// ======================================================
+// VVIP PAGE
+// ======================================================
+
+async function setupVvipPage() {
+
+    const userToken = getUserToken();
+
+    // VVIP requires a normal FLEX HUB account
+    if (!userToken) {
+
+        window.location.href = "index.html";
+
+        return;
+    }
+
+    const sessionValid =
+        await verifyUserForVvipPage();
+
+    if (!sessionValid) {
+        return;
+    }
+
+    setupVvipAccessForm();
+    setupVvipLogout();
+
+    await checkVvipStatus();
+}
+
+
+// ======================================================
+// VERIFY USER FOR VVIP PAGE
+// ======================================================
+
+async function verifyUserForVvipPage() {
+
+    try {
+
+        const data =
+            await apiRequest("/user/me");
+
+        if (!data.user) {
+
+            throw new Error(
+                "Invalid user session."
+            );
+        }
+
+        saveUser(data.user);
+
+        updateUserUI();
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "VVIP user verification failed:",
+            error
+        );
+
+        clearUserSession();
+
+        window.location.href =
+            "index.html";
+
+        return false;
+    }
+}
+
+
+// ======================================================
+// VVIP ACCESS FORM
+// ======================================================
+
+function setupVvipAccessForm() {
+
+    const form =
+        document.querySelector(
+            "#vvipAccessForm"
+        );
+
+    if (!form) {
+        return;
+    }
+
+    if (
+        form.dataset.listenerAttached ===
+        "true"
+    ) {
+        return;
+    }
+
+    form.dataset.listenerAttached =
+        "true";
+
+    form.addEventListener(
+        "submit",
+        handleVvipAccess
+    );
+}
+
+
+// ======================================================
+// ACTIVATE VVIP ACCESS
+// ======================================================
+
+async function handleVvipAccess(event) {
+
+    event.preventDefault();
+
+    const codeInput =
+        document.querySelector(
+            "#vvipAccessCode"
+        );
+
+    const message =
+        document.querySelector(
+            "#vvipMessage"
+        );
+
+    const code =
+        codeInput?.value.trim();
+
+    if (!code) {
+
+        showElementMessage(
+            message,
+            "Please enter your VVIP access code.",
+            "error"
+        );
+
+        return;
+    }
+
+    const userToken =
+        getUserToken();
+
+    if (!userToken) {
+
+        showElementMessage(
+            message,
+            "Please login to your account first.",
+            "error"
+        );
+
+        return;
+    }
+
+    try {
+
+        setButtonLoading(
+            event.submitter,
+            true,
+            "Activating..."
+        );
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/vvip/access`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${userToken}`
+                    },
+
+                    body: JSON.stringify({
+                        accessCode: code
+                    })
+                }
+            );
+
+        let data = {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch (error) {
+
+            data = {};
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to activate VVIP access."
+            );
+        }
+
+        if (!data.token) {
+
+            throw new Error(
+                "The server did not return a VVIP session."
+            );
+        }
+
+        localStorage.setItem(
+            STORAGE_KEYS.vvipToken,
+            data.token
+        );
+
+        if (codeInput) {
+            codeInput.value = "";
+        }
+
+        showElementMessage(
+            message,
+            "VVIP access activated successfully!",
+            "success"
+        );
+
+        await checkVvipStatus();
+
+    } catch (error) {
+
+        console.error(
+            "VVIP activation error:",
+            error
+        );
+
+        showElementMessage(
+            message,
+            error.message ||
+            "Unable to activate VVIP access.",
+            "error"
+        );
+
+    } finally {
+
+        setButtonLoading(
+            event.submitter,
+            false
+        );
+    }
+}
+
+
+// ======================================================
+// CHECK VVIP STATUS
+// ======================================================
+
+async function checkVvipStatus() {
+
+    const userToken =
+        getUserToken();
+
+    if (!userToken) {
+
+        updateVvipStatusUI(null);
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/vvip/status`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${userToken}`
+                    }
+                }
+            );
+
+        let data = {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch (error) {
+
+            data = {};
+        }
+
+        if (!response.ok) {
+
+            console.error(
+                "VVIP status request failed:",
+                data.message
+            );
+
+            updateVvipStatusUI(null);
+
+            return;
+        }
+
+        updateVvipStatusUI(data);
+
+        if (data.active === true) {
+
+            await loadVvipPredictions();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "VVIP status error:",
+            error
+        );
+
+        updateVvipStatusUI(null);
+    }
+}
+
+
+// ======================================================
+// VVIP STATUS UI
+// ======================================================
+
+function updateVvipStatusUI(data) {
+
+    const statusElement =
+        document.querySelector(
+            "#vvipStatus"
+        );
+
+    const planElement =
+        document.querySelector(
+            "#vvipPlan"
+        );
+
+    const expiryElement =
+        document.querySelector(
+            "#vvipExpiry"
+        );
+
+    if (!data || !data.active) {
+
+        if (statusElement) {
+
+            statusElement.textContent =
+                "Locked";
+
+            statusElement.classList.remove(
+                "active"
+            );
+
+            statusElement.classList.add(
+                "locked"
+            );
+        }
+
+        if (planElement) {
+
+            planElement.textContent =
+                "No active VVIP plan";
+        }
+
+        if (expiryElement) {
+
+            expiryElement.textContent =
+                "—";
+        }
+
+        return;
+    }
+
+    if (statusElement) {
+
+        statusElement.textContent =
+            "VVIP Active";
+
+        statusElement.classList.remove(
+            "locked"
+        );
+
+        statusElement.classList.add(
+            "active"
+        );
+    }
+
+    if (planElement) {
+
+        planElement.textContent =
+            formatVvipPlan(data.plan);
+    }
+
+    if (expiryElement) {
+
+        expiryElement.textContent =
+            formatExpiry(data.expiresAt);
+    }
+}
+
+
+// ======================================================
+// VVIP PLAN FORMAT
+// ======================================================
+
+function formatVvipPlan(plan) {
+
+    const plans = {
+        "1_week": "1 Week VVIP",
+        "2_weeks": "2 Weeks VVIP",
+        "1_month": "1 Month VVIP"
+    };
+
+    return (
+        plans[plan] ||
+        capitalize(
+            String(
+                plan || "VVIP"
+            ).replaceAll(
+                "_",
+                " "
+            )
+        )
+    );
+}
+
+
+// ======================================================
+// LOAD VVIP PREDICTIONS
+// ======================================================
+
+async function loadVvipPredictions() {
+
+    const grid =
+        document.querySelector(
+            "#vvipPredictionsGrid"
+        );
+
+    if (!grid) {
+        return;
+    }
+
+    const vvipToken =
+        localStorage.getItem(
+            STORAGE_KEYS.vvipToken
+        );
+
+    if (!vvipToken) {
+
+        grid.innerHTML = `
+            <div class="empty-state">
+
+                <h3>
+                    VVIP access required
+                </h3>
+
+                <p>
+                    Activate your VVIP subscription
+                    to view this section.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+    try {
+
+        grid.innerHTML = `
+            <div class="loading-state">
+                <p>Loading VVIP content...</p>
+            </div>
+        `;
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/vvip/predictions`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${vvipToken}`
+                    }
+                }
+            );
+
+        let data = {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch (error) {
+
+            data = {};
+        }
+
+        if (!response.ok) {
+
+            if (response.status === 401) {
+
+                localStorage.removeItem(
+                    STORAGE_KEYS.vvipToken
+                );
+            }
+
+            throw new Error(
+                data.message ||
+                "Unable to load VVIP content."
+            );
+        }
+
+        const predictions =
+            Array.isArray(data)
+                ? data
+                : data.predictions || [];
+
+        if (!predictions.length) {
+
+            grid.innerHTML = `
+                <div class="empty-state">
+
+                    <h3>
+                        No VVIP predictions yet
+                    </h3>
+
+                    <p>
+                        New VVIP match previews
+                        will appear here.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        grid.innerHTML =
+            predictions
+                .map(createPredictionCard)
+                .join("");
+
+    } catch (error) {
+
+        console.error(
+            "VVIP prediction error:",
+            error
+        );
+
+        grid.innerHTML = `
+            <div class="empty-state">
+
+                <h3>
+                    VVIP content unavailable
+                </h3>
+
+                <p>
+                    ${escapeHtml(
+                        error.message ||
+                        "Unable to load VVIP predictions."
+                    )}
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+
+// ======================================================
+// VVIP LOGOUT
+// ======================================================
+
+function setupVvipLogout() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-vvip-logout], #vvipLogoutButton"
+        );
+
+    buttons.forEach(button => {
+
+        if (
+            button.dataset.vvipLogoutAttached ===
+            "true"
+        ) {
+            return;
+        }
+
+        button.dataset.vvipLogoutAttached =
+            "true";
+
+        button.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                localStorage.removeItem(
+                    STORAGE_KEYS.vvipToken
+                );
+
+                window.location.href =
+                    "index.html";
+            }
+        );
+    });
+}
+
+// ======================================================
+// END VVIP SYSTEM
+// ======================================================
