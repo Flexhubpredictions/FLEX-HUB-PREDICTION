@@ -242,7 +242,7 @@ async function apiRequest(
     ) {
 
         headers.Authorization =
-            `Bearer ${token}`;
+            'Bearer ${token}';
 
     }
 
