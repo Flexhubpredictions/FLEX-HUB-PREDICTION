@@ -5806,7 +5806,184 @@ async function generateVvipSubscription(
                     `${winRate}%`;
             }
         }
+    
+/* =========================================================
+   ADMIN LOGOUT
+   ========================================================= */
 
+async function handleAdminLogout() {
+
+    clearAdminToken();
+
+    adminToken = null;
+
+    document.getElementById("adminApp").style.display = "none";
+
+    document.getElementById("adminLoginScreen").style.display = "flex";
+
+    const loginForm =
+        document.getElementById("adminLoginForm");
+
+    if (loginForm) {
+        loginForm.reset();
+    }
+
+    clearMessage("loginMessage");
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+
+/* =========================================================
+   COPY VIP CODE
+   ========================================================= */
+
+async function copyGeneratedCode() {
+
+    const codeElement =
+        document.getElementById("generatedCode");
+
+    const code =
+        codeElement?.textContent?.trim();
+
+    if (!code) {
+        showMessage(
+            "subscriptionMessage",
+            "There is no VIP code to copy.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+
+        await navigator.clipboard.writeText(code);
+
+        showMessage(
+            "subscriptionMessage",
+            "VIP access code copied successfully.",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Copy VIP code error:",
+            error
+        );
+
+        // Fallback for browsers where clipboard API
+        // is unavailable.
+        const textarea =
+            document.createElement("textarea");
+
+        textarea.value = code;
+
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        try {
+            document.execCommand("copy");
+
+            showMessage(
+                "subscriptionMessage",
+                "VIP access code copied successfully.",
+                "success"
+            );
+
+        } catch (copyError) {
+
+            showMessage(
+                "subscriptionMessage",
+                "Unable to copy the code automatically.",
+                "error"
+            );
+        }
+
+        textarea.remove();
+    }
+}
+
+
+/* =========================================================
+   COPY VVIP CODE
+   ========================================================= */
+
+async function copyGeneratedVvipCode() {
+
+    const codeElement =
+        document.getElementById("vvipGeneratedCode");
+
+    const code =
+        codeElement?.textContent?.trim();
+
+    if (!code) {
+        showMessage(
+            "vvipSubscriptionMessage",
+            "There is no VVIP code to copy.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+
+        await navigator.clipboard.writeText(code);
+
+        showMessage(
+            "vvipSubscriptionMessage",
+            "VVIP access code copied successfully.",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Copy VVIP code error:",
+            error
+        );
+
+        const textarea =
+            document.createElement("textarea");
+
+        textarea.value = code;
+
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        try {
+
+            document.execCommand("copy");
+
+            showMessage(
+                "vvipSubscriptionMessage",
+                "VVIP access code copied successfully.",
+                "success"
+            );
+
+        } catch (copyError) {
+
+            showMessage(
+                "vvipSubscriptionMessage",
+                "Unable to copy the code automatically.",
+                "error"
+            );
+        }
+
+        textarea.remove();
+    }
+}
 
         /* =========================================================
            EVENT LISTENERS
