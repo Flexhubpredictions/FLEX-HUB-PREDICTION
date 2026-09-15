@@ -5315,150 +5315,111 @@ async function loadNotifications() {
 }
 
 
-/* ============================================================
-   RENDER NOTIFICATIONS
-   ============================================================ */
-
-function renderNotifications(
-    notifications
-) {
+```js
+function renderNotifications(notifications) {
 
     const container =
-        getElement(
-            "notificationList"
-        );
+        getElement("notificationList");
 
     if (!container) {
         return;
     }
 
-
     const list =
-        Array.isArray(
-            notifications
-        )
+        Array.isArray(notifications)
             ? notifications
             : [];
 
-
     if (!list.length) {
 
-        container.innerHTML = `
-            <div class="notification-empty">
-                No notifications yet.
-            </div>
-        `;
+        container.innerHTML =
+            '<div class="notification-empty">' +
+                'No notifications yet.' +
+            '</div>';
 
-        updateNotificationBadge(
-            0
-        );
-
-        updateNotificationCount(
-            0
-        );
+        updateNotificationBadge(0);
+        updateNotificationCount(0);
 
         return;
-
     }
 
-
     let unreadCount = 0;
+    let html = "";
 
+    list.forEach(function(item) {
 
-    container.innerHTML =
-        list
-            .map(
-                (item) => {
+        const id =
+            Number(item.id || 0);
 
-                    const id =
-                        Number(
-                            item.id || 0
-                        );
+        const title =
+            escapeHTML(
+                item.title ||
+                "Notification"
+            );
 
+        const message =
+            escapeHTML(
+                item.message ||
+                ""
+            );
 
-                    const title =
-                        escapeHTML(
-                            item.title ||
-                            "Notification"
-                        );
+        const date =
+            item.created_at ||
+            item.createdAt ||
+            "";
 
+        const isRead =
+            Boolean(
+                item.read_at ||
+                item.readAt ||
+                item.is_read ||
+                item.isRead
+            );
 
-                    const message =
-                        escapeHTML(
-                            item.message ||
-                            ""
-                        );
+        if (!isRead) {
+            unreadCount++;
+        }
 
+        html +=
+            '<article ' +
+                'class="user-notification ' +
+                (isRead ? "read" : "unread") +
+                '" ' +
+                'data-notification-id="' +
+                id +
+                '" ' +
+                'data-read="' +
+                (isRead ? "true" : "false") +
+                '>' +
 
-                    const date =
-                        item.created_at ||
-                        item.createdAt ||
-                        "";
+                '<div class="user-notification-title">' +
 
+                    '<strong>' +
+                        title +
+                    '</strong>' +
 
-                    const isRead =
-                        Boolean(
-                            item.read_at ||
-                            item.readAt ||
-                            item.is_read ||
-                            item.isRead
-                        );
+                    (
+                        date
+                            ? (
+                                '<span class="user-notification-time">' +
+                                    escapeHTML(
+                                        formatDate(date)
+                                    ) +
+                                '</span>'
+                            )
+                            : ""
+                    ) +
 
+                '</div>' +
 
-                    if (!isRead) {
-                        unreadCount++;
-                    }
+                '<div class="user-notification-message">' +
+                    message +
+                '</div>' +
 
+            '</article>';
+    });
 
-                    return `
-                        <article
-                            class="user-notification ${
-                                isRead
-                                    ? "read"
-                                    : "unread"
-                            }"
-                            data-notification-id="${id}"
-                            onclick="handleNotificationClick(${id}, ${isRead})"
-                        >
-
-                            <div
-                                class="user-notification-title"
-                            >
-
-                                <strong>
-                                    ${title}
-                                </strong>
-
-                                ${
-                                    date
-                                        ? `
-                                            <span
-                                                class="user-notification-time"
-                                            >
-                                                ${formatDate(
-                                                    date
-                                                )}
-                                            </span>
-                                          `
-                                        : ""
-                                }
-
-                            </div>
-
-
-                            <div
-                                class="user-notification-message"
-                            >
-                                ${message}
-                            </div>
-
-                        </article>
-                    `;
-
-                }
-            )
-            .join("");
-
+    container.innerHTML = html;
 
     updateNotificationBadge(
         unreadCount
@@ -5468,7 +5429,86 @@ function renderNotifications(
         unreadCount
     );
 
+
+    /* Attach click events safely */
+
+    const notificationItems =
+        container.querySelectorAll(
+            ".user-notification"
+        );
+
+    notificationItems.forEach(
+        function(item) {
+
+            item.addEventListener(
+                "click",
+                async function() {
+
+                    const notificationId =
+                        Number(
+                            item.dataset.notificationId
+                        );
+
+                    const alreadyRead =
+                        item.dataset.read === "true";
+
+                    if (
+                        !notificationId ||
+                        alreadyRead
+                    ) {
+                        return;
+                    }
+
+                    try {
+
+                        await apiRequest(
+                            "/notifications/" +
+                            notificationId +
+                            "/read",
+                            {
+                                method: "POST"
+                            }
+                        );
+
+                        const notification =
+                            userNotifications.find(
+                                function(notificationItem) {
+                                    return Number(
+                                        notificationItem.id
+                                    ) ===
+                                    notificationId;
+                                }
+                            );
+
+                        if (notification) {
+
+                            notification.read_at =
+                                new Date().toISOString();
+
+                        }
+
+                        renderNotifications(
+                            userNotifications
+                        );
+
+                    } catch (error) {
+
+                        console.error(
+                            "Mark notification as read error:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
 }
+```
+
 
 
 /* ============================================================
