@@ -3,8 +3,7 @@
 /* ============================================================
    FLEX HUB PREDICTIONS
    FRONTEND APPLICATION
-   COMPLETE REWRITE
-   PART 1/4
+   CLEAN COMPLETE REWRITE
    ============================================================ */
 
 const API_BASE_URL =
@@ -30,11 +29,13 @@ let currentSearchTerm = "";
 let currentLeagueFilter = "all";
 let currentResultFilter = "all";
 
-let notificationTimer = null;
 let deferredInstallPrompt = null;
+
+let userNotifications = [];
 
 window.vipAccessActive = false;
 window.vipPredictionCount = 0;
+
 
 /* ============================================================
    DOM READY
@@ -42,7 +43,7 @@ window.vipPredictionCount = 0;
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function () {
 
         console.log(
             "FLEX HUB PREDICTIONS app starting..."
@@ -65,8 +66,11 @@ document.addEventListener(
             window.location.pathname.toLowerCase();
 
         const isVipPage =
-            document.body?.dataset?.page === "vip" ||
-            currentPath.includes("vip.html");
+            document.body &&
+            (
+                document.body.dataset.page === "vip" ||
+                currentPath.includes("vip.html")
+            );
 
         if (isVipPage) {
 
@@ -136,10 +140,7 @@ function getStoredUser() {
 }
 
 
-function saveUser(
-    user,
-    token
-) {
+function saveUser(user, token) {
 
     if (user) {
 
@@ -209,15 +210,13 @@ async function apiRequest(
         ...headers
     };
 
-
     if (
         fetchOptions.body &&
         typeof fetchOptions.body !== "string"
     ) {
 
-        requestHeaders[
-            "Content-Type"
-        ] = "application/json";
+        requestHeaders["Content-Type"] =
+            "application/json";
 
         fetchOptions.body =
             JSON.stringify(
@@ -225,7 +224,6 @@ async function apiRequest(
             );
 
     }
-
 
     if (!skipAuth) {
 
@@ -241,12 +239,10 @@ async function apiRequest(
 
     }
 
-
     const url =
         endpoint.startsWith("http")
             ? endpoint
             : `${API_BASE_URL}${endpoint}`;
-
 
     let response;
 
@@ -281,7 +277,6 @@ async function apiRequest(
 
     }
 
-
     let data = null;
 
     try {
@@ -294,7 +289,6 @@ async function apiRequest(
         data = null;
 
     }
-
 
     if (!response.ok) {
 
@@ -310,7 +304,6 @@ async function apiRequest(
                     : `Request failed with status ${response.status}.`
             );
 
-
         const error =
             new Error(message);
 
@@ -324,7 +317,6 @@ async function apiRequest(
 
     }
 
-
     return data;
 
 }
@@ -337,15 +329,10 @@ async function apiRequest(
 function showAccountGate() {
 
     const gate =
-        getElement(
-            "accountGate"
-        );
+        getElement("accountGate");
 
     const website =
-        getElement(
-            "mainWebsite"
-        );
-
+        getElement("mainWebsite");
 
     if (gate) {
 
@@ -356,8 +343,13 @@ function showAccountGate() {
             "is-hidden"
         );
 
-    }
+        gate.style.visibility =
+            "visible";
 
+        gate.style.opacity =
+            "1";
+
+    }
 
     if (website) {
 
@@ -376,15 +368,10 @@ function showAccountGate() {
 function hideAccountGate() {
 
     const gate =
-        getElement(
-            "accountGate"
-        );
+        getElement("accountGate");
 
     const website =
-        getElement(
-            "mainWebsite"
-        );
-
+        getElement("mainWebsite");
 
     if (gate) {
 
@@ -396,7 +383,6 @@ function hideAccountGate() {
         );
 
     }
-
 
     if (website) {
 
@@ -419,15 +405,10 @@ function hideAccountGate() {
 function showLoginPanel() {
 
     const loginPanel =
-        getElement(
-            "loginPanel"
-        );
+        getElement("loginPanel");
 
     const registerPanel =
-        getElement(
-            "registerPanel"
-        );
-
+        getElement("registerPanel");
 
     if (loginPanel) {
 
@@ -436,14 +417,12 @@ function showLoginPanel() {
 
     }
 
-
     if (registerPanel) {
 
         registerPanel.style.display =
             "none";
 
     }
-
 
     clearMessage(
         "registerMessage"
@@ -455,15 +434,10 @@ function showLoginPanel() {
 function showRegisterPanel() {
 
     const loginPanel =
-        getElement(
-            "loginPanel"
-        );
+        getElement("loginPanel");
 
     const registerPanel =
-        getElement(
-            "registerPanel"
-        );
-
+        getElement("registerPanel");
 
     if (loginPanel) {
 
@@ -472,14 +446,12 @@ function showRegisterPanel() {
 
     }
 
-
     if (registerPanel) {
 
         registerPanel.style.display =
             "";
 
     }
-
 
     clearMessage(
         "loginMessage"
@@ -488,28 +460,23 @@ function showRegisterPanel() {
 }
 
 
+/* ============================================================
+   ACCOUNT FORMS
+   ============================================================ */
+
 function setupAccountForms() {
 
     const loginForm =
-        getElement(
-            "loginForm"
-        );
+        getElement("loginForm");
 
     const registerForm =
-        getElement(
-            "registerForm"
-        );
+        getElement("registerForm");
 
     const showRegisterButton =
-        getElement(
-            "showRegisterButton"
-        );
+        getElement("showRegisterButton");
 
     const showLoginButton =
-        getElement(
-            "showLoginButton"
-        );
-
+        getElement("showLoginButton");
 
     if (loginForm) {
 
@@ -520,7 +487,6 @@ function setupAccountForms() {
 
     }
 
-
     if (registerForm) {
 
         registerForm.addEventListener(
@@ -530,12 +496,11 @@ function setupAccountForms() {
 
     }
 
-
     if (showRegisterButton) {
 
         showRegisterButton.addEventListener(
             "click",
-            (event) => {
+            function (event) {
 
                 event.preventDefault();
 
@@ -546,12 +511,11 @@ function setupAccountForms() {
 
     }
 
-
     if (showLoginButton) {
 
         showLoginButton.addEventListener(
             "click",
-            (event) => {
+            function (event) {
 
                 event.preventDefault();
 
@@ -570,20 +534,35 @@ function setupAccountForms() {
    ============================================================ */
 
 async function handleLogin(event) {
-    if (event) event.preventDefault();
 
-    const identifierInput = getElement("loginIdentifier");
-    const passwordInput = getElement("loginPassword");
-    const rememberInput = getElement("rememberMe");
-    const messageElement = getElement("loginMessage");
+    if (event) {
+        event.preventDefault();
+    }
+
+    const identifierInput =
+        getElement("loginIdentifier");
+
+    const passwordInput =
+        getElement("loginPassword");
+
+    const rememberInput =
+        getElement("rememberMe");
+
+    const messageElement =
+        getElement("loginMessage");
 
     const identifier =
-        String(identifierInput?.value || "").trim();
+        String(
+            identifierInput?.value || ""
+        ).trim();
 
     const password =
-        String(passwordInput?.value || "");
+        String(
+            passwordInput?.value || ""
+        );
 
     if (!identifier) {
+
         showMessage(
             messageElement,
             "Please enter your username or email.",
@@ -591,10 +570,13 @@ async function handleLogin(event) {
         );
 
         identifierInput?.focus();
+
         return;
+
     }
 
     if (!password) {
+
         showMessage(
             messageElement,
             "Please enter your password.",
@@ -602,7 +584,9 @@ async function handleLogin(event) {
         );
 
         passwordInput?.focus();
+
         return;
+
     }
 
     setFormLoading(
@@ -618,31 +602,32 @@ async function handleLogin(event) {
     );
 
     try {
-        const data = await apiRequest(
-            "/auth/login",
-            {
-                method: "POST",
-                skipAuth: true,
-                body: {
-                    identifier,
-                    password
-                }
-            }
-        );
 
-        if (!data || !data.token || !data.user) {
+        const data =
+            await apiRequest(
+                "/auth/login",
+                {
+                    method: "POST",
+                    skipAuth: true,
+                    body: {
+                        identifier,
+                        password
+                    }
+                }
+            );
+
+        if (
+            !data ||
+            !data.token ||
+            !data.user
+        ) {
+
             throw new Error(
                 "The server returned an incomplete login response."
             );
+
         }
 
-        /*
-         * The login endpoint already verified the credentials
-         * and returned the user + token.
-         *
-         * Do NOT call /user/me here.
-         * This removes one unnecessary network request.
-         */
         saveUser(
             data.user,
             data.token
@@ -655,7 +640,8 @@ async function handleLogin(event) {
                 : "false"
         );
 
-        currentUser = data.user;
+        currentUser =
+            data.user;
 
         updateUserInterface();
 
@@ -665,12 +651,10 @@ async function handleLogin(event) {
             "success"
         );
 
-        /*
-         * Open immediately instead of waiting 500ms.
-         */
         openMainWebsite();
 
     } catch (error) {
+
         console.error(
             "Login error:",
             error
@@ -686,11 +670,14 @@ async function handleLogin(event) {
         );
 
     } finally {
+
         setFormLoading(
             event?.currentTarget,
             false
         );
+
     }
+
 }
 
 
@@ -698,89 +685,59 @@ async function handleLogin(event) {
    REGISTER
    ============================================================ */
 
-async function handleRegister(
-    event
-) {
+async function handleRegister(event) {
 
     if (event) {
-
         event.preventDefault();
-
     }
 
-
     const nameInput =
-        getElement(
-            "registerName"
-        );
+        getElement("registerName");
 
     const usernameInput =
-        getElement(
-            "registerUsername"
-        );
+        getElement("registerUsername");
 
     const emailInput =
-        getElement(
-            "registerEmail"
-        );
+        getElement("registerEmail");
 
     const passwordInput =
-        getElement(
-            "registerPassword"
-        );
+        getElement("registerPassword");
 
     const confirmPasswordInput =
-        getElement(
-            "registerConfirmPassword"
-        );
+        getElement("registerConfirmPassword");
 
     const termsInput =
-        getElement(
-            "registerTerms"
-        );
+        getElement("registerTerms");
 
     const messageElement =
-        getElement(
-            "registerMessage"
-        );
-
+        getElement("registerMessage");
 
     const name =
         String(
-            nameInput?.value ||
-            ""
+            nameInput?.value || ""
         ).trim();
-
 
     const username =
         String(
-            usernameInput?.value ||
-            ""
+            usernameInput?.value || ""
         ).trim();
-
 
     const email =
         String(
-            emailInput?.value ||
-            ""
+            emailInput?.value || ""
         )
             .trim()
             .toLowerCase();
 
-
     const password =
         String(
-            passwordInput?.value ||
-            ""
+            passwordInput?.value || ""
         );
-
 
     const confirmPassword =
         String(
-            confirmPasswordInput?.value ||
-            ""
+            confirmPasswordInput?.value || ""
         );
-
 
     if (!name) {
 
@@ -796,7 +753,6 @@ async function handleRegister(
 
     }
 
-
     if (!username) {
 
         showMessage(
@@ -810,7 +766,6 @@ async function handleRegister(
         return;
 
     }
-
 
     if (!email) {
 
@@ -826,7 +781,6 @@ async function handleRegister(
 
     }
 
-
     if (!password) {
 
         showMessage(
@@ -841,7 +795,6 @@ async function handleRegister(
 
     }
 
-
     if (password.length < 6) {
 
         showMessage(
@@ -855,7 +808,6 @@ async function handleRegister(
         return;
 
     }
-
 
     if (
         password !==
@@ -874,7 +826,6 @@ async function handleRegister(
 
     }
 
-
     if (
         termsInput &&
         !termsInput.checked
@@ -890,20 +841,17 @@ async function handleRegister(
 
     }
 
-
     setFormLoading(
         event?.currentTarget,
         true,
         "Creating account..."
     );
 
-
     showMessage(
         messageElement,
         "Creating your account...",
         "info"
     );
-
 
     try {
 
@@ -922,7 +870,6 @@ async function handleRegister(
                 }
             );
 
-
         if (
             !data ||
             !data.token ||
@@ -935,30 +882,20 @@ async function handleRegister(
 
         }
 
-
         saveUser(
             data.user,
             data.token
         );
-
 
         localStorage.setItem(
             STORAGE_KEYS.REMEMBER_ME,
             "true"
         );
 
-
-        await verifyCurrentUserSession(
-            true
-        );
-
-
         currentUser =
             data.user;
 
-
         updateUserInterface();
-
 
         showMessage(
             messageElement,
@@ -966,16 +903,7 @@ async function handleRegister(
             "success"
         );
 
-
-        setTimeout(
-            () => {
-
-                openMainWebsite();
-
-            },
-            500
-        );
-
+        openMainWebsite();
 
     } catch (error) {
 
@@ -984,9 +912,7 @@ async function handleRegister(
             error
         );
 
-
         clearUserSession();
-
 
         showMessage(
             messageElement,
@@ -994,7 +920,6 @@ async function handleRegister(
                 "Unable to create your account.",
             "error"
         );
-
 
     } finally {
 
@@ -1019,13 +944,9 @@ async function verifyCurrentUserSession(
     const token =
         getUserToken();
 
-
     if (!token) {
-
         return false;
-
     }
-
 
     try {
 
@@ -1037,7 +958,6 @@ async function verifyCurrentUserSession(
                 }
             );
 
-
         if (
             data &&
             data.user
@@ -1046,7 +966,6 @@ async function verifyCurrentUserSession(
             currentUser =
                 data.user;
 
-
             localStorage.setItem(
                 STORAGE_KEYS.USER,
                 JSON.stringify(
@@ -1054,11 +973,9 @@ async function verifyCurrentUserSession(
                 )
             );
 
-
             return true;
 
         }
-
 
         return false;
 
@@ -1068,7 +985,6 @@ async function verifyCurrentUserSession(
             "User session verification failed:",
             error.message
         );
-
 
         if (
             !preserveOnFailure &&
@@ -1082,12 +998,12 @@ async function verifyCurrentUserSession(
 
         }
 
-
         return false;
 
     }
 
 }
+
 
 /* ============================================================
    CHECK SESSION
@@ -1101,11 +1017,6 @@ async function checkUserSession() {
     const storedUser =
         getStoredUser();
 
-
-    /* --------------------------------------------------------
-       NO SAVED SESSION
-       -------------------------------------------------------- */
-
     if (!token) {
 
         showAccountGate();
@@ -1113,12 +1024,6 @@ async function checkUserSession() {
         return;
 
     }
-
-
-    /* --------------------------------------------------------
-       SESSION EXISTS
-       Keep login gate hidden while checking.
-       -------------------------------------------------------- */
 
     const accountGate =
         getElement("accountGate");
@@ -1133,24 +1038,13 @@ async function checkUserSession() {
 
     }
 
-
     currentUser =
         storedUser;
-
-
-    /* --------------------------------------------------------
-       VERIFY SESSION WITH BACKEND
-       -------------------------------------------------------- */
 
     const verified =
         await verifyCurrentUserSession(
             false
         );
-
-
-    /* --------------------------------------------------------
-       SESSION VERIFIED
-       -------------------------------------------------------- */
 
     if (verified) {
 
@@ -1160,17 +1054,11 @@ async function checkUserSession() {
 
     }
 
-
-    /* --------------------------------------------------------
-       FALLBACK TO STORED SESSION
-       -------------------------------------------------------- */
-
     const remainingUser =
         getStoredUser();
 
     const remainingToken =
         getUserToken();
-
 
     if (
         remainingUser &&
@@ -1186,12 +1074,6 @@ async function checkUserSession() {
 
     }
 
-
-    /* --------------------------------------------------------
-       SESSION INVALID
-       Show login gate again.
-       -------------------------------------------------------- */
-
     if (accountGate) {
 
         accountGate.style.visibility =
@@ -1201,7 +1083,6 @@ async function checkUserSession() {
             "1";
 
     }
-
 
     showAccountGate();
 
@@ -1220,10 +1101,9 @@ function openMainWebsite() {
 
     closeMobileMenu();
 
-
     loadPredictions()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "Prediction loading error:",
@@ -1233,10 +1113,9 @@ function openMainWebsite() {
             }
         );
 
-
     loadResults()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "Results loading error:",
@@ -1246,15 +1125,9 @@ function openMainWebsite() {
             }
         );
 
-
-    /*
-     * NEW:
-     * Load booking codes from the
-     * public backend endpoint.
-     */
     loadRegularBettingCodes()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "Booking code loading error:",
@@ -1264,10 +1137,9 @@ function openMainWebsite() {
             }
         );
 
-
     refreshRegularAccessStatus()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "Regular access error:",
@@ -1277,10 +1149,9 @@ function openMainWebsite() {
             }
         );
 
-
     loadNotifications()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "Notification loading error:",
@@ -1303,19 +1174,14 @@ function updateUserInterface() {
         currentUser ||
         getStoredUser();
 
-
     if (!user) {
-
         return;
-
     }
-
 
     const displayName =
         user.name ||
         user.username ||
         "Member";
-
 
     [
         getElement("userName"),
@@ -1324,7 +1190,7 @@ function updateUserInterface() {
     ]
         .filter(Boolean)
         .forEach(
-            (element) => {
+            function (element) {
 
                 element.textContent =
                     displayName;
@@ -1332,14 +1198,13 @@ function updateUserInterface() {
             }
         );
 
-
     [
         getElement("usernameDisplay"),
         getElement("profileUsername")
     ]
         .filter(Boolean)
         .forEach(
-            (element) => {
+            function (element) {
 
                 element.textContent =
                     user.username ||
@@ -1348,14 +1213,13 @@ function updateUserInterface() {
             }
         );
 
-
     [
         getElement("emailDisplay"),
         getElement("profileEmail")
     ]
         .filter(Boolean)
         .forEach(
-            (element) => {
+            function (element) {
 
                 element.textContent =
                     user.email ||
@@ -1374,10 +1238,7 @@ function updateUserInterface() {
 function setupSignOut() {
 
     const signOutButton =
-        getElement(
-            "signOutButton"
-        );
-
+        getElement("signOutButton");
 
     if (signOutButton) {
 
@@ -1391,20 +1252,14 @@ function setupSignOut() {
 }
 
 
-async function handleSignOut(
-    event
-) {
+async function handleSignOut(event) {
 
     if (event) {
-
         event.preventDefault();
-
     }
-
 
     const token =
         getUserToken();
-
 
     try {
 
@@ -1436,27 +1291,22 @@ async function handleSignOut(
         window.vipPredictionCount =
             0;
 
+        userNotifications = [];
+
+        closeNotificationPanel();
 
         showAccountGate();
 
         showLoginPanel();
 
-
         const loginForm =
-            getElement(
-                "loginForm"
-            );
-
+            getElement("loginForm");
 
         if (loginForm) {
-
             loginForm.reset();
-
         }
 
-
         closeMobileMenu();
-
 
         window.scrollTo({
             top: 0,
@@ -1479,24 +1329,16 @@ function showMessage(
 ) {
 
     const element =
-        typeof elementOrId ===
-        "string"
-            ? getElement(
-                elementOrId
-            )
+        typeof elementOrId === "string"
+            ? getElement(elementOrId)
             : elementOrId;
 
-
     if (!element) {
-
         return;
-
     }
-
 
     element.textContent =
         message || "";
-
 
     element.classList.remove(
         "success",
@@ -1505,11 +1347,9 @@ function showMessage(
         "warning"
     );
 
-
     element.classList.add(
         type
     );
-
 
     element.style.display =
         message
@@ -1524,17 +1364,12 @@ function clearMessage(id) {
     const element =
         getElement(id);
 
-
     if (!element) {
-
         return;
-
     }
-
 
     element.textContent =
         "";
-
 
     element.classList.remove(
         "success",
@@ -1542,7 +1377,6 @@ function clearMessage(id) {
         "info",
         "warning"
     );
-
 
     element.style.display =
         "none";
@@ -1561,35 +1395,27 @@ function setFormLoading(
 ) {
 
     if (!form) {
-
         return;
-
     }
-
 
     const submitButton =
         form.querySelector(
             'button[type="submit"], input[type="submit"]'
         );
 
-
     if (!submitButton) {
-
         return;
-
     }
-
 
     if (loading) {
 
-        submitButton.dataset
-            .originalText =
-            submitButton.textContent;
-
+        submitButton.dataset.originalText =
+            submitButton.tagName === "INPUT"
+                ? submitButton.value
+                : submitButton.textContent;
 
         submitButton.disabled =
             true;
-
 
         if (
             submitButton.tagName ===
@@ -1613,11 +1439,8 @@ function setFormLoading(
         submitButton.disabled =
             false;
 
-
         const original =
-            submitButton.dataset
-                .originalText;
-
+            submitButton.dataset.originalText;
 
         if (
             submitButton.tagName ===
@@ -1625,10 +1448,8 @@ function setFormLoading(
         ) {
 
             if (original) {
-
                 submitButton.value =
                     original;
-
             }
 
         } else if (original) {
@@ -1641,16 +1462,6 @@ function setFormLoading(
     }
 
 }
-
-
-/* ============================================================
-   END OF PART 1
-   ============================================================ */
-/* ============================================================
-   FLEX HUB PREDICTIONS
-   APP.JS — PART 2/4
-   PREDICTIONS + RESULTS + BOOKING CODES
-   ============================================================ */
 
 
 /* ============================================================
@@ -1669,7 +1480,6 @@ async function loadPredictions() {
                 }
             );
 
-
         allPredictions =
             Array.isArray(data)
                 ? data
@@ -1679,12 +1489,9 @@ async function loadPredictions() {
                     []
                 );
 
-
         renderPredictions();
 
-
         updatePredictionStats();
-
 
         return allPredictions;
 
@@ -1695,12 +1502,9 @@ async function loadPredictions() {
             error
         );
 
-
         allPredictions = [];
 
-
         renderPredictionsError();
-
 
         return [];
 
@@ -1709,56 +1513,30 @@ async function loadPredictions() {
 }
 
 
-/* ============================================================
-   RENDER PREDICTIONS
-   ============================================================ */
-
 function renderPredictions() {
 
     const containers = [
-
-        getElement(
-            "predictionsGrid"
-        ),
-
-        getElement(
-            "predictionGrid"
-        ),
-
-        getElement(
-            "predictionsContainer"
-        ),
-
-        getElement(
-            "regularPredictionsGrid"
-        )
-
+        getElement("predictionsGrid"),
+        getElement("predictionGrid"),
+        getElement("predictionsContainer"),
+        getElement("regularPredictionsGrid")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return;
-
     }
-
 
     let filtered =
         [...allPredictions];
 
-
-    /* SEARCH */
-
     if (currentSearchTerm) {
 
         const search =
-            currentSearchTerm
-                .toLowerCase();
-
+            currentSearchTerm.toLowerCase();
 
         filtered =
             filtered.filter(
-                (item) => {
+                function (item) {
 
                     const text = [
                         item.league,
@@ -1772,7 +1550,6 @@ function renderPredictions() {
                         .join(" ")
                         .toLowerCase();
 
-
                     return text.includes(
                         search
                     );
@@ -1782,9 +1559,6 @@ function renderPredictions() {
 
     }
 
-
-    /* LEAGUE FILTER */
-
     if (
         currentLeagueFilter &&
         currentLeagueFilter !== "all"
@@ -1792,24 +1566,23 @@ function renderPredictions() {
 
         filtered =
             filtered.filter(
-                (item) =>
-                    String(
-                        item.league ||
-                        ""
+                function (item) {
+
+                    return String(
+                        item.league || ""
                     ).toLowerCase() ===
                     String(
                         currentLeagueFilter
-                    ).toLowerCase()
+                    ).toLowerCase();
+
+                }
             );
 
     }
 
-
-    /* REGULAR PREDICTIONS */
-
     filtered =
         filtered.filter(
-            (item) => {
+            function (item) {
 
                 const category =
                     String(
@@ -1817,20 +1590,15 @@ function renderPredictions() {
                         "regular"
                     ).toLowerCase();
 
-
-                return (
-                    category ===
-                    "regular"
-                );
+                return category === "regular";
 
             }
         );
 
-
     if (!filtered.length) {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -1840,22 +1608,17 @@ function renderPredictions() {
             }
         );
 
-
         return;
 
     }
 
-
     const html =
         filtered
-            .map(
-                createPredictionCard
-            )
+            .map(createPredictionCard)
             .join("");
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 html;
@@ -1863,23 +1626,15 @@ function renderPredictions() {
         }
     );
 
-
     setupTeamBadgeObserver();
 
 }
 
 
-/* ============================================================
-   PREDICTION CARD
-   ============================================================ */
-
-function createPredictionCard(
-    item
-) {
+function createPredictionCard(item) {
 
     const id =
         Number(item.id || 0);
-
 
     const league =
         escapeHTML(
@@ -1887,13 +1642,11 @@ function createPredictionCard(
             "Football"
         );
 
-
     const homeTeam =
         escapeHTML(
             item.home_team ||
             "Home Team"
         );
-
 
     const awayTeam =
         escapeHTML(
@@ -1901,13 +1654,11 @@ function createPredictionCard(
             "Away Team"
         );
 
-
     const matchDate =
         escapeHTML(
             item.match_date ||
             ""
         );
-
 
     const matchTime =
         escapeHTML(
@@ -1915,20 +1666,17 @@ function createPredictionCard(
             ""
         );
 
-
     const prediction =
         escapeHTML(
             item.prediction ||
             "Prediction pending"
         );
 
-
     const analysis =
         escapeHTML(
             item.analysis ||
             "No analysis available."
         );
-
 
     const category =
         escapeHTML(
@@ -1938,7 +1686,6 @@ function createPredictionCard(
             ).toUpperCase()
         );
 
-
     const featured =
         item.featured
             ? `
@@ -1947,7 +1694,6 @@ function createPredictionCard(
                 </span>
               `
             : "";
-
 
     return `
         <article
@@ -1973,7 +1719,6 @@ function createPredictionCard(
 
             </div>
 
-
             <div class="prediction-match">
 
                 <div class="prediction-team">
@@ -1989,7 +1734,6 @@ function createPredictionCard(
 
                 </div>
 
-
                 <div class="prediction-vs">
 
                     <span>VS</span>
@@ -2000,7 +1744,6 @@ function createPredictionCard(
                     </small>
 
                 </div>
-
 
                 <div class="prediction-team">
 
@@ -2017,7 +1760,6 @@ function createPredictionCard(
 
             </div>
 
-
             <div class="prediction-selection">
 
                 <span>
@@ -2029,7 +1771,6 @@ function createPredictionCard(
                 </strong>
 
             </div>
-
 
             <div class="prediction-analysis">
 
@@ -2049,35 +1790,17 @@ function createPredictionCard(
 }
 
 
-/* ============================================================
-   PREDICTION ERROR
-   ============================================================ */
-
 function renderPredictionsError() {
 
     const containers = [
-
-        getElement(
-            "predictionsGrid"
-        ),
-
-        getElement(
-            "predictionGrid"
-        ),
-
-        getElement(
-            "predictionsContainer"
-        ),
-
-        getElement(
-            "regularPredictionsGrid"
-        )
-
+        getElement("predictionsGrid"),
+        getElement("predictionGrid"),
+        getElement("predictionsContainer"),
+        getElement("regularPredictionsGrid")
     ].filter(Boolean);
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 createEmptyState(
@@ -2090,79 +1813,51 @@ function renderPredictionsError() {
 }
 
 
-/* ============================================================
-   PREDICTION STATS
-   ============================================================ */
-
 function updatePredictionStats() {
 
     const predictionCount =
         allPredictions.length;
 
+    [
+        getElement("predictionCount"),
+        getElement("totalPredictions"),
+        getElement("predictionsStat")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const elements = [
+                element.textContent =
+                    predictionCount;
 
-        getElement(
-            "predictionCount"
-        ),
-
-        getElement(
-            "totalPredictions"
-        ),
-
-        getElement(
-            "predictionsStat"
-        )
-
-    ].filter(Boolean);
-
-
-    elements.forEach(
-        (element) => {
-
-            element.textContent =
-                predictionCount;
-
-        }
-    );
-
+            }
+        );
 
     const leagues =
         new Set(
             allPredictions
                 .map(
-                    (item) =>
-                        item.league
+                    function (item) {
+                        return item.league;
+                    }
                 )
                 .filter(Boolean)
         );
 
+    [
+        getElement("leagueCount"),
+        getElement("totalLeagues"),
+        getElement("leaguesStat")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const leagueElements = [
+                element.textContent =
+                    leagues.size;
 
-        getElement(
-            "leagueCount"
-        ),
-
-        getElement(
-            "totalLeagues"
-        ),
-
-        getElement(
-            "leaguesStat"
-        )
-
-    ].filter(Boolean);
-
-
-    leagueElements.forEach(
-        (element) => {
-
-            element.textContent =
-                leagues.size;
-
-        }
-    );
+            }
+        );
 
 }
 
@@ -2183,7 +1878,6 @@ async function loadResults() {
                 }
             );
 
-
         allResults =
             Array.isArray(data)
                 ? data
@@ -2193,12 +1887,9 @@ async function loadResults() {
                     []
                 );
 
-
         renderResults();
 
-
         updateResultStats();
-
 
         return allResults;
 
@@ -2209,12 +1900,9 @@ async function loadResults() {
             error
         );
 
-
         allResults = [];
 
-
         renderResultsError();
-
 
         return [];
 
@@ -2223,66 +1911,40 @@ async function loadResults() {
 }
 
 
-/* ============================================================
-   RENDER RESULTS
-   ============================================================ */
-
 function renderResults() {
 
     const containers = [
-
-        getElement(
-            "resultsGrid"
-        ),
-
-        getElement(
-            "resultGrid"
-        ),
-
-        getElement(
-            "resultsContainer"
-        )
-
+        getElement("resultsGrid"),
+        getElement("resultGrid"),
+        getElement("resultsContainer")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return;
-
     }
-
 
     let filtered =
         [...allResults];
 
-
-    /* SEARCH */
-
     if (currentSearchTerm) {
 
         const search =
-            currentSearchTerm
-                .toLowerCase();
-
+            currentSearchTerm.toLowerCase();
 
         filtered =
             filtered.filter(
-                (item) => {
+                function (item) {
 
                     const text = [
-
                         item.league,
                         item.home_team,
                         item.away_team,
                         item.prediction,
                         item.status
-
                     ]
                         .filter(Boolean)
                         .join(" ")
                         .toLowerCase();
-
 
                     return text.includes(
                         search
@@ -2293,9 +1955,6 @@ function renderResults() {
 
     }
 
-
-    /* RESULT FILTER */
-
     if (
         currentResultFilter &&
         currentResultFilter !== "all"
@@ -2303,33 +1962,25 @@ function renderResults() {
 
         filtered =
             filtered.filter(
-                (item) => {
+                function (item) {
 
-                    const status =
-                        String(
-                            item.status ||
-                            ""
-                        )
-                            .toLowerCase();
-
-
-                    return (
-                        status ===
-                        String(
-                            currentResultFilter
-                        ).toLowerCase()
-                    );
+                    return String(
+                        item.status || ""
+                    )
+                        .toLowerCase() ===
+                    String(
+                        currentResultFilter
+                    ).toLowerCase();
 
                 }
             );
 
     }
 
-
     if (!filtered.length) {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -2339,22 +1990,17 @@ function renderResults() {
             }
         );
 
-
         return;
 
     }
 
-
     const html =
         filtered
-            .map(
-                createResultCard
-            )
+            .map(createResultCard)
             .join("");
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 html;
@@ -2362,19 +2008,12 @@ function renderResults() {
         }
     );
 
-
     setupTeamBadgeObserver();
 
 }
 
 
-/* ============================================================
-   RESULT CARD
-   ============================================================ */
-
-function createResultCard(
-    item
-) {
+function createResultCard(item) {
 
     const league =
         escapeHTML(
@@ -2382,13 +2021,11 @@ function createResultCard(
             "Football"
         );
 
-
     const homeTeam =
         escapeHTML(
             item.home_team ||
             "Home Team"
         );
-
 
     const awayTeam =
         escapeHTML(
@@ -2396,29 +2033,23 @@ function createResultCard(
             "Away Team"
         );
 
-
     const prediction =
         escapeHTML(
             item.prediction ||
             "—"
         );
 
-
     const status =
         String(
             item.status ||
             "pending"
-        )
-            .toLowerCase();
-
+        ).toLowerCase();
 
     let statusLabel =
         status.toUpperCase();
 
-
     let statusClass =
         "status-pending";
-
 
     if (
         status === "win" ||
@@ -2454,7 +2085,6 @@ function createResultCard(
 
     }
 
-
     return `
         <article class="result-card">
 
@@ -2472,7 +2102,6 @@ function createResultCard(
 
             </div>
 
-
             <div class="result-match">
 
                 <div class="result-team">
@@ -2488,11 +2117,9 @@ function createResultCard(
 
                 </div>
 
-
                 <span class="result-vs">
                     VS
                 </span>
-
 
                 <div class="result-team">
 
@@ -2508,7 +2135,6 @@ function createResultCard(
                 </div>
 
             </div>
-
 
             <div class="result-prediction">
 
@@ -2528,31 +2154,16 @@ function createResultCard(
 }
 
 
-/* ============================================================
-   RESULT ERROR
-   ============================================================ */
-
 function renderResultsError() {
 
     const containers = [
-
-        getElement(
-            "resultsGrid"
-        ),
-
-        getElement(
-            "resultGrid"
-        ),
-
-        getElement(
-            "resultsContainer"
-        )
-
+        getElement("resultsGrid"),
+        getElement("resultGrid"),
+        getElement("resultsContainer")
     ].filter(Boolean);
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 createEmptyState(
@@ -2565,46 +2176,29 @@ function renderResultsError() {
 }
 
 
-/* ============================================================
-   RESULT STATS
-   ============================================================ */
-
 function updateResultStats() {
 
     const resultCount =
         allResults.length;
 
+    [
+        getElement("resultCount"),
+        getElement("totalResults"),
+        getElement("resultsStat")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const elements = [
+                element.textContent =
+                    resultCount;
 
-        getElement(
-            "resultCount"
-        ),
-
-        getElement(
-            "totalResults"
-        ),
-
-        getElement(
-            "resultsStat"
-        )
-
-    ].filter(Boolean);
-
-
-    elements.forEach(
-        (element) => {
-
-            element.textContent =
-                resultCount;
-
-        }
-    );
-
+            }
+        );
 
     const wins =
         allResults.filter(
-            (item) => {
+            function (item) {
 
                 const status =
                     String(
@@ -2620,32 +2214,20 @@ function updateResultStats() {
             }
         ).length;
 
+    [
+        getElement("winCount"),
+        getElement("totalWins"),
+        getElement("winsStat")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const winElements = [
+                element.textContent =
+                    wins;
 
-        getElement(
-            "winCount"
-        ),
-
-        getElement(
-            "totalWins"
-        ),
-
-        getElement(
-            "winsStat"
-        )
-
-    ].filter(Boolean);
-
-
-    winElements.forEach(
-        (element) => {
-
-            element.textContent =
-                wins;
-
-        }
-    );
+            }
+        );
 
 }
 
@@ -2657,40 +2239,23 @@ function updateResultStats() {
 function setupSearch() {
 
     const searchInputs = [
-
-        getElement(
-            "predictionSearch"
-        ),
-
-        getElement(
-            "searchInput"
-        ),
-
-        getElement(
-            "teamSearch"
-        ),
-
-        getElement(
-            "mainSearch"
-        )
-
+        getElement("predictionSearch"),
+        getElement("searchInput"),
+        getElement("teamSearch"),
+        getElement("mainSearch")
     ].filter(Boolean);
 
-
     searchInputs.forEach(
-        (input) => {
+        function (input) {
 
             input.addEventListener(
                 "input",
-                () => {
+                function () {
 
                     currentSearchTerm =
-                        input.value
-                            .trim();
-
+                        input.value.trim();
 
                     renderPredictions();
-
                     renderResults();
 
                 }
@@ -2713,22 +2278,19 @@ function setupFilters() {
             "[data-league-filter]"
         );
 
-
     leagueFilters.forEach(
-        (button) => {
+        function (button) {
 
             button.addEventListener(
                 "click",
-                () => {
+                function () {
 
                     currentLeagueFilter =
-                        button.dataset
-                            .leagueFilter ||
+                        button.dataset.leagueFilter ||
                         "all";
 
-
                     leagueFilters.forEach(
-                        (item) => {
+                        function (item) {
 
                             item.classList.remove(
                                 "active"
@@ -2737,11 +2299,9 @@ function setupFilters() {
                         }
                     );
 
-
                     button.classList.add(
                         "active"
                     );
-
 
                     renderPredictions();
 
@@ -2751,28 +2311,24 @@ function setupFilters() {
         }
     );
 
-
     const resultFilters =
         document.querySelectorAll(
             "[data-result-filter]"
         );
 
-
     resultFilters.forEach(
-        (button) => {
+        function (button) {
 
             button.addEventListener(
                 "click",
-                () => {
+                function () {
 
                     currentResultFilter =
-                        button.dataset
-                            .resultFilter ||
+                        button.dataset.resultFilter ||
                         "all";
 
-
                     resultFilters.forEach(
-                        (item) => {
+                        function (item) {
 
                             item.classList.remove(
                                 "active"
@@ -2781,11 +2337,9 @@ function setupFilters() {
                         }
                     );
 
-
                     button.classList.add(
                         "active"
                     );
-
 
                     renderResults();
 
@@ -2795,23 +2349,18 @@ function setupFilters() {
         }
     );
 
-
     const selectLeague =
-        getElement(
-            "leagueFilter"
-        );
-
+        getElement("leagueFilter");
 
     if (selectLeague) {
 
         selectLeague.addEventListener(
             "change",
-            () => {
+            function () {
 
                 currentLeagueFilter =
                     selectLeague.value ||
                     "all";
-
 
                 renderPredictions();
 
@@ -2820,23 +2369,18 @@ function setupFilters() {
 
     }
 
-
     const selectResult =
-        getElement(
-            "resultFilter"
-        );
-
+        getElement("resultFilter");
 
     if (selectResult) {
 
         selectResult.addEventListener(
             "change",
-            () => {
+            function () {
 
                 currentResultFilter =
                     selectResult.value ||
                     "all";
-
 
                 renderResults();
 
@@ -2864,35 +2408,20 @@ async function loadBookingCodes(
             .trim()
             .toLowerCase();
 
-
     const containers = [
-
-        getElement(
-            "bettingCodesGrid"
-        ),
-
-        getElement(
-            "bookingCodesContainer"
-        ),
-
-        getElement(
-            "bookingCodesGrid"
-        )
-
+        getElement("bettingCodesGrid"),
+        getElement("bookingCodesContainer"),
+        getElement("bookingCodesGrid")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return [];
-
     }
-
 
     try {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createLoadingState(
@@ -2901,7 +2430,6 @@ async function loadBookingCodes(
 
             }
         );
-
 
         const data =
             await apiRequest(
@@ -2914,26 +2442,20 @@ async function loadBookingCodes(
                 }
             );
 
-
         const codes =
-            Array.isArray(
-                data?.codes
-            )
+            Array.isArray(data?.codes)
                 ? data.codes
                 : Array.isArray(data)
                 ? data
                 : [];
 
-
         allBookingCodes =
             codes;
-
 
         renderBookingCodes(
             codes,
             normalizedCategory
         );
-
 
         return codes;
 
@@ -2944,9 +2466,8 @@ async function loadBookingCodes(
             error
         );
 
-
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -2956,7 +2477,6 @@ async function loadBookingCodes(
             }
         );
 
-
         return [];
 
     }
@@ -2964,48 +2484,29 @@ async function loadBookingCodes(
 }
 
 
-/* ============================================================
-   RENDER BOOKING CODES
-   ============================================================ */
-
 function renderBookingCodes(
     codes,
     category = "regular"
 ) {
 
     const containers = [
-
-        getElement(
-            "bettingCodesGrid"
-        ),
-
-        getElement(
-            "bookingCodesContainer"
-        ),
-
-        getElement(
-            "bookingCodesGrid"
-        )
-
+        getElement("bettingCodesGrid"),
+        getElement("bookingCodesContainer"),
+        getElement("bookingCodesGrid")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return;
-
     }
-
 
     const list =
         Array.isArray(codes)
             ? codes
             : [];
 
-
     const activeCodes =
         list.filter(
-            (code) => {
+            function (code) {
 
                 return (
                     String(
@@ -3019,11 +2520,10 @@ function renderBookingCodes(
             }
         );
 
-
     if (!activeCodes.length) {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -3035,16 +2535,14 @@ function renderBookingCodes(
             }
         );
 
-
         return;
 
     }
 
-
     const html =
         activeCodes
             .map(
-                (code) => {
+                function (code) {
 
                     const bookmaker =
                         escapeHTML(
@@ -3052,13 +2550,11 @@ function renderBookingCodes(
                             "Bookmaker"
                         );
 
-
                     const bookingCode =
                         escapeHTML(
                             code.code ||
                             ""
                         );
-
 
                     const description =
                         escapeHTML(
@@ -3066,24 +2562,20 @@ function renderBookingCodes(
                             ""
                         );
 
-
                     const codeCategory =
                         escapeHTML(
                             String(
                                 code.category ||
                                 category ||
                                 "regular"
-                            )
-                                .toUpperCase()
+                            ).toUpperCase()
                         );
-
 
                     const rawCode =
                         String(
                             code.code ||
                             ""
                         );
-
 
                     return `
                         <article
@@ -3112,13 +2604,11 @@ function renderBookingCodes(
 
                             </div>
 
-
                             <div
                                 class="booking-code-value"
                             >
                                 ${bookingCode}
                             </div>
-
 
                             ${
                                 description
@@ -3131,7 +2621,6 @@ function renderBookingCodes(
                                       `
                                     : ""
                             }
-
 
                             <button
                                 type="button"
@@ -3150,28 +2639,25 @@ function renderBookingCodes(
             )
             .join("");
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 html;
-
 
             container
                 .querySelectorAll(
                     ".booking-code-copy-button"
                 )
                 .forEach(
-                    (button) => {
+                    function (button) {
 
                         button.addEventListener(
                             "click",
-                            () => {
+                            function () {
 
                                 copyBettingCode(
-                                    button.dataset
-                                        .bookingCode,
+                                    button.dataset.bookingCode,
                                     button
                                 );
 
@@ -3187,10 +2673,6 @@ function renderBookingCodes(
 }
 
 
-/* ============================================================
-   REGULAR BOOKING CODES
-   ============================================================ */
-
 async function loadRegularBettingCodes() {
 
     return loadBookingCodes(
@@ -3200,10 +2682,6 @@ async function loadRegularBettingCodes() {
 }
 
 
-/* ============================================================
-   VIP BOOKING CODES
-   ============================================================ */
-
 async function loadVipBettingCodes() {
 
     return loadBookingCodes(
@@ -3212,10 +2690,6 @@ async function loadVipBettingCodes() {
 
 }
 
-
-/* ============================================================
-   COPY BOOKING CODE
-   ============================================================ */
 
 async function copyBettingCode(
     code,
@@ -3228,13 +2702,9 @@ async function copyBettingCode(
             ""
         ).trim();
 
-
     if (!value) {
-
         return;
-
     }
-
 
     try {
 
@@ -3242,11 +2712,9 @@ async function copyBettingCode(
             value
         );
 
-
         const originalText =
             button?.textContent ||
             "Copy Code";
-
 
         if (button) {
 
@@ -3256,9 +2724,8 @@ async function copyBettingCode(
             button.disabled =
                 true;
 
-
             setTimeout(
-                () => {
+                function () {
 
                     button.textContent =
                         originalText;
@@ -3279,9 +2746,6 @@ async function copyBettingCode(
             error
         );
 
-
-        /* Fallback for older browsers */
-
         try {
 
             const textarea =
@@ -3289,10 +2753,8 @@ async function copyBettingCode(
                     "textarea"
                 );
 
-
             textarea.value =
                 value;
-
 
             textarea.style.position =
                 "fixed";
@@ -3300,35 +2762,28 @@ async function copyBettingCode(
             textarea.style.opacity =
                 "0";
 
-
             document.body.appendChild(
                 textarea
             );
 
-
             textarea.select();
-
 
             document.execCommand(
                 "copy"
             );
 
-
             textarea.remove();
-
 
             if (button) {
 
                 const originalText =
                     button.textContent;
 
-
                 button.textContent =
                     "Copied!";
 
-
                 setTimeout(
-                    () => {
+                    function () {
 
                         button.textContent =
                             originalText;
@@ -3354,111 +2809,7 @@ async function copyBettingCode(
 
 
 /* ============================================================
-   CREATE EMPTY STATE
-   ============================================================ */
-
-function createEmptyState(
-    message
-) {
-
-    return `
-        <div class="empty-state">
-            ${escapeHTML(
-                message ||
-                "Nothing available."
-            )}
-        </div>
-    `;
-
-}
-
-
-/* ============================================================
-   CREATE LOADING STATE
-   ============================================================ */
-
-function createLoadingState(
-    message
-) {
-
-    return `
-        <div class="loading-state">
-            ${escapeHTML(
-                message ||
-                "Loading..."
-            )}
-        </div>
-    `;
-
-}
-
-
-/* ============================================================
-   HTML ESCAPE
-   ============================================================ */
-
-function escapeHTML(
-    value
-) {
-
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* ============================================================
-   ATTRIBUTE ESCAPE
-   ============================================================ */
-
-function escapeAttribute(
-    value
-) {
-
-    return escapeHTML(
-        value
-    )
-        .replace(
-            /`/g,
-            "&#096;"
-        );
-
-}
-
-
-/* ============================================================
-   END OF PART 2
-   ============================================================ */
-/* ============================================================
-   FLEX HUB PREDICTIONS
-   APP.JS — PART 3/4
-   VIP SYSTEM + ACCESS + PAYMENTS
-   ============================================================ */
-
-
-/* ============================================================
-   VIP PAGE SETUP
+   VIP PAGE
    ============================================================ */
 
 function setupVipPage() {
@@ -3467,10 +2818,9 @@ function setupVipPage() {
         "VIP page initialized."
     );
 
-
     loadVipStatus()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "VIP status error:",
@@ -3480,10 +2830,9 @@ function setupVipPage() {
             }
         );
 
-
     loadVipPredictions()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "VIP prediction loading error:",
@@ -3493,10 +2842,9 @@ function setupVipPage() {
             }
         );
 
-
     loadVipBettingCodes()
         .catch(
-            (error) => {
+            function (error) {
 
                 console.error(
                     "VIP booking code loading error:",
@@ -3505,7 +2853,6 @@ function setupVipPage() {
 
             }
         );
-
 
     setupVipRedeemForm();
 
@@ -3521,7 +2868,6 @@ async function loadVipStatus() {
     const token =
         getUserToken();
 
-
     if (!token) {
 
         window.vipAccessActive =
@@ -3533,7 +2879,6 @@ async function loadVipStatus() {
 
     }
 
-
     try {
 
         const data =
@@ -3544,19 +2889,17 @@ async function loadVipStatus() {
                 }
             );
 
-
-     const active =
-    Boolean(
-        data?.active ??
-        (
-            data?.success === true &&
-            data?.subscription?.status === "active"
-        )
-    );
+        const active =
+            Boolean(
+                data?.active ??
+                (
+                    data?.success === true &&
+                    data?.subscription?.status === "active"
+                )
+            );
 
         window.vipAccessActive =
             active;
-
 
         window.vipPredictionCount =
             Number(
@@ -3565,11 +2908,9 @@ async function loadVipStatus() {
                 0
             );
 
-
         updateVipInterface(
             data
         );
-
 
         return data;
 
@@ -3580,13 +2921,10 @@ async function loadVipStatus() {
             error
         );
 
-
         window.vipAccessActive =
             false;
 
-
         updateVipInterface();
-
 
         return null;
 
@@ -3594,10 +2932,6 @@ async function loadVipStatus() {
 
 }
 
-
-/* ============================================================
-   VIP INTERFACE
-   ============================================================ */
 
 function updateVipInterface(
     data = null
@@ -3608,48 +2942,40 @@ function updateVipInterface(
             window.vipAccessActive
         );
 
-
-    const lockedElements =
-        document.querySelectorAll(
+    document
+        .querySelectorAll(
             "[data-vip-locked]"
+        )
+        .forEach(
+            function (element) {
+
+                element.style.display =
+                    active
+                        ? ""
+                        : "none";
+
+            }
         );
 
-
-    lockedElements.forEach(
-        (element) => {
-
-            element.style.display =
-                active
-                    ? ""
-                    : "none";
-
-        }
-    );
-
-
-    const accessElements =
-        document.querySelectorAll(
+    document
+        .querySelectorAll(
             "[data-vip-access]"
+        )
+        .forEach(
+            function (element) {
+
+                element.style.display =
+                    active
+                        ? ""
+                        : "none";
+
+            }
         );
-
-
-    accessElements.forEach(
-        (element) => {
-
-            element.style.display =
-                active
-                    ? ""
-                    : "none";
-
-        }
-    );
-
 
     const lockMessage =
         getElement(
             "vipLockedMessage"
         );
-
 
     if (lockMessage) {
 
@@ -3660,46 +2986,32 @@ function updateVipInterface(
 
     }
 
+    [
+        getElement("vipStatus"),
+        getElement("vipAccessStatus"),
+        getElement("vipMembershipStatus")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const statusElements = [
+                element.textContent =
+                    active
+                        ? "VIP ACCESS ACTIVE"
+                        : "VIP ACCESS LOCKED";
 
-        getElement(
-            "vipStatus"
-        ),
+                element.classList.toggle(
+                    "active",
+                    active
+                );
 
-        getElement(
-            "vipAccessStatus"
-        ),
+                element.classList.toggle(
+                    "locked",
+                    !active
+                );
 
-        getElement(
-            "vipMembershipStatus"
-        )
-
-    ].filter(Boolean);
-
-
-    statusElements.forEach(
-        (element) => {
-
-            element.textContent =
-                active
-                    ? "VIP ACCESS ACTIVE"
-                    : "VIP ACCESS LOCKED";
-
-
-            element.classList.toggle(
-                "active",
-                active
-            );
-
-            element.classList.toggle(
-                "locked",
-                !active
-            );
-
-        }
-    );
-
+            }
+        );
 
     const expiry =
         data?.expiresAt ||
@@ -3707,56 +3019,35 @@ function updateVipInterface(
         data?.subscription?.expires_at ||
         "";
 
+    [
+        getElement("vipExpiry"),
+        getElement("vipExpiresAt")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const expiryElements = [
+                element.textContent =
+                    expiry
+                        ? formatDate(expiry)
+                        : active
+                        ? "Active"
+                        : "—";
 
-        getElement(
-            "vipExpiry"
-        ),
-
-        getElement(
-            "vipExpiresAt"
-        )
-
-    ].filter(Boolean);
-
-
-    expiryElements.forEach(
-        (element) => {
-
-            element.textContent =
-                expiry
-                    ? formatDate(
-                        expiry
-                    )
-                    : active
-                    ? "Active"
-                    : "—";
-
-        }
-    );
+            }
+        );
 
 }
 
 
-/* ============================================================
-   VIP REDEEM FORM
-   ============================================================ */
-
 function setupVipRedeemForm() {
 
     const form =
-        getElement(
-            "vipRedeemForm"
-        );
-
+        getElement("vipRedeemForm");
 
     if (!form) {
-
         return;
-
     }
-
 
     form.addEventListener(
         "submit",
@@ -3766,48 +3057,26 @@ function setupVipRedeemForm() {
 }
 
 
-/* ============================================================
-   REDEEM VIP CODE
-   ============================================================ */
-
-async function redeemVipCode(
-    event
-) {
+async function redeemVipCode(event) {
 
     if (event) {
-
         event.preventDefault();
-
     }
 
-
     const input =
-        getElement(
-            "vipCode"
-        ) ||
-        getElement(
-            "vipAccessCode"
-        ) ||
-        getElement(
-            "redeemVipCode"
-        );
-
+        getElement("vipCode") ||
+        getElement("vipAccessCode") ||
+        getElement("redeemVipCode");
 
     const message =
-        getElement(
-            "vipRedeemMessage"
-        ) ||
-        getElement(
-            "vipMessage"
-        );
-
+        getElement("vipRedeemMessage") ||
+        getElement("vipMessage");
 
     const code =
         String(
             input?.value ||
             ""
         ).trim();
-
 
     if (!code) {
 
@@ -3823,10 +3092,8 @@ async function redeemVipCode(
 
     }
 
-
     const form =
         event?.currentTarget;
-
 
     setFormLoading(
         form,
@@ -3834,13 +3101,11 @@ async function redeemVipCode(
         "Activating..."
     );
 
-
     showMessage(
         message,
         "Activating your VIP access...",
         "info"
     );
-
 
     try {
 
@@ -3855,17 +3120,14 @@ async function redeemVipCode(
                 }
             );
 
-
         window.vipAccessActive =
             true;
-
 
         window.vipPredictionCount =
             Number(
                 data?.predictionCount ||
                 0
             );
-
 
         showMessage(
             message,
@@ -3874,21 +3136,13 @@ async function redeemVipCode(
             "success"
         );
 
-
         if (input) {
-
-            input.value =
-                "";
-
+            input.value = "";
         }
 
-
         await loadVipStatus();
-
         await loadVipPredictions();
-
         await loadVipBettingCodes();
-
 
     } catch (error) {
 
@@ -3897,14 +3151,12 @@ async function redeemVipCode(
             error
         );
 
-
         showMessage(
             message,
             error.message ||
                 "Unable to activate VIP access.",
             "error"
         );
-
 
     } finally {
 
@@ -3925,33 +3177,19 @@ async function redeemVipCode(
 async function loadVipPredictions() {
 
     const containers = [
-
-        getElement(
-            "vipPredictionsGrid"
-        ),
-
-        getElement(
-            "vipPredictionGrid"
-        ),
-
-        getElement(
-            "vipPredictionsContainer"
-        )
-
+        getElement("vipPredictionsGrid"),
+        getElement("vipPredictionGrid"),
+        getElement("vipPredictionsContainer")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return [];
-
     }
-
 
     if (!window.vipAccessActive) {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -3961,16 +3199,14 @@ async function loadVipPredictions() {
             }
         );
 
-
         return [];
 
     }
 
-
     try {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createLoadingState(
@@ -3980,7 +3216,6 @@ async function loadVipPredictions() {
             }
         );
 
-
         const data =
             await apiRequest(
                 "/vip/predictions",
@@ -3988,7 +3223,6 @@ async function loadVipPredictions() {
                     method: "GET"
                 }
             );
-
 
         const predictions =
             Array.isArray(data)
@@ -3999,11 +3233,9 @@ async function loadVipPredictions() {
                     []
                 );
 
-
         renderVipPredictions(
             predictions
         );
-
 
         return predictions;
 
@@ -4014,9 +3246,8 @@ async function loadVipPredictions() {
             error
         );
 
-
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -4029,7 +3260,6 @@ async function loadVipPredictions() {
             }
         );
 
-
         return [];
 
     }
@@ -4037,48 +3267,29 @@ async function loadVipPredictions() {
 }
 
 
-/* ============================================================
-   RENDER VIP PREDICTIONS
-   ============================================================ */
-
 function renderVipPredictions(
     predictions
 ) {
 
     const containers = [
-
-        getElement(
-            "vipPredictionsGrid"
-        ),
-
-        getElement(
-            "vipPredictionGrid"
-        ),
-
-        getElement(
-            "vipPredictionsContainer"
-        )
-
+        getElement("vipPredictionsGrid"),
+        getElement("vipPredictionGrid"),
+        getElement("vipPredictionsContainer")
     ].filter(Boolean);
 
-
     if (!containers.length) {
-
         return;
-
     }
-
 
     const list =
         Array.isArray(predictions)
             ? predictions
             : [];
 
-
     if (!list.length) {
 
         containers.forEach(
-            (container) => {
+            function (container) {
 
                 container.innerHTML =
                     createEmptyState(
@@ -4088,22 +3299,17 @@ function renderVipPredictions(
             }
         );
 
-
         return;
 
     }
 
-
     const html =
         list
-            .map(
-                createVipPredictionCard
-            )
+            .map(createVipPredictionCard)
             .join("");
 
-
     containers.forEach(
-        (container) => {
+        function (container) {
 
             container.innerHTML =
                 html;
@@ -4111,19 +3317,12 @@ function renderVipPredictions(
         }
     );
 
-
     setupTeamBadgeObserver();
 
 }
 
 
-/* ============================================================
-   VIP PREDICTION CARD
-   ============================================================ */
-
-function createVipPredictionCard(
-    item
-) {
+function createVipPredictionCard(item) {
 
     const league =
         escapeHTML(
@@ -4131,13 +3330,11 @@ function createVipPredictionCard(
             "VIP Football"
         );
 
-
     const homeTeam =
         escapeHTML(
             item.home_team ||
             "Home Team"
         );
-
 
     const awayTeam =
         escapeHTML(
@@ -4145,13 +3342,11 @@ function createVipPredictionCard(
             "Away Team"
         );
 
-
     const matchDate =
         escapeHTML(
             item.match_date ||
             ""
         );
-
 
     const matchTime =
         escapeHTML(
@@ -4159,20 +3354,17 @@ function createVipPredictionCard(
             ""
         );
 
-
     const prediction =
         escapeHTML(
             item.prediction ||
             "Prediction pending"
         );
 
-
     const analysis =
         escapeHTML(
             item.analysis ||
             "Premium analysis available."
         );
-
 
     const featured =
         item.featured
@@ -4182,7 +3374,6 @@ function createVipPredictionCard(
                 </span>
               `
             : "";
-
 
     return `
         <article
@@ -4205,7 +3396,6 @@ function createVipPredictionCard(
 
                 </div>
 
-
                 <span
                     class="prediction-category vip"
                 >
@@ -4213,7 +3403,6 @@ function createVipPredictionCard(
                 </span>
 
             </div>
-
 
             <div
                 class="prediction-match"
@@ -4234,7 +3423,6 @@ function createVipPredictionCard(
 
                 </div>
 
-
                 <div
                     class="prediction-vs"
                 >
@@ -4249,7 +3437,6 @@ function createVipPredictionCard(
                     </small>
 
                 </div>
-
 
                 <div
                     class="prediction-team"
@@ -4268,7 +3455,6 @@ function createVipPredictionCard(
 
             </div>
 
-
             <div
                 class="prediction-selection"
             >
@@ -4282,7 +3468,6 @@ function createVipPredictionCard(
                 </strong>
 
             </div>
-
 
             <div
                 class="prediction-analysis"
@@ -4313,13 +3498,9 @@ async function refreshRegularAccessStatus() {
     const token =
         getUserToken();
 
-
     if (!token) {
-
         return null;
-
     }
-
 
     try {
 
@@ -4331,11 +3512,9 @@ async function refreshRegularAccessStatus() {
                 }
             );
 
-
         updateRegularAccessInterface(
             data
         );
-
 
         return data;
 
@@ -4346,7 +3525,6 @@ async function refreshRegularAccessStatus() {
             error.message
         );
 
-
         return null;
 
     }
@@ -4354,20 +3532,11 @@ async function refreshRegularAccessStatus() {
 }
 
 
-/* ============================================================
-   REGULAR ACCESS UI
-   ============================================================ */
-
-function updateRegularAccessInterface(
-    data
-) {
+function updateRegularAccessInterface(data) {
 
     if (!data) {
-
         return;
-
     }
-
 
     const active =
         Boolean(
@@ -4376,68 +3545,47 @@ function updateRegularAccessInterface(
             data.success
         );
 
-
     const expiry =
         data.expiresAt ||
         data.expires_at ||
         "";
 
+    [
+        getElement("regularAccessStatus"),
+        getElement("accountAccessStatus")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
-    const statusElements = [
+                element.textContent =
+                    active
+                        ? "ACTIVE"
+                        : "STANDARD ACCESS";
 
-        getElement(
-            "regularAccessStatus"
-        ),
+                element.classList.toggle(
+                    "active",
+                    active
+                );
 
-        getElement(
-            "accountAccessStatus"
-        )
+            }
+        );
 
-    ].filter(Boolean);
+    [
+        getElement("regularAccessExpiry"),
+        getElement("accountAccessExpiry")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (element) {
 
+                element.textContent =
+                    expiry
+                        ? formatDate(expiry)
+                        : "No expiry";
 
-    statusElements.forEach(
-        (element) => {
-
-            element.textContent =
-                active
-                    ? "ACTIVE"
-                    : "STANDARD ACCESS";
-
-            element.classList.toggle(
-                "active",
-                active
-            );
-
-        }
-    );
-
-
-    const expiryElements = [
-
-        getElement(
-            "regularAccessExpiry"
-        ),
-
-        getElement(
-            "accountAccessExpiry"
-        )
-
-    ].filter(Boolean);
-
-
-    expiryElements.forEach(
-        (element) => {
-
-            element.textContent =
-                expiry
-                    ? formatDate(
-                        expiry
-                    )
-                    : "No expiry";
-
-        }
-    );
+            }
+        );
 
 }
 
@@ -4453,9 +3601,8 @@ function setupPaymentButtons() {
             "[data-payment]"
         );
 
-
     buttons.forEach(
-        (button) => {
+        function (button) {
 
             button.addEventListener(
                 "click",
@@ -4465,75 +3612,48 @@ function setupPaymentButtons() {
         }
     );
 
+    [
+        getElement("vipPaymentButton"),
+        getElement("payVipButton"),
+        getElement("upgradeVipButton")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (button) {
 
-    const explicitButtons = [
+                if (
+                    button.dataset.paymentBound
+                ) {
+                    return;
+                }
 
-        getElement(
-            "vipPaymentButton"
-        ),
+                button.dataset.paymentBound =
+                    "true";
 
-        getElement(
-            "payVipButton"
-        ),
-
-        getElement(
-            "upgradeVipButton"
-        )
-
-    ].filter(Boolean);
-
-
-    explicitButtons.forEach(
-        (button) => {
-
-            if (
-                button.dataset.paymentBound
-            ) {
-
-                return;
+                button.addEventListener(
+                    "click",
+                    handlePaymentButton
+                );
 
             }
-
-
-            button.dataset.paymentBound =
-                "true";
-
-
-            button.addEventListener(
-                "click",
-                handlePaymentButton
-            );
-
-        }
-    );
+        );
 
 }
 
 
-/* ============================================================
-   PAYMENT HANDLER
-   ============================================================ */
-
-function handlePaymentButton(
-    event
-) {
+function handlePaymentButton(event) {
 
     if (event) {
-
         event.preventDefault();
-
     }
-
 
     const button =
         event?.currentTarget;
-
 
     const paymentUrl =
         button?.dataset?.paymentUrl ||
         button?.dataset?.url ||
         "";
-
 
     if (paymentUrl) {
 
@@ -4544,15 +3664,9 @@ function handlePaymentButton(
 
     }
 
-
     const message =
-        getElement(
-            "paymentMessage"
-        ) ||
-        getElement(
-            "vipMessage"
-        );
-
+        getElement("paymentMessage") ||
+        getElement("vipMessage");
 
     if (message) {
 
@@ -4566,17 +3680,12 @@ function handlePaymentButton(
 
     }
 
-
     console.log(
         "Payment button clicked."
     );
 
 }
 
-
-/* ============================================================
-   VIP NAVIGATION
-   ============================================================ */
 
 function openVipPage() {
 
@@ -4587,31 +3696,16 @@ function openVipPage() {
 
 
 /* ============================================================
-   END OF PART 3
-   ============================================================ */
-/* ============================================================
-   FLEX HUB PREDICTIONS
-   APP.JS — PART 4/4
-   NAVIGATION + NOTIFICATIONS + PWA + HELPERS
-   ============================================================ */
-
-
-/* ============================================================
    NAVIGATION
    ============================================================ */
 
 function setupNavigation() {
 
     const menuButton =
-        getElement(
-            "menuButton"
-        );
+        getElement("menuButton");
 
     const mainNav =
-        getElement(
-            "mainNav"
-        );
-
+        getElement("mainNav");
 
     if (
         menuButton &&
@@ -4620,19 +3714,25 @@ function setupNavigation() {
 
         menuButton.addEventListener(
             "click",
-            () => {
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
 
                 const isOpen =
                     mainNav.classList.toggle(
                         "active"
                     );
 
+                mainNav.classList.toggle(
+                    "open",
+                    isOpen
+                );
 
                 menuButton.classList.toggle(
                     "active",
                     isOpen
                 );
-
 
                 menuButton.setAttribute(
                     "aria-expanded",
@@ -4644,19 +3744,17 @@ function setupNavigation() {
 
     }
 
-
     const navLinks =
         document.querySelectorAll(
             "#mainNav a, .main-nav a, nav a"
         );
 
-
     navLinks.forEach(
-        (link) => {
+        function (link) {
 
             link.addEventListener(
                 "click",
-                () => {
+                function () {
 
                     closeMobileMenu();
 
@@ -4667,118 +3765,112 @@ function setupNavigation() {
     );
 
 }
+
+
 function closeMobileMenu() {
-    const menuButton = getElement("menuButton");
-    const mainNav = getElement("mainNav");
+
+    const menuButton =
+        getElement("menuButton");
+
+    const mainNav =
+        getElement("mainNav");
 
     if (mainNav) {
-        mainNav.classList.remove("active");
-        mainNav.classList.remove("open");
+
+        mainNav.classList.remove(
+            "active"
+        );
+
+        mainNav.classList.remove(
+            "open"
+        );
+
     }
 
     if (menuButton) {
-        menuButton.classList.remove("active");
-        menuButton.setAttribute("aria-expanded", "false");
+
+        menuButton.classList.remove(
+            "active"
+        );
+
+        menuButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        menuButton.setAttribute(
+            "aria-label",
+            "Open navigation"
+        );
+
     }
 
-    document.body.classList.remove("menu-open");
+    document.body.classList.remove(
+        "menu-open"
+    );
+
 }
+
 
 /* ============================================================
    MOBILE MENU
    ============================================================ */
 
 function setupMobileMenu() {
-    const menuButton = document.getElementById("menuButton");
-    const mainNav = document.getElementById("mainNav");
 
-    if (!menuButton || !mainNav) {
-        console.warn("Mobile menu elements not found.");
+    const menuButton =
+        getElement("menuButton");
+
+    const mainNav =
+        getElement("mainNav");
+
+    if (
+        !menuButton ||
+        !mainNav
+    ) {
+
         return;
+
     }
 
-    // Open / close menu
-    menuButton.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
+    /* Navigation is already handled by setupNavigation().
+       This section only adds outside-click and Escape support. */
 
-        const isOpen = mainNav.classList.toggle("open");
+    document.addEventListener(
+        "click",
+        function (event) {
 
-        menuButton.setAttribute(
-            "aria-expanded",
-            String(isOpen)
-        );
+            if (
+                mainNav.classList.contains("open") &&
+                !mainNav.contains(event.target) &&
+                !menuButton.contains(event.target)
+            ) {
 
-        menuButton.setAttribute(
-            "aria-label",
-            isOpen
-                ? "Close navigation"
-                : "Open navigation"
-        );
-    });
+                closeMobileMenu();
 
-    // Close menu when a navigation link is selected
-    const navLinks = mainNav.querySelectorAll("a");
+            }
 
-    navLinks.forEach(function (link) {
-        link.addEventListener("click", function () {
-            mainNav.classList.remove("open");
-
-            menuButton.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-
-            menuButton.setAttribute(
-                "aria-label",
-                "Open navigation"
-            );
-        });
-    });
-
-    // Close menu when clicking outside it
-    document.addEventListener("click", function (event) {
-
-        if (
-            mainNav.classList.contains("open") &&
-            !mainNav.contains(event.target) &&
-            !menuButton.contains(event.target)
-        ) {
-            mainNav.classList.remove("open");
-
-            menuButton.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-
-            menuButton.setAttribute(
-                "aria-label",
-                "Open navigation"
-            );
         }
-    });
+    );
 
-    // Close menu with Escape key
-    document.addEventListener("keydown", function (event) {
+    document.addEventListener(
+        "keydown",
+        function (event) {
 
-        if (
-            event.key === "Escape" &&
-            mainNav.classList.contains("open")
-        ) {
-            mainNav.classList.remove("open");
+            if (
+                event.key === "Escape" &&
+                mainNav.classList.contains("open")
+            ) {
 
-            menuButton.setAttribute(
-                "aria-expanded",
-                "false"
-            );
+                closeMobileMenu();
 
-            menuButton.setAttribute(
-                "aria-label",
-                "Open navigation"
-            );
+            }
+
         }
-    });
+    );
+
 }
+
 
 /* ============================================================
    FOOTER
@@ -4791,31 +3883,23 @@ function setupFooter() {
 }
 
 
-/* ============================================================
-   CURRENT YEAR
-   ============================================================ */
-
 function updateCurrentYear() {
 
     const year =
-        new Date()
-            .getFullYear();
+        new Date().getFullYear();
 
-
-    const elements =
-        document.querySelectorAll(
+    document
+        .querySelectorAll(
             "#currentYear, .current-year, [data-current-year]"
+        )
+        .forEach(
+            function (element) {
+
+                element.textContent =
+                    year;
+
+            }
         );
-
-
-    elements.forEach(
-        (element) => {
-
-            element.textContent =
-                year;
-
-        }
-    );
 
 }
 
@@ -4831,35 +3915,28 @@ function setupWhatsApp() {
             "[data-whatsapp]"
         );
 
-
     buttons.forEach(
-        (button) => {
+        function (button) {
 
             button.addEventListener(
                 "click",
-                (event) => {
+                function (event) {
 
                     event.preventDefault();
 
-
                     const number =
-                        button.dataset
-                            .whatsappNumber ||
+                        button.dataset.whatsappNumber ||
                         "";
 
-
                     const message =
-                        button.dataset
-                            .whatsappMessage ||
+                        button.dataset.whatsappMessage ||
                         "Hello FLEX HUB PREDICTIONS.";
-
 
                     const cleanNumber =
                         number.replace(
                             /[^0-9]/g,
                             ""
                         );
-
 
                     if (!cleanNumber) {
 
@@ -4871,12 +3948,10 @@ function setupWhatsApp() {
 
                     }
 
-
                     const url =
                         `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
                             message
                         )}`;
-
 
                     window.open(
                         url,
@@ -4890,88 +3965,60 @@ function setupWhatsApp() {
         }
     );
 
+    [
+        getElement("whatsappButton"),
+        getElement("contactWhatsApp"),
+        getElement("whatsappContactButton")
+    ]
+        .filter(Boolean)
+        .forEach(
+            function (button) {
 
-    const explicitButtons = [
+                if (
+                    button.dataset.whatsappBound
+                ) {
+                    return;
+                }
 
-        getElement(
-            "whatsappButton"
-        ),
+                button.dataset.whatsappBound =
+                    "true";
 
-        getElement(
-            "contactWhatsApp"
-        ),
+                button.addEventListener(
+                    "click",
+                    function () {
 
-        getElement(
-            "whatsappContactButton"
-        )
+                        const number =
+                            button.dataset.whatsappNumber ||
+                            button.getAttribute("data-number") ||
+                            "";
 
-    ].filter(Boolean);
+                        const message =
+                            button.dataset.whatsappMessage ||
+                            "Hello FLEX HUB PREDICTIONS.";
 
+                        if (!number) {
+                            return;
+                        }
 
-    explicitButtons.forEach(
-        (button) => {
+                        const cleanNumber =
+                            number.replace(
+                                /[^0-9]/g,
+                                ""
+                            );
 
-            if (
-                button.dataset
-                    .whatsappBound
-            ) {
-
-                return;
-
-            }
-
-
-            button.dataset
-                .whatsappBound =
-                "true";
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const number =
-                        button.dataset
-                            .whatsappNumber ||
-                        button.getAttribute(
-                            "data-number"
-                        ) ||
-                        "";
-
-
-                    const message =
-                        button.dataset
-                            .whatsappMessage ||
-                        "Hello FLEX HUB PREDICTIONS.";
-
-
-                    if (!number) {
-
-                        return;
-
-                    }
-
-
-                    const cleanNumber =
-                        number.replace(
-                            /[^0-9]/g,
-                            ""
+                        window.open(
+                            `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+                                message
+                            )}`,
+                            "_blank",
+                            "noopener,noreferrer"
                         );
 
+                    }
+                );
 
-                    window.open(
-                        `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
-                            message
-                        )}`,
-                        "_blank",
-                        "noopener,noreferrer"
-                    );
-
-                }
-            );
-
-        }
-    );
+            }
+        );
 
 }
 
@@ -4987,33 +4034,24 @@ function setupForgotPassword() {
             "forgotPasswordButton"
         );
 
-
     if (!button) {
-
         return;
-
     }
-
 
     button.addEventListener(
         "click",
-        async (event) => {
+        async function (event) {
 
             event.preventDefault();
-
 
             const identifier =
                 window.prompt(
                     "Enter your email address:"
                 );
 
-
             if (!identifier) {
-
                 return;
-
             }
-
 
             try {
 
@@ -5032,12 +4070,10 @@ function setupForgotPassword() {
                         }
                     );
 
-
                 alert(
                     data?.message ||
                     "If the account exists, password reset instructions have been sent."
                 );
-
 
             } catch (error) {
 
@@ -5045,7 +4081,6 @@ function setupForgotPassword() {
                     "Forgot password error:",
                     error
                 );
-
 
                 alert(
                     error.message ||
@@ -5060,16 +4095,8 @@ function setupForgotPassword() {
 }
 
 
-```js
 /* ============================================================
-   FLEX HUB — USER NOTIFICATION CENTER
-   ============================================================ */
-
-let userNotifications = [];
-
-
-/* ============================================================
-   SETUP NOTIFICATION CENTER
+   NOTIFICATION CENTER
    ============================================================ */
 
 function setupNotificationCenter() {
@@ -5085,16 +4112,18 @@ function setupNotificationCenter() {
             "markAllNotificationsButton"
         );
 
-    if (!button || !panel) {
+    if (
+        !button ||
+        !panel
+    ) {
+
         return;
+
     }
-
-
-    /* OPEN / CLOSE PANEL */
 
     button.addEventListener(
         "click",
-        (event) => {
+        function (event) {
 
             event.preventDefault();
             event.stopPropagation();
@@ -5115,14 +4144,11 @@ function setupNotificationCenter() {
         }
     );
 
-
-    /* MARK ALL AS READ */
-
     if (markAllButton) {
 
         markAllButton.addEventListener(
             "click",
-            async (event) => {
+            async function (event) {
 
                 event.preventDefault();
                 event.stopPropagation();
@@ -5134,12 +4160,9 @@ function setupNotificationCenter() {
 
     }
 
-
-    /* CLOSE WHEN CLICKING OUTSIDE */
-
     document.addEventListener(
         "click",
-        (event) => {
+        function (event) {
 
             const center =
                 getElement(
@@ -5163,27 +4186,21 @@ function setupNotificationCenter() {
 }
 
 
-/* ============================================================
-   OPEN NOTIFICATION PANEL
-   ============================================================ */
-
 function openNotificationPanel() {
 
     const panel =
-        getElement(
-            "notificationPanel"
-        );
+        getElement("notificationPanel");
 
     const button =
-        getElement(
-            "notificationBell"
-        );
+        getElement("notificationBell");
 
     if (!panel) {
         return;
     }
 
-    panel.removeAttribute("hidden");
+    panel.removeAttribute(
+        "hidden"
+    );
 
     if (button) {
 
@@ -5197,21 +4214,13 @@ function openNotificationPanel() {
 }
 
 
-/* ============================================================
-   CLOSE NOTIFICATION PANEL
-   ============================================================ */
-
 function closeNotificationPanel() {
 
     const panel =
-        getElement(
-            "notificationPanel"
-        );
+        getElement("notificationPanel");
 
     const button =
-        getElement(
-            "notificationBell"
-        );
+        getElement("notificationBell");
 
     if (!panel) {
         return;
@@ -5249,13 +4258,10 @@ async function loadNotifications() {
         return [];
     }
 
-
-    container.innerHTML = `
-        <div class="notification-loading">
-            Loading notifications...
-        </div>
-    `;
-
+    container.innerHTML =
+        '<div class="notification-loading">' +
+            'Loading notifications...' +
+        '</div>';
 
     try {
 
@@ -5267,7 +4273,6 @@ async function loadNotifications() {
                 }
             );
 
-
         userNotifications =
             Array.isArray(data)
                 ? data
@@ -5277,11 +4282,9 @@ async function loadNotifications() {
                     []
                 );
 
-
         renderNotifications(
             userNotifications
         );
-
 
         return userNotifications;
 
@@ -5292,21 +4295,15 @@ async function loadNotifications() {
             error
         );
 
-
         userNotifications = [];
 
+        container.innerHTML =
+            '<div class="notification-empty">' +
+                'No notifications available.' +
+            '</div>';
 
-        container.innerHTML = `
-            <div class="notification-empty">
-                No notifications available.
-            </div>
-        `;
-
-
-        updateNotificationBadge(
-            0
-        );
-
+        updateNotificationBadge(0);
+        updateNotificationCount(0);
 
         return [];
 
@@ -5314,10 +4311,19 @@ async function loadNotifications() {
 
 }
 
-function renderNotifications(notifications) {
+
+/* ============================================================
+   RENDER NOTIFICATIONS
+   ============================================================ */
+
+function renderNotifications(
+    notifications
+) {
 
     const container =
-        getElement("notificationList");
+        getElement(
+            "notificationList"
+        );
 
     if (!container) {
         return;
@@ -5339,85 +4345,100 @@ function renderNotifications(notifications) {
         updateNotificationCount(0);
 
         return;
+
     }
 
     let unreadCount = 0;
     let html = "";
 
-    list.forEach(function(item) {
+    list.forEach(
+        function (item) {
 
-        const id =
-            Number(item.id || 0);
+            const id =
+                Number(
+                    item.id || 0
+                );
 
-        const title =
-            escapeHTML(
-                item.title ||
-                "Notification"
-            );
+            const title =
+                escapeHTML(
+                    item.title ||
+                    "Notification"
+                );
 
-        const message =
-            escapeHTML(
-                item.message ||
-                ""
-            );
+            const message =
+                escapeHTML(
+                    item.message ||
+                    ""
+                );
 
-        const date =
-            item.created_at ||
-            item.createdAt ||
-            "";
+            const date =
+                item.created_at ||
+                item.createdAt ||
+                "";
 
-        const isRead =
-            Boolean(
-                item.read_at ||
-                item.readAt ||
-                item.is_read ||
-                item.isRead
-            );
+            const isRead =
+                Boolean(
+                    item.read_at ||
+                    item.readAt ||
+                    item.is_read ||
+                    item.isRead
+                );
 
-        if (!isRead) {
-            unreadCount++;
-        }
+            if (!isRead) {
+                unreadCount++;
+            }
 
-        html +=
-            '<article ' +
-                'class="user-notification ' +
-                (isRead ? "read" : "unread") +
-                '" ' +
-                'data-notification-id="' +
-                id +
-                '" ' +
-                'data-read="' +
-                (isRead ? "true" : "false") +
-                '">' +
-
-                '<div class="user-notification-title">' +
-
-                    '<strong>' +
-                        title +
-                    '</strong>' +
-
+            html +=
+                '<article ' +
+                    'class="user-notification ' +
                     (
-                        date
-                            ? (
-                                '<span class="user-notification-time">' +
-                                    escapeHTML(
-                                        formatDate(date)
-                                    ) +
-                                '</span>'
-                            )
-                            : ""
+                        isRead
+                            ? "read"
+                            : "unread"
                     ) +
+                    '" ' +
+                    'data-notification-id="' +
+                    id +
+                    '" ' +
+                    'data-read="' +
+                    (
+                        isRead
+                            ? "true"
+                            : "false"
+                    ) +
+                    '">' +
 
-                '</div>' +
+                    '<div class="user-notification-title">' +
 
-                '<div class="user-notification-message">' +
-                    message +
-                '</div>' +
+                        '<strong>' +
+                            title +
+                        '</strong>' +
 
-            '</article>';
-    });
+                        (
+                            date
+                                ? (
+                                    '<span class="user-notification-time">' +
+                                        escapeHTML(
+                                            formatDate(date)
+                                        ) +
+                                    '</span>'
+                                )
+                                : ""
+                        ) +
 
-    container.innerHTML = html;
+                    '</div>' +
+
+                    '<div class="user-notification-message">' +
+                        message +
+                    '</div>' +
+
+                '</article>';
+
+        }
+    );
+
+    container.innerHTML =
+        html;
 
     updateNotificationBadge(
         unreadCount
@@ -5433,11 +4454,11 @@ function renderNotifications(notifications) {
         );
 
     notificationItems.forEach(
-        function(item) {
+        function (item) {
 
             item.addEventListener(
                 "click",
-                async function() {
+                async function () {
 
                     const notificationId =
                         Number(
@@ -5445,7 +4466,8 @@ function renderNotifications(notifications) {
                         );
 
                     const alreadyRead =
-                        item.dataset.read === "true";
+                        item.dataset.read ===
+                        "true";
 
                     if (
                         !notificationId ||
@@ -5454,47 +4476,10 @@ function renderNotifications(notifications) {
                         return;
                     }
 
-                    try {
-
-                        await apiRequest(
-                            "/notifications/" +
-                            notificationId +
-                            "/read",
-                            {
-                                method: "POST"
-                            }
-                        );
-
-                        const notification =
-                            userNotifications.find(
-                                function(notificationItem) {
-
-                                    return Number(
-                                        notificationItem.id
-                                    ) === notificationId;
-
-                                }
-                            );
-
-                        if (notification) {
-
-                            notification.read_at =
-                                new Date().toISOString();
-
-                        }
-
-                        renderNotifications(
-                            userNotifications
-                        );
-
-                    } catch (error) {
-
-                        console.error(
-                            "Mark notification as read error:",
-                            error
-                        );
-
-                    }
+                    await handleNotificationClick(
+                        notificationId,
+                        alreadyRead
+                    );
 
                 }
             );
@@ -5504,8 +4489,9 @@ function renderNotifications(notifications) {
 
 }
 
+
 /* ============================================================
-   UPDATE NOTIFICATION BADGE
+   NOTIFICATION BADGE
    ============================================================ */
 
 function updateNotificationBadge(
@@ -5521,13 +4507,11 @@ function updateNotificationBadge(
         return;
     }
 
-
     const safeCount =
         Math.max(
             0,
             Number(count) || 0
         );
-
 
     if (safeCount > 0) {
 
@@ -5555,7 +4539,7 @@ function updateNotificationBadge(
 
 
 /* ============================================================
-   UPDATE PANEL COUNT
+   NOTIFICATION COUNT
    ============================================================ */
 
 function updateNotificationCount(
@@ -5571,13 +4555,11 @@ function updateNotificationCount(
         return;
     }
 
-
     const safeCount =
         Math.max(
             0,
             Number(count) || 0
         );
-
 
     countElement.textContent =
         safeCount > 99
@@ -5590,7 +4572,7 @@ function updateNotificationCount(
 
 
 /* ============================================================
-   MARK ONE NOTIFICATION AS READ
+   MARK ONE NOTIFICATION READ
    ============================================================ */
 
 async function handleNotificationClick(
@@ -5602,11 +4584,8 @@ async function handleNotificationClick(
         !notificationId ||
         alreadyRead
     ) {
-
         return;
-
     }
-
 
     try {
 
@@ -5617,18 +4596,19 @@ async function handleNotificationClick(
             }
         );
 
-
         const notification =
             userNotifications.find(
-                (item) =>
-                    Number(
+                function (item) {
+
+                    return Number(
                         item.id
                     ) ===
                     Number(
                         notificationId
-                    )
-            );
+                    );
 
+                }
+            );
 
         if (notification) {
 
@@ -5636,7 +4616,6 @@ async function handleNotificationClick(
                 new Date().toISOString();
 
         }
-
 
         renderNotifications(
             userNotifications
@@ -5655,43 +4634,38 @@ async function handleNotificationClick(
 
 
 /* ============================================================
-   MARK ALL NOTIFICATIONS AS READ
+   MARK ALL NOTIFICATIONS READ
    ============================================================ */
 
 async function markAllNotificationsRead() {
 
     const unread =
         userNotifications.filter(
-            (item) =>
-                !(
+            function (item) {
+
+                return !(
                     item.read_at ||
                     item.readAt ||
                     item.is_read ||
                     item.isRead
-                )
-        );
+                );
 
+            }
+        );
 
     if (!unread.length) {
 
-        updateNotificationBadge(
-            0
-        );
-
-        updateNotificationCount(
-            0
-        );
+        updateNotificationBadge(0);
+        updateNotificationCount(0);
 
         return;
 
     }
 
-
     const button =
         getElement(
             "markAllNotificationsButton"
         );
-
 
     if (button) {
 
@@ -5706,12 +4680,11 @@ async function markAllNotificationsRead() {
 
     }
 
-
     try {
 
         await Promise.all(
             unread.map(
-                async (item) => {
+                async function (item) {
 
                     const id =
                         Number(
@@ -5747,7 +4720,6 @@ async function markAllNotificationsRead() {
             )
         );
 
-
         renderNotifications(
             userNotifications
         );
@@ -5768,7 +4740,6 @@ async function markAllNotificationsRead() {
     }
 
 }
-```
 
 
 /* ============================================================
@@ -5779,23 +4750,20 @@ function setupPWAInstall() {
 
     window.addEventListener(
         "beforeinstallprompt",
-        (event) => {
+        function (event) {
 
             event.preventDefault();
 
-
             deferredInstallPrompt =
                 event;
-
 
             const installButtons =
                 document.querySelectorAll(
                     "#installAppButton, [data-install-app]"
                 );
 
-
             installButtons.forEach(
-                (button) => {
+                function (button) {
 
                     button.style.display =
                         "";
@@ -5814,23 +4782,20 @@ function setupPWAInstall() {
         }
     );
 
-
     window.addEventListener(
         "appinstalled",
-        () => {
+        function () {
 
             deferredInstallPrompt =
                 null;
-
 
             const installButtons =
                 document.querySelectorAll(
                     "#installAppButton, [data-install-app]"
                 );
 
-
             installButtons.forEach(
-                (button) => {
+                function (button) {
 
                     button.style.display =
                         "none";
@@ -5844,28 +4809,17 @@ function setupPWAInstall() {
 }
 
 
-/* ============================================================
-   INSTALL PWA
-   ============================================================ */
-
 async function installPWA() {
 
-    if (
-        !deferredInstallPrompt
-    ) {
-
+    if (!deferredInstallPrompt) {
         return;
-
     }
-
 
     try {
 
         deferredInstallPrompt.prompt();
 
-
         await deferredInstallPrompt.userChoice;
-
 
     } catch (error) {
 
@@ -5895,45 +4849,27 @@ function setupTeamBadgeObserver() {
             ".team-badge[data-team]"
         );
 
-
     if (!badges.length) {
-
         return;
-
     }
 
-
     badges.forEach(
-        (badge) => {
+        function (badge) {
 
             const team =
                 badge.dataset.team;
 
-
             if (!team) {
-
                 return;
-
             }
-
-
-            /*
-             * The badge area remains clean if
-             * no external logo is available.
-             *
-             * A short team abbreviation is
-             * generated instead.
-             */
 
             const abbreviation =
                 createTeamAbbreviation(
                     team
                 );
 
-
             badge.textContent =
                 abbreviation;
-
 
             badge.setAttribute(
                 "aria-label",
@@ -5946,34 +4882,22 @@ function setupTeamBadgeObserver() {
 }
 
 
-/* ============================================================
-   TEAM ABBREVIATION
-   ============================================================ */
-
-function createTeamAbbreviation(
-    team
-) {
+function createTeamAbbreviation(team) {
 
     const value =
         String(
             team ||
             ""
-        )
-            .trim();
-
+        ).trim();
 
     if (!value) {
-
         return "FC";
-
     }
-
 
     const words =
         value
             .split(/\s+/)
             .filter(Boolean);
-
 
     if (
         words.length === 1
@@ -5985,12 +4909,12 @@ function createTeamAbbreviation(
 
     }
 
-
     return words
         .slice(0, 3)
         .map(
-            (word) =>
-                word.charAt(0)
+            function (word) {
+                return word.charAt(0);
+            }
         )
         .join("")
         .toUpperCase();
@@ -6002,20 +4926,14 @@ function createTeamAbbreviation(
    DATE FORMAT
    ============================================================ */
 
-function formatDate(
-    value
-) {
+function formatDate(value) {
 
     if (!value) {
-
         return "—";
-
     }
-
 
     const date =
         new Date(value);
-
 
     if (
         Number.isNaN(
@@ -6029,7 +4947,6 @@ function formatDate(
 
     }
 
-
     return date.toLocaleDateString(
         undefined,
         {
@@ -6037,6 +4954,83 @@ function formatDate(
             month: "short",
             day: "numeric"
         }
+    );
+
+}
+
+
+/* ============================================================
+   EMPTY / LOADING STATES
+   ============================================================ */
+
+function createEmptyState(message) {
+
+    return `
+        <div class="empty-state">
+            ${escapeHTML(
+                message ||
+                "Nothing available."
+            )}
+        </div>
+    `;
+
+}
+
+
+function createLoadingState(message) {
+
+    return `
+        <div class="loading-state">
+            ${escapeHTML(
+                message ||
+                "Loading..."
+            )}
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   HTML ESCAPE
+   ============================================================ */
+
+function escapeHTML(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+function escapeAttribute(value) {
+
+    return escapeHTML(
+        value
+    ).replace(
+        /`/g,
+        "&#096;"
     );
 
 }
@@ -6053,29 +5047,22 @@ function setButtonLoading(
 ) {
 
     if (!button) {
-
         return;
-
     }
-
 
     if (loading) {
 
         if (
-            !button.dataset
-                .originalText
+            !button.dataset.originalText
         ) {
 
-            button.dataset
-                .originalText =
+            button.dataset.originalText =
                 button.textContent;
 
         }
 
-
         button.disabled =
             true;
-
 
         button.textContent =
             loadingText;
@@ -6085,15 +5072,12 @@ function setButtonLoading(
         button.disabled =
             false;
 
-
         if (
-            button.dataset
-                .originalText
+            button.dataset.originalText
         ) {
 
             button.textContent =
-                button.dataset
-                    .originalText;
+                button.dataset.originalText;
 
         }
 
@@ -6108,13 +5092,12 @@ function setButtonLoading(
 
 document.addEventListener(
     "click",
-    (event) => {
+    function (event) {
 
         const vipLink =
             event.target.closest(
                 "[data-open-vip]"
             );
-
 
         if (vipLink) {
 
@@ -6183,35 +5166,26 @@ window.openVipPage =
 window.installPWA =
     installPWA;
 
+window.loadNotifications =
+    loadNotifications;
+
+window.openNotificationPanel =
+    openNotificationPanel;
+
+window.closeNotificationPanel =
+    closeNotificationPanel;
+
+window.markAllNotificationsRead =
+    markAllNotificationsRead;
+
 
 /* ============================================================
-   FINAL INITIALIZATION
+   APP LOADED
    ============================================================ */
-// ============================================================
-// MOBILE MENU CLOSE
-// ============================================================
-
-function closeMobileMenu() {
-    const menuButton = document.getElementById("menuButton");
-    const mainNav = document.getElementById("mainNav");
-
-    if (mainNav) {
-        mainNav.classList.remove("active");
-        mainNav.classList.remove("open");
-    }
-
-    if (menuButton) {
-        menuButton.classList.remove("active");
-        menuButton.setAttribute("aria-expanded", "false");
-    }
-
-    document.body.classList.remove("menu-open");
-}
 
 console.log(
     "FLEX HUB PREDICTIONS app.js loaded successfully."
 );
-
 
 /* ============================================================
    END OF APP.JS
