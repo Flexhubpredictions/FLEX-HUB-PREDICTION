@@ -5060,66 +5060,173 @@ function setupForgotPassword() {
 }
 
 
+```js
 /* ============================================================
-   NOTIFICATIONS
+   FLEX HUB — USER NOTIFICATION CENTER
+   ============================================================ */
+
+let userNotifications = [];
+
+
+/* ============================================================
+   SETUP NOTIFICATION CENTER
    ============================================================ */
 
 function setupNotificationCenter() {
 
     const button =
+        getElement("notificationBell");
+
+    const panel =
+        getElement("notificationPanel");
+
+    const markAllButton =
         getElement(
-            "notificationButton"
+            "markAllNotificationsButton"
         );
 
+    if (!button || !panel) {
+        return;
+    }
+
+
+    /* OPEN / CLOSE PANEL */
+
+    button.addEventListener(
+        "click",
+        (event) => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const isOpen =
+                !panel.hasAttribute("hidden");
+
+            if (isOpen) {
+
+                closeNotificationPanel();
+
+            } else {
+
+                openNotificationPanel();
+
+            }
+
+        }
+    );
+
+
+    /* MARK ALL AS READ */
+
+    if (markAllButton) {
+
+        markAllButton.addEventListener(
+            "click",
+            async (event) => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                await markAllNotificationsRead();
+
+            }
+        );
+
+    }
+
+
+    /* CLOSE WHEN CLICKING OUTSIDE */
+
+    document.addEventListener(
+        "click",
+        (event) => {
+
+            const center =
+                getElement(
+                    "notificationCenter"
+                );
+
+            if (
+                center &&
+                !center.contains(
+                    event.target
+                )
+            ) {
+
+                closeNotificationPanel();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   OPEN NOTIFICATION PANEL
+   ============================================================ */
+
+function openNotificationPanel() {
 
     const panel =
         getElement(
             "notificationPanel"
         );
 
-
-    if (
-        button &&
-        panel
-    ) {
-
-        button.addEventListener(
-            "click",
-            (event) => {
-
-                event.preventDefault();
-
-                event.stopPropagation();
-
-
-                panel.classList.toggle(
-                    "active"
-                );
-
-            }
+    const button =
+        getElement(
+            "notificationBell"
         );
 
+    if (!panel) {
+        return;
+    }
 
-        document.addEventListener(
-            "click",
-            (event) => {
+    panel.removeAttribute("hidden");
 
-                if (
-                    !panel.contains(
-                        event.target
-                    ) &&
-                    !button.contains(
-                        event.target
-                    )
-                ) {
+    if (button) {
 
-                    panel.classList.remove(
-                        "active"
-                    );
+        button.setAttribute(
+            "aria-expanded",
+            "true"
+        );
 
-                }
+    }
 
-            }
+}
+
+
+/* ============================================================
+   CLOSE NOTIFICATION PANEL
+   ============================================================ */
+
+function closeNotificationPanel() {
+
+    const panel =
+        getElement(
+            "notificationPanel"
+        );
+
+    const button =
+        getElement(
+            "notificationBell"
+        );
+
+    if (!panel) {
+        return;
+    }
+
+    panel.setAttribute(
+        "hidden",
+        ""
+    );
+
+    if (button) {
+
+        button.setAttribute(
+            "aria-expanded",
+            "false"
         );
 
     }
@@ -5135,18 +5242,19 @@ async function loadNotifications() {
 
     const container =
         getElement(
-            "notificationsContainer"
-        ) ||
-        getElement(
             "notificationList"
         );
 
-
     if (!container) {
-
         return [];
-
     }
+
+
+    container.innerHTML = `
+        <div class="notification-loading">
+            Loading notifications...
+        </div>
+    `;
 
 
     try {
@@ -5160,7 +5268,7 @@ async function loadNotifications() {
             );
 
 
-        const notifications =
+        userNotifications =
             Array.isArray(data)
                 ? data
                 : (
@@ -5171,11 +5279,11 @@ async function loadNotifications() {
 
 
         renderNotifications(
-            notifications
+            userNotifications
         );
 
 
-        return notifications;
+        return userNotifications;
 
     } catch (error) {
 
@@ -5185,10 +5293,19 @@ async function loadNotifications() {
         );
 
 
-        container.innerHTML =
-            createEmptyState(
-                "No notifications available."
-            );
+        userNotifications = [];
+
+
+        container.innerHTML = `
+            <div class="notification-empty">
+                No notifications available.
+            </div>
+        `;
+
+
+        updateNotificationBadge(
+            0
+        );
 
 
         return [];
@@ -5208,17 +5325,11 @@ function renderNotifications(
 
     const container =
         getElement(
-            "notificationsContainer"
-        ) ||
-        getElement(
             "notificationList"
         );
 
-
     if (!container) {
-
         return;
-
     }
 
 
@@ -5232,20 +5343,38 @@ function renderNotifications(
 
     if (!list.length) {
 
-        container.innerHTML =
-            createEmptyState(
-                "No notifications available."
-            );
+        container.innerHTML = `
+            <div class="notification-empty">
+                No notifications yet.
+            </div>
+        `;
+
+        updateNotificationBadge(
+            0
+        );
+
+        updateNotificationCount(
+            0
+        );
 
         return;
 
     }
 
 
+    let unreadCount = 0;
+
+
     container.innerHTML =
         list
             .map(
                 (item) => {
+
+                    const id =
+                        Number(
+                            item.id || 0
+                        );
+
 
                     const title =
                         escapeHTML(
@@ -5267,34 +5396,61 @@ function renderNotifications(
                         "";
 
 
+                    const isRead =
+                        Boolean(
+                            item.read_at ||
+                            item.readAt ||
+                            item.is_read ||
+                            item.isRead
+                        );
+
+
+                    if (!isRead) {
+                        unreadCount++;
+                    }
+
+
                     return `
                         <article
-                            class="notification-item"
+                            class="user-notification ${
+                                isRead
+                                    ? "read"
+                                    : "unread"
+                            }"
+                            data-notification-id="${id}"
+                            onclick="handleNotificationClick(${id}, ${isRead})"
                         >
 
                             <div
-                                class="notification-title"
+                                class="user-notification-title"
                             >
-                                ${title}
+
+                                <strong>
+                                    ${title}
+                                </strong>
+
+                                ${
+                                    date
+                                        ? `
+                                            <span
+                                                class="user-notification-time"
+                                            >
+                                                ${formatDate(
+                                                    date
+                                                )}
+                                            </span>
+                                          `
+                                        : ""
+                                }
+
                             </div>
 
-                            <p
-                                class="notification-message"
+
+                            <div
+                                class="user-notification-message"
                             >
                                 ${message}
-                            </p>
-
-                            ${
-                                date
-                                    ? `
-                                        <small>
-                                            ${formatDate(
-                                                date
-                                            )}
-                                        </small>
-                                      `
-                                    : ""
-                            }
+                            </div>
 
                         </article>
                     `;
@@ -5303,7 +5459,283 @@ function renderNotifications(
             )
             .join("");
 
+
+    updateNotificationBadge(
+        unreadCount
+    );
+
+    updateNotificationCount(
+        unreadCount
+    );
+
 }
+
+
+/* ============================================================
+   UPDATE NOTIFICATION BADGE
+   ============================================================ */
+
+function updateNotificationBadge(
+    count
+) {
+
+    const badge =
+        getElement(
+            "notificationBadge"
+        );
+
+    if (!badge) {
+        return;
+    }
+
+
+    const safeCount =
+        Math.max(
+            0,
+            Number(count) || 0
+        );
+
+
+    if (safeCount > 0) {
+
+        badge.textContent =
+            safeCount > 99
+                ? "99+"
+                : String(
+                    safeCount
+                );
+
+        badge.style.display =
+            "flex";
+
+    } else {
+
+        badge.textContent =
+            "0";
+
+        badge.style.display =
+            "none";
+
+    }
+
+}
+
+
+/* ============================================================
+   UPDATE PANEL COUNT
+   ============================================================ */
+
+function updateNotificationCount(
+    count
+) {
+
+    const countElement =
+        getElement(
+            "notificationCount"
+        );
+
+    if (!countElement) {
+        return;
+    }
+
+
+    const safeCount =
+        Math.max(
+            0,
+            Number(count) || 0
+        );
+
+
+    countElement.textContent =
+        safeCount > 99
+            ? "99+"
+            : String(
+                safeCount
+            );
+
+}
+
+
+/* ============================================================
+   MARK ONE NOTIFICATION AS READ
+   ============================================================ */
+
+async function handleNotificationClick(
+    notificationId,
+    alreadyRead
+) {
+
+    if (
+        !notificationId ||
+        alreadyRead
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await apiRequest(
+            `/notifications/${notificationId}/read`,
+            {
+                method: "POST"
+            }
+        );
+
+
+        const notification =
+            userNotifications.find(
+                (item) =>
+                    Number(
+                        item.id
+                    ) ===
+                    Number(
+                        notificationId
+                    )
+            );
+
+
+        if (notification) {
+
+            notification.read_at =
+                new Date().toISOString();
+
+        }
+
+
+        renderNotifications(
+            userNotifications
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Mark notification as read error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   MARK ALL NOTIFICATIONS AS READ
+   ============================================================ */
+
+async function markAllNotificationsRead() {
+
+    const unread =
+        userNotifications.filter(
+            (item) =>
+                !(
+                    item.read_at ||
+                    item.readAt ||
+                    item.is_read ||
+                    item.isRead
+                )
+        );
+
+
+    if (!unread.length) {
+
+        updateNotificationBadge(
+            0
+        );
+
+        updateNotificationCount(
+            0
+        );
+
+        return;
+
+    }
+
+
+    const button =
+        getElement(
+            "markAllNotificationsButton"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.dataset.originalText =
+            button.textContent;
+
+        button.textContent =
+            "Marking...";
+
+    }
+
+
+    try {
+
+        await Promise.all(
+            unread.map(
+                async (item) => {
+
+                    const id =
+                        Number(
+                            item.id
+                        );
+
+                    if (!id) {
+                        return;
+                    }
+
+                    try {
+
+                        await apiRequest(
+                            `/notifications/${id}/read`,
+                            {
+                                method: "POST"
+                            }
+                        );
+
+                        item.read_at =
+                            new Date().toISOString();
+
+                    } catch (error) {
+
+                        console.error(
+                            `Unable to mark notification ${id} as read:`,
+                            error
+                        );
+
+                    }
+
+                }
+            )
+        );
+
+
+        renderNotifications(
+            userNotifications
+        );
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                button.dataset.originalText ||
+                "Mark all read";
+
+        }
+
+    }
+
+}
+```
 
 
 /* ============================================================
