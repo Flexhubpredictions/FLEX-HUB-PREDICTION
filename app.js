@@ -569,54 +569,21 @@ function setupAccountForms() {
    LOGIN
    ============================================================ */
 
-async function handleLogin(
-    event
-) {
+async function handleLogin(event) {
+    if (event) event.preventDefault();
 
-    if (event) {
-
-        event.preventDefault();
-
-    }
-
-
-    const identifierInput =
-        getElement(
-            "loginIdentifier"
-        );
-
-    const passwordInput =
-        getElement(
-            "loginPassword"
-        );
-
-    const rememberInput =
-        getElement(
-            "rememberMe"
-        );
-
-    const messageElement =
-        getElement(
-            "loginMessage"
-        );
-
+    const identifierInput = getElement("loginIdentifier");
+    const passwordInput = getElement("loginPassword");
+    const rememberInput = getElement("rememberMe");
+    const messageElement = getElement("loginMessage");
 
     const identifier =
-        String(
-            identifierInput?.value ||
-            ""
-        ).trim();
-
+        String(identifierInput?.value || "").trim();
 
     const password =
-        String(
-            passwordInput?.value ||
-            ""
-        );
-
+        String(passwordInput?.value || "");
 
     if (!identifier) {
-
         showMessage(
             messageElement,
             "Please enter your username or email.",
@@ -624,14 +591,10 @@ async function handleLogin(
         );
 
         identifierInput?.focus();
-
         return;
-
     }
 
-
     if (!password) {
-
         showMessage(
             messageElement,
             "Please enter your password.",
@@ -639,11 +602,8 @@ async function handleLogin(
         );
 
         passwordInput?.focus();
-
         return;
-
     }
-
 
     setFormLoading(
         event?.currentTarget,
@@ -651,48 +611,42 @@ async function handleLogin(
         "Signing in..."
     );
 
-
     showMessage(
         messageElement,
         "Signing in...",
         "info"
     );
 
-
     try {
-
-        const data =
-            await apiRequest(
-                "/auth/login",
-                {
-                    method: "POST",
-                    skipAuth: true,
-                    body: {
-                        identifier,
-                        password
-                    }
+        const data = await apiRequest(
+            "/auth/login",
+            {
+                method: "POST",
+                skipAuth: true,
+                body: {
+                    identifier,
+                    password
                 }
-            );
+            }
+        );
 
-
-        if (
-            !data ||
-            !data.token ||
-            !data.user
-        ) {
-
+        if (!data || !data.token || !data.user) {
             throw new Error(
                 "The server returned an incomplete login response."
             );
-
         }
 
-
+        /*
+         * The login endpoint already verified the credentials
+         * and returned the user + token.
+         *
+         * Do NOT call /user/me here.
+         * This removes one unnecessary network request.
+         */
         saveUser(
             data.user,
             data.token
         );
-
 
         localStorage.setItem(
             STORAGE_KEYS.REMEMBER_ME,
@@ -701,28 +655,9 @@ async function handleLogin(
                 : "false"
         );
 
-
-        const verified =
-            await verifyCurrentUserSession(
-                true
-            );
-
-
-        if (!verified) {
-
-            console.warn(
-                "Login succeeded, but session verification did not complete."
-            );
-
-        }
-
-
-        currentUser =
-            data.user;
-
+        currentUser = data.user;
 
         updateUserInterface();
-
 
         showMessage(
             messageElement,
@@ -730,27 +665,18 @@ async function handleLogin(
             "success"
         );
 
-
-        setTimeout(
-            () => {
-
-                openMainWebsite();
-
-            },
-            500
-        );
-
+        /*
+         * Open immediately instead of waiting 500ms.
+         */
+        openMainWebsite();
 
     } catch (error) {
-
         console.error(
             "Login error:",
             error
         );
 
-
         clearUserSession();
-
 
         showMessage(
             messageElement,
@@ -759,16 +685,12 @@ async function handleLogin(
             "error"
         );
 
-
     } finally {
-
         setFormLoading(
             event?.currentTarget,
             false
         );
-
     }
-
 }
 
 
