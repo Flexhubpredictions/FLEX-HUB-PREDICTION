@@ -3370,7 +3370,7 @@ async function loadSubscriptions() {
 
     const data =
         await apiRequest(
-            "/admin/vip-subscriptions"
+            "/admin/vip-codes"
         );
 
 
@@ -3913,10 +3913,10 @@ async function generateVipSubscription(
             );
 
 
-        const code =
-            data.code ||
-            data.subscription?.code ||
-            data.subscription_code;
+      const code =
+    data.code?.code ||
+    data.subscription?.code ||
+    data.subscription_code;
 
 
         if (!code) {
