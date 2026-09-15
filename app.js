@@ -5314,8 +5314,6 @@ async function loadNotifications() {
 
 }
 
-
-```js
 function renderNotifications(notifications) {
 
     const container =
@@ -5390,7 +5388,7 @@ function renderNotifications(notifications) {
                 '" ' +
                 'data-read="' +
                 (isRead ? "true" : "false") +
-                '>' +
+                '">' +
 
                 '<div class="user-notification-title">' +
 
@@ -5428,9 +5426,6 @@ function renderNotifications(notifications) {
     updateNotificationCount(
         unreadCount
     );
-
-
-    /* Attach click events safely */
 
     const notificationItems =
         container.querySelectorAll(
@@ -5473,10 +5468,11 @@ function renderNotifications(notifications) {
                         const notification =
                             userNotifications.find(
                                 function(notificationItem) {
+
                                     return Number(
                                         notificationItem.id
-                                    ) ===
-                                    notificationId;
+                                    ) === notificationId;
+
                                 }
                             );
 
@@ -5507,9 +5503,6 @@ function renderNotifications(notifications) {
     );
 
 }
-```
-
-
 
 /* ============================================================
    UPDATE NOTIFICATION BADGE
