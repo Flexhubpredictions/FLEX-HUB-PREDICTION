@@ -3043,9 +3043,12 @@ function updateVipInterface(
 function setupVipRedeemForm() {
 
     const form =
-        getElement("vipRedeemForm");
+        getElement("vipAccessForm");
 
     if (!form) {
+        console.warn(
+            "VIP access form not found."
+        );
         return;
     }
 
@@ -3055,7 +3058,6 @@ function setupVipRedeemForm() {
     );
 
 }
-
 
 async function redeemVipCode(event) {
 
